@@ -463,6 +463,96 @@
 .hander-phone .font-bold { font-weight: 600; }
 .hander-phone .font-semibold { font-weight: 500; }
 .hander-phone .map-shell { border-radius: 22px; }
+
+/* På riktiga telefoner ska appen fylla hela viewporten, inte bete sig som en centrerad mockup. */
+@media (max-width: 519px) {
+  html,
+  body {
+    width: 100%;
+    min-width: 0;
+    min-height: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    min-height: 100dvh;
+  }
+
+  .hander-phone {
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    min-height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+  }
+
+  .hander-phone > main {
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(102px + env(safe-area-inset-bottom));
+  }
+
+  .hander-phone .hander-topbar-inner {
+    min-height: 78px;
+    gap: .5rem;
+    padding-left: .75rem;
+    padding-right: .75rem;
+  }
+
+  .hander-phone .hander-topbar-inner > div:last-child {
+    gap: .25rem;
+  }
+
+  .hander-phone .hander-topbar-inner > div:last-child a,
+  .hander-phone .hander-logo-placeholder {
+    height: 2.25rem;
+    width: 2.25rem;
+  }
+
+  .hander-phone .hander-bottom-nav ul {
+    margin: 0 .5rem calc(.5rem + env(safe-area-inset-bottom));
+    height: 68px;
+    padding-left: .5rem;
+    padding-right: .5rem;
+  }
+
+  .hander-phone .hander-nav-item {
+    height: 48px;
+    width: 48px;
+  }
+
+  .hander-phone .hander-nav-item svg {
+    height: 1.5rem;
+    width: 1.5rem;
+  }
+
+  .hander-phone .hander-fab {
+    height: 58px;
+    width: 58px;
+    margin-top: -2rem;
+  }
+
+  .hander-phone .map-controls {
+    gap: .5rem;
+  }
+
+  .hander-phone .map-view-toggle-pill {
+    width: min(156px, 48vw);
+  }
+
+  .hander-phone .map-filter-button {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .hander-phone .event-actions-dock {
+    width: 100%;
+  }
+}
 /* Tunna accentramar håller fokus på bilderna och kartan. */
 .hander-phone .popular-event-card,
 .hander-phone .invite-event-card,

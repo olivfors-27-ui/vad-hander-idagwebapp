@@ -156,7 +156,7 @@ export function AppShell({
   bare?: boolean;
 }) {
   return (
-    <div className="relative mx-auto flex h-screen min-h-[800px] w-full max-w-md flex-col bg-background hander-phone">
+    <div className="relative mx-auto flex h-screen min-h-0 w-full max-w-md flex-col bg-background hander-phone">
       <div className="hander-notch" aria-hidden />
       <div className="hander-statusbar" aria-hidden>
         <span>9:41</span>
