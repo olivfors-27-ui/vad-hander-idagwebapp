@@ -479,12 +479,22 @@
   }
 
   .hander-phone {
+    position: relative;
+    isolation: isolate;
     width: 100%;
     max-width: none;
     height: 100dvh;
     min-height: 100dvh;
-    max-height: none;
+    max-height: 100dvh;
+    overflow: hidden;
     border-radius: 0;
+  }
+
+  .hander-phone > .hander-statusbar,
+  .hander-phone > .hander-topbar,
+  .hander-phone > .hander-lines,
+  .hander-phone > main {
+    flex-shrink: 0;
   }
 
   .hander-phone > main {
@@ -494,6 +504,20 @@
     overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
     padding-bottom: calc(102px + env(safe-area-inset-bottom));
+  }
+
+  .hander-phone > .hander-bottom-nav {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    pointer-events: none;
+  }
+
+  .hander-phone > .hander-bottom-nav ul,
+  .hander-phone > .hander-bottom-nav a {
+    pointer-events: auto;
   }
 
   .hander-phone .hander-topbar-inner {
@@ -514,7 +538,7 @@
   }
 
   .hander-phone .hander-bottom-nav ul {
-    margin: 0 .5rem calc(.5rem + env(safe-area-inset-bottom));
+    margin: 0 .5rem .5rem;
     height: 68px;
     padding-left: .5rem;
     padding-right: .5rem;

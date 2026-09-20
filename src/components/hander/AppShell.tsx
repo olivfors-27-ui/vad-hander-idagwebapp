@@ -33,7 +33,7 @@ export function TopBar({
 }) {
   const { unreadNotifications } = useHander();
   return (
-    <header className="sticky top-0 z-30 hander-topbar">
+    <header className="shrink-0 sticky top-0 z-30 hander-topbar">
       <div className="hander-topbar-inner flex items-center justify-between gap-3 px-4 pb-3 pt-3.5">
         {/* Neutral cirkel som placeholder för appens logotyp. */}
         <div
@@ -121,7 +121,7 @@ export function BottomNav() {
 
   return (
     <>
-      <nav className="hander-bottom-nav absolute inset-x-0 bottom-0 z-40 pb-[env(safe-area-inset-bottom)]">
+      <nav className="hander-bottom-nav absolute inset-x-0 bottom-0 z-40 pb-[env(safe-area-inset-bottom)]" aria-label="Huvudnavigation">
         <ul className="flex items-center justify-around px-4 py-3">
           {NAV_LEFT.map(({ to, label, icon }) => (
             <NavItem key={to} to={to} label={label} icon={icon} active={isActive(to)} />
