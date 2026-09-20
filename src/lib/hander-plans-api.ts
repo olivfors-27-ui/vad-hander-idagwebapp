@@ -2,6 +2,12 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Availability, Plan, PlanOption, PlanReply, PlanSlot } from "./hander-plans";
 
+const hasSupabaseConfig = Boolean(
+  import.meta.env["VITE_SUPABASE_URL"] && import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"],
+);
+
+const noCloudPlan = () => [] as Plan[];
+
 type PlanRow = {
   id: string;
   code: string;
@@ -80,6 +86,8 @@ function planToRow(plan: Plan) {
 
 /** Hämtar alla planer med svar. */
 export async function fetchPlans(): Promise<Plan[]> {
+  if (!hasSupabaseConfig) return noCloudPlan();
+
   const [{ data: plans, error }, { data: replies }] = await Promise.all([
     supabase.from("plans").select("*").order("created_at", { ascending: false }),
     supabase.from("plan_replies").select("*").order("created_at", { ascending: true }),
@@ -92,6 +100,8 @@ export async function fetchPlans(): Promise<Plan[]> {
 
 /** Hämtar en plan via delningskod – används av mottagaren utan konto. */
 export async function fetchPlanByCode(code: string): Promise<Plan | null> {
+  if (!hasSupabaseConfig) return null;
+
   const { data, error } = await supabase
     .from("plans")
     .select("*")
@@ -109,11 +119,15 @@ export async function fetchPlanByCode(code: string): Promise<Plan | null> {
 }
 
 export async function insertPlan(plan: Plan) {
+  if (!hasSupabaseConfig) return;
+
   const { error } = await supabase.from("plans").insert(planToRow(plan) as never);
   if (error) throw error;
 }
 
 export async function patchPlan(plan: Plan) {
+  if (!hasSupabaseConfig) return;
+
   const { error } = await supabase
     .from("plans")
     .update(planToRow(plan) as never)
@@ -122,12 +136,16 @@ export async function patchPlan(plan: Plan) {
 }
 
 export async function removePlan(id: string) {
+  if (!hasSupabaseConfig) return;
+
   const { error } = await supabase.from("plans").delete().eq("id", id);
   if (error) throw error;
 }
 
 /** Ett svar per namn och plan – nytt svar ersätter det gamla. */
 export async function upsertReply(planId: string, reply: Omit<PlanReply, "id" | "at">) {
+  if (!hasSupabaseConfig) return;
+
   const name = reply.name.trim();
   await supabase
     .from("plan_replies")
@@ -147,6 +165,8 @@ export async function upsertReply(planId: string, reply: Omit<PlanReply, "id" | 
 
 /** Lyssnar på ändringar i planer och svar (live-uppdatering). */
 export function subscribePlans(onChange: () => void) {
+  if (!hasSupabaseConfig) return () => undefined;
+
   const channel = supabase
     .channel(`hander-plans-${Math.random().toString(36).slice(2)}`)
     .on("postgres_changes", { event: "*", schema: "public", table: "plans" }, onChange)
