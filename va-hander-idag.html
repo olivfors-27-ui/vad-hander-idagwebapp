@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Va Händer Idag?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --coral:#E4544B;
+    --coral-dark:#D9423F;
+    --orange:#E97859;
+    --yellow:#E8A054;
+    --yellow-deep:#EFB44D;
+    --blue:#667FDB;
+    --blue-deep:#4458C5;
+    --sky:#AFC0F0;
+    --sage:#F1E5D2;
+    --grey:#8E8E93;
+    --ink:#1C1C1E;
+    --ink-soft:#68686D;
+    --ink-faint:#9A9AA0;
+    --bg:#FFFDF9;
+    --glass:rgba(255,253,249,0.62);
+    --glass-strong:rgba(255,253,249,0.86);
+    --line:rgba(68,52,47,0.11);
+    --shadow-soft:0 10px 28px rgba(86,61,48,0.11);
+    --shadow-lift:0 16px 40px rgba(86,61,48,0.17);
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  body{
+    background:
+      radial-gradient(circle at 15% 8%, #FFE9DC 0%, transparent 45%),
+      radial-gradient(circle at 85% 90%, #E7ECFF 0%, transparent 40%),
+      #EDEAE5;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Manrope', 'Helvetica Neue', Arial, sans-serif;
+    padding:32px 12px;
+  }
+
+  h1,h2,h3, .display, .btn-primary, .btn-ghost, .fab, .pill-toggle, .section-title, .filterbtn, .maplabel{
+    font-family:'Manrope', 'Helvetica Neue', Arial, sans-serif;
+    letter-spacing:-0.15px;
+  }
+
+  /* Keep the phone chrome more app-like, while the content uses a clean Severance-inspired grotesk. */
+  .bottomnav, .navlabel{font-family:'Poppins', sans-serif;}
+  .screen button, .screen a{font-family:'Manrope', 'Helvetica Neue', Arial, sans-serif;}
+
+  /* ---------- Phone frame ---------- */
+  .phone{
+    position:relative;
+    width:388px;
+    height:812px;
+    background:var(--bg);
+    border-radius:46px;
+    overflow:hidden;
+    box-shadow:
+      0 2px 0 rgba(255,255,255,0.6) inset,
+      0 40px 80px -20px rgba(34,34,59,0.35),
+      0 0 0 10px #16161C,
+      0 0 0 12px rgba(255,255,255,0.06);
+  }
+
+  .statusbar{
+    position:relative;
+    z-index:30;
+    height:46px;
+    padding:0 26px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-family:'Poppins', sans-serif;
+    font-weight:800;
+    font-size:14.5px;
+    color:var(--ink);
+    background:var(--bg);
+  }
+  .statusbar .icons{display:flex; align-items:center; gap:6px;}
+
+  .notch{
+    position:absolute;
+    top:8px; left:50%; transform:translateX(-50%);
+    width:110px; height:22px;
+    background:#16161C;
+    border-radius:14px;
+    z-index:40;
+  }
+
+  /* ---------- Screens ---------- */
+  .bg-ribbons{
+    position:absolute;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+  }
+  .bg-ribbons svg{width:100%; height:100%; display:block;}
+
+  .screens{
+    position:relative;
+    z-index:10;
+    height:calc(100% - 46px - 92px);
+  }
+
+  .screen{
+    position:absolute;
+    inset:0;
+    overflow-y:auto;
+    -ms-overflow-style:none;
+    scrollbar-width:none;
+    padding:6px 22px 28px;
+    opacity:0;
+    visibility:hidden;
+    transform:translateY(6px);
+    transition:opacity .28s ease, transform .28s ease;
+  }
+  .screen::-webkit-scrollbar{display:none;}
+  .screen.active{
+    opacity:1;
+    visibility:visible;
+    transform:translateY(0);
+  }
+
+  /* ---------- Shared header ---------- */
+  .page-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    padding:14px 2px 18px;
+  }
+  .page-head h1{
+    font-size:25px;
+    font-weight:700;
+    letter-spacing:-.7px;
+    color:var(--ink);
+    line-height:1.08;
+  }
+  .page-head p{
+    font-size:13.5px;
+    color:#595961;
+    font-weight:600;
+    margin-top:5px;
+    line-height:1.3;
+  }
+  .head-actions{display:flex; align-items:center; gap:9px;}
+  .icon-btn{
+    width:38px; height:38px;
+    cursor:pointer;
+    border-radius:14px;
+    background:var(--bg);
+    border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 3px 10px rgba(86,61,48,.06);
+    position:relative;
+    flex-shrink:0;
+  }
+  .icon-btn svg{width:17px; height:17px; stroke:var(--ink);}
+  .icon-btn:focus-visible, .msg-btn:focus-visible, .trash-btn:focus-visible, .navitem:focus-visible, .fab:focus-visible{outline:3px solid rgba(239,180,77,.78); outline-offset:2px;}
+  .badge-dot{
+    position:absolute; top:-3px; right:-3px;
+    width:16px; height:16px;
+    background:var(--coral);
+    border-radius:50%;
+    color:#fff; font-size:9.5px; font-weight:800;
+    display:flex; align-items:center; justify-content:center;
+    border:2px solid var(--bg);
+  }
+  .avatar{
+    width:38px; height:38px; border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 4px 12px rgba(86,61,48,.06);
+    flex-shrink:0;
+    cursor:pointer;
+  }
+  .avatar:focus-visible{outline:3px solid rgba(239,180,77,.78); outline-offset:3px;}
+  .avatar img{width:100%; height:100%; object-fit:cover; display:block;}
+
+  .section-title{
+    position:relative;
+    font-size:16.5px;
+    font-weight:700;
+    color:var(--ink);
+    margin:24px 2px 12px;
+    padding:8px 10px 9px 20px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:rgba(255,253,249,.92);
+    border:1px solid rgba(68,52,47,.12);
+    border-bottom:2px solid rgba(68,52,47,.14);
+    border-radius:11px;
+    line-height:1.2;
+  }
+  .section-title::before{
+    content:'';
+    position:absolute;
+    left:7px;
+    top:50%;
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:var(--coral);
+    transform:translateY(-50%);
+  }
+  #screen-hem .section-title{
+    letter-spacing:-.3px;
+    padding:8px 10px 9px 20px;
+  }
+  #screen-hem .section-title .see-more{
+    color:var(--blue-deep);
+    padding:0;
+  }
+  .section-title .see-more{
+    font-size:12.5px;
+    font-weight:800;
+    color:var(--blue-deep);
+    white-space:nowrap;
+  }
+
+  /* ---------- Blob accent shapes ---------- */
+
+  /* ---------- Event cards ---------- */
+  .hscroll{
+    display:flex;
+    gap:13px;
+    overflow-x:auto;
+    margin-right:-8px;
+    padding:4px 10px 6px 2px;
+    scrollbar-width:none;
+    scroll-snap-type:x proximity;
+  }
+  .hscroll::-webkit-scrollbar{display:none;}
+
+  .hscroll .ecard{
+    box-shadow:none;
+    scroll-snap-align:start;
+  }
+
+  .ecard{
+    position:relative;
+    flex:0 0 auto;
+    width:142px;
+    height:178px;
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow:0 4px 12px -7px rgba(86,61,48,.28);
+    background:#ddd;
+  }
+  .ecard img{width:100%; height:100%; object-fit:cover; display:block;}
+  .ecard .scrim{
+    position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(20,16,25,0.82) 100%);
+  }
+  .ecard .tag{
+    position:absolute; top:11px; left:11px;
+    padding:4px 10px;
+    border-radius:20px;
+    font-size:10px;
+    font-weight:800;
+    color:#fff;
+    letter-spacing:.2px;
+  }
+  .ecard .info{
+    position:absolute; bottom:11px; left:12px; right:12px;
+    color:#fff;
+    text-shadow:0 1px 3px rgba(0,0,0,.5);
+  }
+  .ecard .info .name{font-size:14px; font-weight:700; font-family:'Manrope', 'Helvetica Neue', Arial, sans-serif; letter-spacing:-.2px;}
+  .ecard .info .meta{font-size:10.5px; font-weight:700; opacity:.95; margin-top:3px; display:flex; align-items:center; gap:4px;}
+
+  .ecard-wide{
+    position:relative;
+    width:100%;
+    height:168px;
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 7px 18px -10px rgba(86,61,48,.34);
+    background:#ddd;
+  }
+  .ecard-wide img{width:100%; height:100%; object-fit:cover; display:block;}
+  .ecard-wide .scrim{position:absolute; inset:0; background:linear-gradient(120deg, rgba(20,10,30,0.75) 20%, rgba(20,10,30,0.05) 75%);}
+  .ecard-wide .price{
+    position:absolute; top:14px; right:14px;
+    background:rgba(255,255,255,0.92);
+    color:var(--ink);
+    font-size:11.5px; font-weight:800;
+    padding:5px 11px; border-radius:20px;
+  }
+  .ecard-wide .tag{
+    position:absolute; top:14px; left:14px;
+    padding:5px 12px; border-radius:20px;
+    font-size:10px; font-weight:800; color:#fff;
+  }
+  .ecard-wide .info{position:absolute; bottom:14px; left:16px; right:16px; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.55);}
+  .ecard-wide .info .name{font-size:17.5px; font-weight:700; font-family:'Manrope', 'Helvetica Neue', Arial, sans-serif; letter-spacing:-.35px;}
+  .ecard-wide .info .meta{font-size:11px; font-weight:700; opacity:.96; margin-top:5px;}
+
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .newpill{
+    position:absolute; top:-4px; right:8px;
+    background:var(--blue); color:#fff;
+    font-size:10px; font-weight:800;
+    padding:4px 9px; border-radius:20px;
+    box-shadow:0 4px 10px rgba(74,95,247,.4);
+    z-index:5;
+  }
+
+  /* People row */
+  .people{display:flex; gap:12px; padding:2px 2px 4px;}
+  .person{
+    flex:1;
+    display:flex; align-items:center; gap:10px;
+    background:rgba(255,253,249,.86);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:9px 12px;
+    box-shadow:0 4px 12px rgba(86,61,48,.06);
+  }
+  .person img{width:36px; height:36px; border-radius:10px; object-fit:cover;}
+  .person .name{font-size:12.5px; font-weight:800; color:var(--ink);}
+  .person .status{font-size:10px; color:var(--ink-soft); font-weight:600; margin-top:1px;}
+
+  /* ---------- Buttons / toggles ---------- */
+  .btn-primary{
+    width:100%;
+    background:var(--coral);
+    cursor:pointer;
+    transition:background .2s ease, transform .2s ease;
+    color:#fff;
+    border:none;
+    padding:15px 16px;
+    border-radius:14px;
+    font-size:15.5px;
+    font-weight:600;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    box-shadow:none;
+  }
+  .btn-ghost{
+    width:100%;
+    background:var(--sky);
+    cursor:pointer;
+    transition:background .2s ease, transform .2s ease;
+    border:1px solid rgba(68,88,197,.18);
+    color:var(--ink);
+    padding:13px 16px;
+    border-radius:14px;
+    font-size:14.5px;
+    font-weight:600;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    margin-top:12px;
+    box-shadow:none;
+  }
+  .btn-primary:hover{background:var(--coral-dark);}
+  .btn-ghost:hover{background:#9EAFE5;}
+  .btn-primary:active, .btn-ghost:active{transform:translateY(1px);}
+
+  .beta-chip{
+    background:var(--blue); color:#fff;
+    font-size:9.5px; font-weight:800;
+    padding:2px 8px; border-radius:20px;
+  }
+
+  .pill-toggle{
+    display:flex;
+    background:rgba(232,160,84,.13);
+    border:1px solid rgba(68,52,47,.1);
+    border-radius:12px;
+    padding:3px;
+    margin:2px 0 16px;
+  }
+  .pill-toggle button{
+    flex:1;
+    border:none;
+    background:transparent;
+    padding:9px 10px;
+    border-radius:9px;
+    font-size:13px;
+    font-weight:700;
+    color:var(--ink-soft);
+    font-family:'Manrope', 'Helvetica Neue', Arial, sans-serif;
+    cursor:pointer;
+    transition:background .2s ease, color .2s ease, box-shadow .2s ease;
+  }
+  .pill-toggle button.active{
+    background:var(--coral);
+    color:#fff;
+    box-shadow:none;
+  }
+  .pill-toggle button:nth-child(2).active{
+    background:var(--yellow);
+    color:var(--ink);
+    box-shadow:none;
+  }
+
+  .toast{
+    position:absolute;
+    left:18px;
+    right:18px;
+    bottom:104px;
+    z-index:50;
+    padding:12px 16px;
+    border-radius:16px;
+    background:var(--ink);
+    color:#fff;
+    font-size:12px;
+    font-weight:700;
+    text-align:center;
+    opacity:0;
+    pointer-events:none;
+    transform:translateY(8px);
+    transition:opacity .2s ease, transform .2s ease;
+  }
+  .toast.show{opacity:1; transform:translateY(0);}
+
+  .filter-panel{
+    display:none;
+    gap:8px;
+    flex-wrap:wrap;
+    margin:0 2px 14px;
+    padding:10px;
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:14px;
+  }
+  .filter-panel.open{display:flex;}
+  .filter-option{
+    border:1px solid var(--line);
+    background:#F7F1E8;
+    color:var(--ink);
+    border-radius:10px;
+    padding:8px 11px;
+    font:700 11.5px 'Manrope', sans-serif;
+    cursor:pointer;
+  }
+  .filter-option.active{background:var(--coral); color:#fff; border-color:var(--coral);}
+
+  .map-list{
+    display:none;
+    flex-direction:column;
+    gap:10px;
+    margin-top:4px;
+  }
+  #screen-karta.list-mode .mapcanvas{display:none;}
+  #screen-karta.list-mode .map-list{display:flex;}
+  .map-list-card{
+    display:flex;
+    align-items:center;
+    gap:11px;
+    padding:10px;
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:16px;
+  }
+  .map-list-card.is-hidden{display:none;}
+  .map-list-card img{width:58px; height:58px; object-fit:cover; border-radius:10px; flex-shrink:0;}
+  .map-list-card .list-info{min-width:0; flex:1;}
+  .map-list-card .list-name{font-size:13px; font-weight:800; color:var(--ink);}
+  .map-list-card .list-meta{font-size:10.5px; color:var(--ink-soft); margin-top:3px;}
+  .list-type{font-size:9.5px; font-weight:800; color:var(--coral-dark); margin-top:4px;}
+
+  .overlay{
+    position:absolute;
+    inset:0;
+    z-index:60;
+    display:none;
+    background:rgba(28,28,30,.28);
+    padding:70px 18px 110px;
+  }
+  .overlay.open{display:block;}
+  .overlay-card{
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:16px;
+    max-height:100%;
+    overflow:auto;
+  }
+  .overlay-head{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;}
+  .overlay-head h2{font-size:18px; color:var(--ink);}
+  .close-btn{border:0; background:#F1EAE1; color:var(--ink); width:30px; height:30px; border-radius:9px; font-size:18px; cursor:pointer;}
+  .search-field{display:flex; gap:8px; align-items:center; margin-bottom:12px;}
+  .search-field input{flex:1; min-width:0; border:1px solid var(--line); border-radius:11px; padding:11px 12px; color:var(--ink); background:#fff; font:600 13px 'Manrope', sans-serif; outline:none;}
+  .search-field input:focus{border-color:var(--blue); box-shadow:0 0 0 3px rgba(102,127,219,.18);}
+  .search-submit{border:0; background:var(--blue-deep); color:#fff; border-radius:11px; padding:11px 13px; font:700 12px 'Manrope', sans-serif; cursor:pointer;}
+  .search-results{display:flex; flex-direction:column; gap:8px;}
+  .search-result{display:flex; gap:10px; align-items:center; padding:8px; border:1px solid var(--line); border-radius:12px; cursor:pointer; background:#fff;}
+  .search-result img{width:48px; height:48px; border-radius:9px; object-fit:cover;}
+  .search-result .result-name{font-size:12.5px; font-weight:800; color:var(--ink);}
+  .search-result .result-meta{font-size:10.5px; color:var(--ink-soft); margin-top:2px;}
+  .empty-search{font-size:12px; color:var(--ink-soft); text-align:center; padding:18px 8px;}
+  .notification-list{display:flex; flex-direction:column; gap:9px;}
+  .notification-item{display:flex; gap:10px; align-items:flex-start; padding:10px; background:#fff; border:1px solid var(--line); border-radius:12px;}
+  .notification-icon{width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:var(--yellow); color:var(--ink); flex-shrink:0; font-size:15px;}
+  .notification-item strong{font-size:12px; color:var(--ink);}
+  .notification-item p{font-size:10.5px; color:var(--ink-soft); margin-top:2px; line-height:1.35;}
+
+  .profile-screen{padding-top:6px;}
+  .profile-card{background:var(--bg); border:1px solid var(--line); border-radius:18px; padding:18px; text-align:center;}
+  .profile-photo{width:86px; height:86px; border-radius:16px; object-fit:cover; border:4px solid var(--yellow);}
+  .profile-card h2{font-size:20px; margin-top:10px; color:var(--ink);}
+  .profile-card p{font-size:12px; color:var(--ink-soft); margin-top:3px;}
+  .profile-stats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:16px;}
+  .profile-stat{padding:10px 6px; background:#F7F1E8; border-radius:11px;}
+  .profile-stat strong{display:block; font-size:16px; color:var(--ink);}
+  .profile-stat span{display:block; font-size:9.5px; color:var(--ink-soft); margin-top:2px;}
+  .profile-section{margin-top:14px; padding-top:14px; border-top:1px solid var(--line); text-align:left;}
+  .profile-section h3{font-size:13px; color:var(--ink); margin-bottom:8px;}
+  .interest-list{display:flex; gap:7px; flex-wrap:wrap;}
+  .interest-chip{padding:7px 9px; border-radius:9px; background:var(--sky); color:var(--blue-deep); font-size:10.5px; font-weight:800;}
+  .back-btn{border:0; background:transparent; color:var(--blue-deep); font:800 12px 'Manrope', sans-serif; cursor:pointer; padding:4px 0 12px;}
+
+  .chiprow{display:flex; gap:8px; overflow-x:auto; padding:2px 2px 4px; scrollbar-width:none;}
+  .chiprow::-webkit-scrollbar{display:none;}
+  .chip{
+    flex:0 0 auto;
+    display:flex; align-items:center; gap:5px;
+    cursor:pointer;
+    background:var(--bg);
+    border:1px solid var(--line);
+    padding:9px 15px;
+    border-radius:20px;
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--ink);
+    box-shadow:0 4px 12px rgba(86,61,48,.06);
+  }
+  .chip.active{background:var(--blue-deep); color:#fff; border-color:var(--blue-deep); box-shadow:0 8px 16px -5px rgba(68,88,197,.34);}
+  .chip .free{
+    background:var(--yellow); color:var(--ink);
+    font-size:8.5px; font-weight:800;
+    padding:2px 6px; border-radius:10px;
+  }
+
+  /* ---------- Map screen ---------- */
+  .maptools{display:flex; gap:10px; margin:6px 2px 14px;}
+  .seg{
+    flex:1;
+    display:flex;
+    background:rgba(232,160,84,.13);
+    border:1px solid rgba(68,52,47,.1);
+    border-radius:12px;
+    padding:3px;
+  }
+  .seg button{
+    flex:1; border:none; background:transparent;
+    padding:8px 9px; border-radius:9px;
+    font-size:12.5px; font-weight:700; color:var(--ink-soft);
+    font-family:'Manrope', 'Helvetica Neue', Arial, sans-serif;
+    display:flex; align-items:center; justify-content:center; gap:5px;
+    cursor:pointer;
+    transition:background .2s ease, color .2s ease, box-shadow .2s ease;
+  }
+  .seg button.active{background:var(--coral); color:#fff; box-shadow:none;}
+  .seg button:nth-child(2).active{background:var(--blue); color:#fff; box-shadow:none;}
+  .seg button:focus-visible, .pill-toggle button:focus-visible, .btn-primary:focus-visible, .btn-ghost:focus-visible{outline:3px solid rgba(239,180,77,.72); outline-offset:2px;}
+  .filterbtn{
+    display:flex; align-items:center; gap:6px;
+    background:var(--blue-deep); color:#fff;
+    transition:background .2s ease, transform .2s ease;
+    padding:8px 13px; border-radius:12px;
+    font-size:12.5px; font-weight:700;
+    white-space:nowrap;
+    border:none;
+    cursor:pointer;
+  }
+  .filterbtn:hover{background:var(--blue); transform:translateY(-1px);}
+
+  .mapcanvas{
+    position:relative;
+    width:100%;
+    height:430px;
+    border-radius:28px;
+    overflow:hidden;
+    background:#F4EBDD;
+    box-shadow:0 4px 12px rgba(86,61,48,.06);
+    border:1px solid var(--line);
+  }
+  .zone{position:absolute; border-radius:50%; opacity:.55;}
+  .zone.park{background:var(--sage); opacity:.45;}
+  .zone.water{background:var(--sky); opacity:.38;}
+
+  .pin{
+    position:absolute;
+    width:38px; height:38px;
+    border-radius:42% 58% 68% 32% / 45% 40% 60% 55%;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 8px 16px -4px rgba(34,34,59,.28);
+    border:2.5px solid rgba(255,255,255,0.88);
+  }
+  .pin svg{width:19px; height:19px; stroke:currentColor; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round;}
+  .pin.sm{width:30px; height:30px;}
+  .pin.sm svg{width:15px; height:15px; stroke-width:2;}
+  .pin.filter-hidden{display:none;}
+
+  .mapctrl{
+    position:absolute; right:14px; top:14px;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .mapctrl button{
+    width:36px; height:36px; border-radius:14px;
+    cursor:pointer;
+    background:rgba(255,253,249,.96);
+    border:1px solid var(--line);
+    font-size:16px; font-weight:800; color:var(--ink);
+    box-shadow:0 4px 12px rgba(86,61,48,.06);
+  }
+  .maplabel{
+    position:absolute; left:14px; bottom:14px;
+    background:var(--yellow);
+    border:1px solid var(--line);
+    padding:9px 14px; border-radius:20px;
+    font-size:12px; font-weight:800; color:var(--ink);
+    box-shadow:0 4px 12px rgba(86,61,48,.06);
+  }
+
+  /* ---------- Empty state (Planer) ---------- */
+  .empty-card{
+    margin-top:18px;
+    border:2px dashed rgba(68,88,197,.18);
+    border-radius:28px;
+    padding:30px 26px;
+    text-align:center;
+    background:rgba(255,253,249,.48);
+  }
+  .empty-blob-cluster{
+    display:none;
+  }
+  .empty-blob-cluster .b1{position:absolute; left:0; top:6px; width:62px; height:62px;    background:var(--sky); border-radius:50%; opacity:.55;}
+  .empty-blob-cluster .b2{position:absolute; right:0; top:0; width:50px; height:50px;    background:var(--yellow); border-radius:50%; opacity:.6;}
+  .empty-blob-cluster .emoji{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:30px; filter:grayscale(.25);}
+  .empty-card h3{font-size:16.5px; font-weight:600; color:var(--ink); margin-bottom:8px;}
+  .empty-card p{font-size:12.5px; color:var(--ink-soft); font-weight:600; line-height:1.55; max-width:230px; margin:0 auto;}
+  .empty-card .link{display:inline-block; margin-top:14px; color:var(--blue); font-weight:800; font-size:13px;}
+  .foot-link{display:block; text-align:center; margin-top:20px; font-size:12.5px; font-weight:700; color:var(--ink-soft); text-decoration:underline; text-underline-offset:3px;}
+
+  /* ---------- Saved list ---------- */
+  .saved-row{
+    display:flex; align-items:center; gap:13px;
+    background:rgba(255,253,249,.84);
+    border:1px solid var(--line);
+    border-radius:22px;
+    padding:12px;
+    margin-bottom:12px;
+    box-shadow:0 8px 22px rgba(34,34,59,.08);
+  }
+  .saved-thumb{
+    position:relative;
+    width:76px; height:76px;
+    border-radius:14px;
+    overflow:hidden;
+    flex-shrink:0;
+    box-shadow:0 8px 16px -8px rgba(28,28,30,.32);
+    background:#ddd;
+  }
+  .saved-thumb img{width:100%; height:100%; object-fit:cover; display:block;}
+  .saved-thumb .scrim{position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(20,16,25,.78) 100%);}
+  .saved-thumb .dot{position:absolute; top:7px; right:7px; width:14px; height:14px; border-radius:50%; border:2px solid rgba(255,255,255,.92);}
+  .saved-thumb .time{position:absolute; left:8px; bottom:6px; color:#fff; font-family:'Manrope', 'Helvetica Neue', Arial, sans-serif; font-weight:700; font-size:11.5px; line-height:1.25;}
+  .saved-thumb .time span{display:block; font-size:8.5px; font-weight:600; opacity:.85;}
+  .saved-mid{flex:1; min-width:0;}
+  .saved-mid .name{font-size:14px; font-weight:700; color:var(--ink); font-family:'Manrope', 'Helvetica Neue', Arial, sans-serif; letter-spacing:-.2px;}
+  .saved-mid .meta{font-size:11px; color:var(--ink-soft); font-weight:600; margin-top:3px;}
+  .saved-mid .interest{font-size:10.5px; color:var(--coral-dark); font-weight:800; margin-top:3px;}
+  .saved-right{display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex-shrink:0;}
+  .price-pill{background:var(--sage); color:var(--ink); font-size:10.5px; font-weight:800; padding:5px 11px; border-radius:16px;}
+  .trash-btn{width:30px; height:30px; border-radius:10px; background:rgba(86,61,48,.06); display:flex; align-items:center; justify-content:center; border:none; cursor:pointer; transition:background .2s ease, transform .2s ease;}
+  .trash-btn:hover{background:rgba(34,34,59,.11);}
+  .trash-btn:active{transform:scale(.94);}
+  .trash-btn svg{width:14px; height:14px; stroke:var(--ink-soft);}
+
+  /* ---------- Friends list ---------- */
+  .friends-list{display:flex; flex-direction:column; gap:10px; margin:2px 0 4px;}
+  .friend-row{
+    display:flex; align-items:center; gap:12px;
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:10px 12px;
+    box-shadow:0 4px 12px rgba(86,61,48,.06);
+  }
+  .friend-row > img, .avatar-wrap img{width:48px; height:48px; border-radius:12px; object-fit:cover; flex-shrink:0;}
+  .avatar-wrap{position:relative; flex-shrink:0;}
+  .online-dot{
+    position:absolute; right:-2px; bottom:-2px;
+    width:13px; height:13px; border-radius:50%;
+    background:var(--coral); border:2.5px solid #fff;
+  }
+  .friend-row .info{flex:1; min-width:0;}
+  .friend-row .info .name{font-family:'Manrope', 'Helvetica Neue', Arial, sans-serif; font-weight:700; font-size:13.5px; color:var(--ink); letter-spacing:-.15px;}
+  .friend-row .info .status{font-size:11px; color:var(--ink-soft); font-weight:600; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .msg-btn{width:36px; height:36px; border-radius:13px; background:rgba(28,28,30,.05); display:flex; align-items:center; justify-content:center; flex-shrink:0; border:none; cursor:pointer; transition:background .2s ease, transform .2s ease;}
+  .msg-btn:hover{background:rgba(228,84,75,.14);}
+  .msg-btn:active{transform:scale(.94);}
+  .msg-btn svg{width:16px; height:16px; stroke:var(--ink-soft);}
+
+  /* ---------- Bottom nav ---------- */
+  .bottomnav{
+    position:absolute; left:0; right:0; bottom:0;
+    height:92px;
+    background:#111116;
+    border-top-left-radius:30px;
+    border-top-right-radius:30px;
+    display:flex;
+    align-items:center;
+    justify-content:space-around;
+    padding:0 6px 14px;
+    z-index:20;
+  }
+  .navitem{
+    display:flex; flex-direction:column; align-items:center; gap:5px;
+    cursor:pointer;
+    background:none; border:none;
+    color:rgba(255,255,255,0.42);
+    padding:8px 6px 0;
+    flex:1;
+  }
+  .navitem svg{width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:2;}
+  .navitem .navlabel{font-size:10px; font-weight:600;}
+  .navitem.active{color:#fff;}
+
+  .navitem.fab-wrap{position:relative; flex:1;}
+  .fab{
+    position:absolute;
+    bottom:24px; left:50%; transform:translateX(-50%);
+    width:64px; height:64px;
+    border-radius:50%;
+    background:#6B6B70;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 16px 28px -6px rgba(0,0,0,.45), 0 0 0 6px #111116;
+  }
+  .fab svg{width:26px; height:26px; stroke:#fff; stroke-width:2.4;}
+
+  ::selection{background:var(--yellow); color:var(--ink);}
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="bg-ribbons">
+    <svg viewBox="0 0 388 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <g fill="none" stroke-linecap="round" stroke-opacity="0.92">
+        <path id="rA" d="M 300 -20 C 288 60 268 120 258 180 C 248 240 268 282 308 272 C 340 264 336 226 300 220 C 262 214 224 250 234 312 C 244 376 286 420 300 480 C 312 524 300 570 270 610 C 244 646 228 690 234 740 C 240 800 262 850 250 930"/>
+        <path id="rB" d="M -30 260 C -30 200 30 174 66 174 C 106 174 132 206 128 256 C 124 332 94 422 54 500 C 18 570 -12 640 -26 720 C -36 782 -30 852 -18 930"/>
+        <path id="rC" d="M 150 560 C 190 544 232 554 262 590 C 302 636 352 662 414 692"/>
+
+        <use href="#rA" stroke="#DD5C54" stroke-width="9"/>
+        <use href="#rA" stroke="#E7B559" stroke-width="6" transform="translate(24,14)"/>
+
+        <use href="#rB" stroke="#E2965C" stroke-width="9"/>
+        <use href="#rB" stroke="#DD5C54" stroke-width="6" transform="translate(24,10)"/>
+
+        <use href="#rC" stroke="#4C5FC7" stroke-width="9"/>
+        <use href="#rC" stroke="#6E86DE" stroke-width="6" transform="translate(18,16)"/>
+      </g>
+    </svg>
+  </div>
+  <div class="notch"></div>
+  <div class="statusbar">
+    <span>9:41</span>
+    <div class="icons">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="7" width="3" height="4" rx="0.8" fill="#1C1C1E"/><rect x="4.5" y="5" width="3" height="6" rx="0.8" fill="#1C1C1E"/><rect x="9" y="3" width="3" height="8" rx="0.8" fill="#1C1C1E"/><rect x="13.5" y="0" width="3" height="11" rx="0.8" fill="#1C1C1E"/></svg>
+      <svg width="15" height="11" viewBox="0 0 15 11" fill="none"><path d="M7.5 10.5c.6 0 1.1-.4 1.1-1s-.5-1-1.1-1-1.1.4-1.1 1 .5 1 1.1 1Z" fill="#1C1C1E"/><path d="M4.3 7.2c1.8-1.6 4.6-1.6 6.4 0" stroke="#1C1C1E" stroke-width="1.3" stroke-linecap="round"/><path d="M1.8 4.6c3.2-2.9 8.2-2.9 11.4 0" stroke="#1C1C1E" stroke-width="1.3" stroke-linecap="round"/></svg>
+      <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x="0.75" y="0.75" width="19.5" height="9.5" rx="2.5" stroke="#1C1C1E" stroke-width="1"/><rect x="2" y="2" width="16" height="7" rx="1.5" fill="#1C1C1E"/><rect x="21" y="3.5" width="1.6" height="4" rx="0.8" fill="#1C1C1E"/></svg>
+    </div>
+  </div>
+
+  <div class="screens">
+
+    <!-- ============ HEM ============ -->
+    <section class="screen active" id="screen-hem">
+      <div class="page-head">
+        <div>
+          <h1>Va Händer Idag?</h1>
+          <p>Hitta skoj i Stockholm idag</p>
+        </div>
+        <div class="head-actions">
+          <button class="icon-btn search-btn" type="button" aria-label="Sök"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></button>
+          <button class="icon-btn notifications-btn" type="button" aria-label="Notifikationer"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="badge-dot">5</span></button>
+          <div class="avatar profile-btn" role="button" tabindex="0" aria-label="Öppna profil"><img src="https://i.pravatar.cc/80?img=68" alt=""></div>
+        </div>
+      </div>
+
+      <div class="section-title">Mest populära nära dig</div>
+      <div class="hscroll">
+        <div class="ecard">
+          <img src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=640&q=85" alt="">
+          <div class="scrim"></div>
+          <div class="tag" style="background:var(--coral)">Klubb</div>
+          <div class="info">
+            <div class="name">Klubb ORANGE</div>
+            <div class="meta">📍 Slakthuset</div>
+            <div class="meta">🕒 Ikväll 22:00</div>
+          </div>
+        </div>
+        <div class="ecard">
+          <img src="https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=640&q=85" alt="">
+          <div class="scrim"></div>
+          <div class="tag" style="background:var(--blue)">Sport</div>
+          <div class="info">
+            <div class="name">Söndags-Padel</div>
+            <div class="meta">📍 Padelverket</div>
+            <div class="meta">🕒 Sön 14:00</div>
+          </div>
+        </div>
+        <div class="ecard">
+          <img src="https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=640&q=85" alt="">
+          <div class="scrim"></div>
+          <div class="tag" style="background:var(--orange)">Konst</div>
+          <div class="info">
+            <div class="name">Vernissage</div>
+            <div class="meta">📍 Fotografiska</div>
+            <div class="meta">🕒 Tor 18:00</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">Sponsrade events</div>
+      <div class="ecard-wide">
+        <img src="https://images.unsplash.com/photo-1585699324551-f6c309eedeca?auto=format&fit=crop&w=1200&q=85" alt="">
+        <div class="scrim"></div>
+        <div class="tag" style="background:var(--coral-dark)">Nöje &amp; Humor</div>
+        <div class="price">120 kr</div>
+        <div class="info">
+          <div class="name">Premium Stand-Up Kväll</div>
+          <div class="meta">📍 Södra Teatern, Södermalm · 🕒 Idag 20:00–22:30</div>
+        </div>
+      </div>
+
+      <div class="section-title">
+        <span>Inbjudna events</span>
+        <span class="see-more">2 nya</span>
+      </div>
+      <div class="grid2">
+        <div class="ecard" style="width:100%; height:150px; position:relative;">
+          <span class="newpill">Ny</span>
+          <img src="https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=640&q=85" alt="">
+          <div class="scrim"></div>
+          <div class="tag" style="background:var(--blue-deep)">AW</div>
+          <div class="info">
+            <div class="name">Fredags AW!</div>
+            <div class="meta">📍 Trädgården · Fre 17:00</div>
+          </div>
+        </div>
+        <div class="ecard" style="width:100%; height:150px; position:relative;">
+          <span class="newpill">Ny</span>
+          <img src="https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=640&q=85" alt="">
+          <div class="scrim"></div>
+          <div class="tag" style="background:var(--yellow-deep)">Socialt</div>
+          <div class="info">
+            <div class="name">Brädspel &amp; Bärs</div>
+            <div class="meta">📍 Alphaspels café · Lör 18:00</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">Dina organiserade events</div>
+      <div class="ecard-wide" style="height:150px;">
+        <img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=85" alt="">
+        <div class="scrim"></div>
+        <div class="tag" style="background:var(--sage); color:var(--ink);">Brunch</div>
+        <div class="price">120 kr</div>
+        <div class="info">
+          <div class="name">Söndagsbrunch &amp; Parkhäng</div>
+          <div class="meta">📍 Vasaparken, Stockholm · 🕒 Sön 11:30</div>
+        </div>
+      </div>
+
+      <div class="section-title">Från folk du följer</div>
+      <div class="people">
+        <div class="person">
+          <img src="https://i.pravatar.cc/80?img=47" alt="">
+          <div>
+            <div class="name">Elin</div>
+            <div class="status">Ska på Klubb Orange</div>
+          </div>
+        </div>
+        <div class="person">
+          <img src="https://i.pravatar.cc/80?img=12" alt="">
+          <div>
+            <div class="name">Lukas</div>
+            <div class="status">Letar efter padelspelare</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ KARTA ============ -->
+    <section class="screen" id="screen-karta">
+      <div class="page-head">
+        <div>
+          <h1>Karta</h1>
+          <p>25 pins nära dig</p>
+        </div>
+        <div class="head-actions">
+          <button class="icon-btn search-btn" type="button" aria-label="Sök"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></button>
+          <button class="icon-btn notifications-btn" type="button" aria-label="Notifikationer"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="badge-dot">5</span></button>
+          <div class="avatar profile-btn" role="button" tabindex="0" aria-label="Öppna profil"><img src="https://i.pravatar.cc/80?img=68" alt=""></div>
+        </div>
+      </div>
+
+      <div class="maptools">
+        <div class="seg">
+          <button class="active">Karta</button>
+          <button>☰ Lista</button>
+        </div>
+        <button class="filterbtn">☰ Filter</button>
+      </div>
+
+      <div class="chiprow">
+        <div class="chip active">Idag</div>
+        <div class="chip">Helgen</div>
+        <div class="chip"><span class="free">Gratis</span></div>
+        <div class="chip">🎵 Musik</div>
+        <div class="chip">🎉 Fest</div>
+        <div class="chip">🎓 Student</div>
+      </div>
+
+      <div class="filter-panel" id="filter-panel" aria-label="Filtrera event">
+        <button class="filter-option active" type="button" data-type="all">Alla</button>
+        <button class="filter-option" type="button" data-type="klubb">Klubb</button>
+        <button class="filter-option" type="button" data-type="sport">Sport</button>
+        <button class="filter-option" type="button" data-type="konst">Konst</button>
+        <button class="filter-option" type="button" data-type="aw">AW</button>
+        <button class="filter-option" type="button" data-type="student">Student</button>
+        <button class="filter-option" type="button" data-type="musik">Musik</button>
+        <button class="filter-option" type="button" data-type="mat">Mat &amp; dryck</button>
+      </div>
+
+      <div class="mapcanvas">
+        <div class="zone park" style="width:150px; height:150px; left:-30px; top:20px;"></div>
+        <div class="zone water" style="width:220px; height:220px; right:-60px; bottom:-50px;"></div>
+
+        <div class="pin" style="background:var(--yellow-deep); color:var(--ink); left:22px; top:64px;" aria-label="Studentevent">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 9 9-4 9 4-9 4-9-4Z"/><path d="M7 11v4c2.8 2.2 7.2 2.2 10 0v-4M21 9v6"/></svg>
+        </div>
+        <div class="pin sm" style="background:var(--orange); color:#fff; left:52px; top:96px;" aria-label="Studentevent">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 9 9-4 9 4-9 4-9-4Z"/><path d="M7 11v4c2.8 2.2 7.2 2.2 10 0v-4M21 9v6"/></svg>
+        </div>
+        <div class="pin" style="background:var(--coral); color:#fff; left:112px; top:26px;" aria-label="Studentevent">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 9 9-4 9 4-9 4-9-4Z"/><path d="M7 11v4c2.8 2.2 7.2 2.2 10 0v-4M21 9v6"/></svg>
+        </div>
+        <div class="pin sm" style="background:var(--blue); color:#fff; left:30px; top:150px;" aria-label="Mat och dryck">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v8M3 3v5a3 3 0 0 0 6 0V3M6 11v10M16 3v18M16 3c3 2 4 5 4 8h-4"/></svg>
+        </div>
+        <div class="pin" style="background:var(--blue-deep); color:#fff; left:108px; top:196px;" aria-label="Konstevent">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4c-4.8 0-8 3.2-8 7.2 0 3.1 2.1 4.8 4.7 4.8 1.5 0 2.1-.8 2.1-1.9 0-.9.6-1.5 1.6-1.5h1.7c3.3 0 5.9-2.2 5.9-4.5C20 6 16.8 4 12 4Z"/><circle cx="8" cy="9" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="7.5" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="9" r="1" fill="currentColor" stroke="none"/></svg>
+        </div>
+        <div class="pin sm" style="background:var(--coral-dark); color:#fff; left:180px; top:118px;" aria-label="Musikevent">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="3"/><circle cx="16.5" cy="16" r="3"/></svg>
+        </div>
+        <div class="pin" style="background:var(--yellow); color:var(--ink); left:200px; top:88px;" aria-label="Musikevent">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="3"/><circle cx="16.5" cy="16" r="3"/></svg>
+        </div>
+        <div class="pin sm" style="background:var(--orange); color:#fff; left:246px; top:128px;" aria-label="Kulturevent">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16M5 16h14M6 16 8 8h8l2 8M8 8h8M9 5h6l1 3H8l1-3Z"/></svg>
+        </div>
+        <div class="pin" style="background:var(--sky); color:var(--blue-deep); left:158px; top:172px;" aria-label="Studentevent">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 9 9-4 9 4-9 4-9-4Z"/><path d="M7 11v4c2.8 2.2 7.2 2.2 10 0v-4M21 9v6"/></svg>
+        </div>
+        <div class="pin sm" style="background:var(--coral); color:#fff; left:186px; top:210px;" aria-label="Mat och dryck">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v8M3 3v5a3 3 0 0 0 6 0V3M6 11v10M16 3v18M16 3c3 2 4 5 4 8h-4"/></svg>
+        </div>
+        <div class="pin" style="background:var(--yellow-deep); color:var(--ink); left:230px; top:210px;" aria-label="Mat och dryck">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v8M3 3v5a3 3 0 0 0 6 0V3M6 11v10M16 3v18M16 3c3 2 4 5 4 8h-4"/></svg>
+        </div>
+        <div class="pin sm" style="background:var(--sage); color:var(--blue-deep); left:270px; top:180px;" aria-label="Sportevent">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M4.5 9.5c2.3 1.2 4.7 1.2 7 0s4.7-1.2 8 0M7 5.3c1.4 1.8 1.4 4.3 0 6.1s-1.4 4.3 0 6.1M17 5.3c-1.4 1.8-1.4 4.3 0 6.1s1.4 4.3 0 6.1"/></svg>
+        </div>
+        <div class="pin" style="background:var(--blue); color:#fff; left:264px; top:230px;" aria-label="Sportevent">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M4.5 9.5c2.3 1.2 4.7 1.2 7 0s4.7-1.2 8 0M7 5.3c1.4 1.8 1.4 4.3 0 6.1s-1.4 4.3 0 6.1M17 5.3c-1.4 1.8-1.4 4.3 0 6.1s1.4 4.3 0 6.1"/></svg>
+        </div>
+
+        <div class="mapctrl">
+          <button type="button" aria-label="Zooma in">+</button>
+          <button type="button" aria-label="Zooma ut">–</button>
+          <button type="button" style="font-size:13px;" aria-label="Centrera karta">◎</button>
+        </div>
+      </div>
+
+      <div class="map-list" id="map-list" aria-label="Event i lista">
+        <article class="map-list-card" data-type="klubb" data-search="klubb orange slakthuset">
+          <img src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&amp;fit=crop&amp;w=320&amp;q=85" alt="">
+          <div class="list-info"><div class="list-name">Klubb ORANGE</div><div class="list-meta">Slakthuset · Idag 22:00</div><div class="list-type">Klubb</div></div>
+        </article>
+        <article class="map-list-card" data-type="sport" data-search="söndags padel padelverket">
+          <img src="https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&amp;fit=crop&amp;w=320&amp;q=85" alt="">
+          <div class="list-info"><div class="list-name">Söndags-Padel</div><div class="list-meta">Padelverket · Sön 14:00</div><div class="list-type">Sport</div></div>
+        </article>
+        <article class="map-list-card" data-type="konst" data-search="vernissage fotografiska konst">
+          <img src="https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&amp;fit=crop&amp;w=320&amp;q=85" alt="">
+          <div class="list-info"><div class="list-name">Vernissage</div><div class="list-meta">Fotografiska · Tor 18:00</div><div class="list-type">Konst</div></div>
+        </article>
+        <article class="map-list-card" data-type="aw" data-search="fredags aw trädgården">
+          <img src="https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&amp;fit=crop&amp;w=320&amp;q=85" alt="">
+          <div class="list-info"><div class="list-name">Fredags AW!</div><div class="list-meta">Trädgården · Fre 17:00</div><div class="list-type">AW</div></div>
+        </article>
+        <article class="map-list-card" data-type="student" data-search="student campus live campusparken">
+          <img src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&amp;fit=crop&amp;w=320&amp;q=85" alt="">
+          <div class="list-info"><div class="list-name">Live på Campus</div><div class="list-meta">Campusparken · Idag 20:00</div><div class="list-type">Student</div></div>
+        </article>
+        <article class="map-list-card" data-type="musik" data-search="musik stand up södra teatern">
+          <img src="https://images.unsplash.com/photo-1585699324551-f6c309eedeca?auto=format&amp;fit=crop&amp;w=320&amp;q=85" alt="">
+          <div class="list-info"><div class="list-name">Premium Stand-Up Kväll</div><div class="list-meta">Södra Teatern · Idag 20:00</div><div class="list-type">Musik &amp; nöje</div></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============ PLANER ============ -->
+    <section class="screen" id="screen-planer">
+      <div class="page-head">
+        <div>
+          <h1>Planer</h1>
+          <p>Dina sociala planer med kompisarna</p>
+        </div>
+        <div class="head-actions">
+          <button class="icon-btn search-btn" type="button" aria-label="Sök"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></button>
+          <button class="icon-btn notifications-btn" type="button" aria-label="Notifikationer"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="badge-dot">5</span></button>
+          <div class="avatar profile-btn" role="button" tabindex="0" aria-label="Öppna profil"><img src="https://i.pravatar.cc/80?img=68" alt=""></div>
+        </div>
+      </div>
+
+      <button class="btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Ny plan
+      </button>
+      <button class="btn-ghost">✨ Överraska oss <span class="beta-chip">Beta</span></button>
+
+      <div class="empty-card">
+        <div class="empty-blob-cluster">
+          <div class="b1"></div>
+          <div class="b2"></div>
+          <div class="emoji">🗺️</div>
+        </div>
+        <h3>Inga planer än</h3>
+        <p>Hitta något på Upptäck och tryck "Planera med kompisar", eller skapa en tom plan.</p>
+        <a class="link" href="javascript:void(0)" onclick="goTo('hem')">Till Upptäck →</a>
+      </div>
+      <a class="foot-link" href="javascript:void(0)">Skapa ett event i stället</a>
+    </section>
+
+    <!-- ============ PROFIL ============ -->
+    <section class="screen profile-screen" id="screen-profil">
+      <button class="back-btn" type="button" onclick="goTo('hem')">← Tillbaka</button>
+      <div class="profile-card">
+        <img class="profile-photo" src="https://i.pravatar.cc/160?img=68" alt="Profilbild för Alex">
+        <h2>Alex Andersson</h2>
+        <p>Stockholm · Upptäcker nya saker</p>
+        <div class="profile-stats">
+          <div class="profile-stat"><strong>12</strong><span>Sparade</span></div>
+          <div class="profile-stat"><strong>8</strong><span>Planer</span></div>
+          <div class="profile-stat"><strong>24</strong><span>Vänner</span></div>
+        </div>
+        <div class="profile-section"><h3>Jag gillar</h3><div class="interest-list"><span class="interest-chip">Musik</span><span class="interest-chip">Sport</span><span class="interest-chip">Mat</span><span class="interest-chip">Konst</span></div></div>
+        <div class="profile-section"><h3>Min stad</h3><p>Stockholm och platser inom 5 km</p></div>
+      </div>
+    </section>
+
+    <!-- ============ SPARAT ============ -->
+    <section class="screen" id="screen-sparat">
+      <div class="page-head">
+        <div>
+          <h1>Sparat</h1>
+          <p>2 event · 1 platser</p>
+        </div>
+        <div class="head-actions">
+          <button class="icon-btn search-btn" type="button" aria-label="Sök"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></button>
+          <button class="icon-btn notifications-btn" type="button" aria-label="Notifikationer"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="badge-dot">5</span></button>
+          <div class="avatar profile-btn" role="button" tabindex="0" aria-label="Öppna profil"><img src="https://i.pravatar.cc/80?img=68" alt=""></div>
+        </div>
+      </div>
+
+      <div class="pill-toggle">
+        <button class="active">Event</button>
+        <button>Platser</button>
+      </div>
+
+      <div class="saved-row">
+        <div class="saved-thumb">
+          <img src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=320&q=85" alt="">
+          <div class="scrim"></div>
+          <span class="dot" style="background:var(--blue-deep)"></span>
+          <div class="time">20:00<span>Idag</span></div>
+        </div>
+        <div class="saved-mid">
+          <div class="name">Live på Campus</div>
+          <div class="meta">📍 Campusparken · 0.5 km</div>
+          <div class="interest">3 du följer är intresserade</div>
+        </div>
+        <div class="saved-right">
+          <span class="price-pill">Gratis</span>
+          <button class="trash-btn" type="button" aria-label="Ta bort sparat event"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13"/></svg></button>
+        </div>
+      </div>
+
+      <div class="saved-row">
+        <div class="saved-thumb">
+          <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=320&q=85" alt="">
+          <div class="scrim"></div>
+          <span class="dot" style="background:var(--orange)"></span>
+          <div class="time">12:00<span>lör 5 sep</span></div>
+        </div>
+        <div class="saved-mid">
+          <div class="name">Foodtruck-festival</div>
+          <div class="meta">📍 Hamnplan · 1.9 km</div>
+          <div class="interest">3 du följer är intresserade</div>
+        </div>
+        <div class="saved-right">
+          <span class="price-pill">Gratis</span>
+          <button class="trash-btn" type="button" aria-label="Ta bort sparat event"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13"/></svg></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ VÄNNER ============ -->
+    <section class="screen" id="screen-vanner">
+      <div class="page-head">
+        <div>
+          <h1>Vänner</h1>
+          <p>Se vad dina kompisar hittar på</p>
+        </div>
+        <div class="head-actions">
+          <button class="icon-btn search-btn" type="button" aria-label="Sök"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></button>
+          <button class="icon-btn notifications-btn" type="button" aria-label="Notifikationer"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="badge-dot">5</span></button>
+          <div class="avatar profile-btn" role="button" tabindex="0" aria-label="Öppna profil"><img src="https://i.pravatar.cc/80?img=68" alt=""></div>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="invite-friends" type="button">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Bjud in vänner
+      </button>
+
+      <div class="section-title">Online nu</div>
+      <div class="friends-list">
+        <div class="friend-row">
+          <div class="avatar-wrap">
+            <img src="https://i.pravatar.cc/100?img=47" alt="">
+            <span class="online-dot"></span>
+          </div>
+          <div class="info">
+            <div class="name">Elin</div>
+            <div class="status">Ska på Klubb Orange ikväll</div>
+          </div>
+          <button class="msg-btn" type="button" data-friend="Elin" aria-label="Skicka meddelande till Elin"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.4 8.4 0 0 1-8.9 8.4 8.6 8.6 0 0 1-3.6-.7L3 21l1.8-5A8.4 8.4 0 0 1 21 11.5Z"/></svg></button>
+        </div>
+        <div class="friend-row">
+          <div class="avatar-wrap">
+            <img src="https://i.pravatar.cc/100?img=12" alt="">
+            <span class="online-dot"></span>
+          </div>
+          <div class="info">
+            <div class="name">Lukas</div>
+            <div class="status">Letar efter padelspelare</div>
+          </div>
+          <button class="msg-btn" type="button" data-friend="Lukas" aria-label="Skicka meddelande till Lukas"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.4 8.4 0 0 1-8.9 8.4 8.6 8.6 0 0 1-3.6-.7L3 21l1.8-5A8.4 8.4 0 0 1 21 11.5Z"/></svg></button>
+        </div>
+      </div>
+
+      <div class="section-title">Alla vänner</div>
+      <div class="friends-list">
+        <div class="friend-row">
+          <img src="https://i.pravatar.cc/100?img=32" alt="">
+          <div class="info">
+            <div class="name">Sara</div>
+            <div class="status">Sparade Foodtruck-festival</div>
+          </div>
+          <button class="msg-btn" type="button" data-friend="Sara" aria-label="Skicka meddelande till Sara"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.4 8.4 0 0 1-8.9 8.4 8.6 8.6 0 0 1-3.6-.7L3 21l1.8-5A8.4 8.4 0 0 1 21 11.5Z"/></svg></button>
+        </div>
+        <div class="friend-row">
+          <img src="https://i.pravatar.cc/100?img=51" alt="">
+          <div class="info">
+            <div class="name">Noah</div>
+            <div class="status">Var på Brädspel &amp; Bärs i lördags</div>
+          </div>
+          <button class="msg-btn" type="button" data-friend="Noah" aria-label="Skicka meddelande till Noah"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.4 8.4 0 0 1-8.9 8.4 8.6 8.6 0 0 1-3.6-.7L3 21l1.8-5A8.4 8.4 0 0 1 21 11.5Z"/></svg></button>
+        </div>
+        <div class="friend-row">
+          <img src="https://i.pravatar.cc/100?img=25" alt="">
+          <div class="info">
+            <div class="name">Maja</div>
+            <div class="status">Går på Söndagsbrunch</div>
+          </div>
+          <button class="msg-btn" type="button" data-friend="Maja" aria-label="Skicka meddelande till Maja"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.4 8.4 0 0 1-8.9 8.4 8.6 8.6 0 0 1-3.6-.7L3 21l1.8-5A8.4 8.4 0 0 1 21 11.5Z"/></svg></button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ============ BOTTOM NAV ============ -->
+  <nav class="bottomnav">
+    <button class="navitem active" type="button" data-screen="hem" onclick="goTo('hem')">
+      <svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+      <span class="navlabel">Hem</span>
+    </button>
+    <button class="navitem" type="button" data-screen="karta" onclick="goTo('karta')">
+      <svg viewBox="0 0 24 24"><path d="M9 4 3 6.5v14L9 18l6 2.5 6-2.5v-14L15 6.5 9 4Z"/><path d="M9 4v14M15 6.5v14"/></svg>
+      <span class="navlabel">Karta</span>
+    </button>
+    <div class="navitem fab-wrap">
+      <button class="fab" type="button" data-screen="planer" onclick="goTo('planer')">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </div>
+    <button class="navitem" type="button" data-screen="vanner" onclick="goTo('vanner')" aria-label="Öppna Vänner">
+      <svg viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0Z"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>
+      <span class="navlabel">Vänner</span>
+    </button>
+    <button class="navitem" type="button" data-screen="sparat" onclick="goTo('sparat')">
+      <svg viewBox="0 0 24 24"><path d="M6 4h12v17l-6-4-6 4V4Z"/></svg>
+      <span class="navlabel">Sparat</span>
+    </button>
+  </nav>
+
+  <div class="overlay" id="search-overlay" aria-hidden="true">
+    <div class="overlay-card">
+      <div class="overlay-head"><h2>Sök event</h2><button class="close-btn" type="button" data-close-overlay="search-overlay" aria-label="Stäng sökning">×</button></div>
+      <div class="search-field"><input id="event-search" type="search" placeholder="Sök på event, plats eller kategori" autocomplete="off"><button class="search-submit" type="button">Sök</button></div>
+      <div class="search-results" id="search-results"></div>
+    </div>
+  </div>
+  <div class="overlay" id="notifications-overlay" aria-hidden="true">
+    <div class="overlay-card">
+      <div class="overlay-head"><h2>Notifikationer</h2><button class="close-btn" type="button" data-close-overlay="notifications-overlay" aria-label="Stäng notifikationer">×</button></div>
+      <div class="notification-list">
+        <div class="notification-item"><span class="notification-icon">↻</span><div><strong>Live på Campus uppdaterades</strong><p>Tiden är nu 20:00 idag. Du har eventet sparat.</p></div></div>
+        <div class="notification-item"><span class="notification-icon">♡</span><div><strong>Elin sparade ett event</strong><p>Hon är intresserad av Klubb ORANGE ikväll.</p></div></div>
+        <div class="notification-item"><span class="notification-icon">+</span><div><strong>Lukas lade upp en ny plan</strong><p>Padel på söndag — kanske vill du följa med?</p></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<script>
+  let toastTimer;
+
+  const mapPinTypes = ['student', 'student', 'student', 'mat', 'konst', 'musik', 'musik', 'aw', 'student', 'mat', 'mat', 'sport', 'sport'];
+  const eventRecords = [
+    {name:'Klubb ORANGE', type:'klubb', meta:'Slakthuset · Idag 22:00', image:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=320&q=85'},
+    {name:'Söndags-Padel', type:'sport', meta:'Padelverket · Sön 14:00', image:'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=320&q=85'},
+    {name:'Vernissage', type:'konst', meta:'Fotografiska · Tor 18:00', image:'https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=320&q=85'},
+    {name:'Fredags AW!', type:'aw', meta:'Trädgården · Fre 17:00', image:'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=320&q=85'},
+    {name:'Live på Campus', type:'student', meta:'Campusparken · Idag 20:00', image:'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=320&q=85'},
+    {name:'Premium Stand-Up Kväll', type:'musik', meta:'Södra Teatern · Idag 20:00', image:'https://images.unsplash.com/photo-1585699324551-f6c309eedeca?auto=format&fit=crop&w=320&q=85'},
+    {name:'Foodtruck-festival', type:'mat', meta:'Hamnplan · Lör 12:00', image:'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=320&q=85'}
+  ];
+
+  function showToast(message){
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+  }
+
+  function goTo(name){
+    const target = document.getElementById('screen-' + name);
+    if(!target) return;
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    target.classList.add('active');
+    document.querySelectorAll('.navitem[data-screen]').forEach(b => {
+      b.classList.toggle('active', b.dataset.screen === name);
+    });
+    target.scrollTop = 0;
+  }
+
+  function openOverlay(id){
+    const overlay = document.getElementById(id);
+    if(!overlay) return;
+    overlay.classList.add('open');
+    overlay.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeOverlay(id){
+    const overlay = document.getElementById(id);
+    if(!overlay) return;
+    overlay.classList.remove('open');
+    overlay.setAttribute('aria-hidden', 'true');
+  }
+
+  function applyMapFilter(type){
+    document.querySelectorAll('.pin').forEach((pin, index) => {
+      pin.classList.toggle('filter-hidden', type !== 'all' && mapPinTypes[index] !== type);
+    });
+    document.querySelectorAll('.map-list-card').forEach(card => {
+      card.classList.toggle('is-hidden', type !== 'all' && card.dataset.type !== type);
+    });
+  }
+
+  function renderSearchResults(query=''){
+    const results = document.getElementById('search-results');
+    if(!results) return;
+    const normalized = query.trim().toLowerCase();
+    const matches = eventRecords.filter(event => !normalized || `${event.name} ${event.type} ${event.meta}`.toLowerCase().includes(normalized));
+    results.innerHTML = matches.length ? matches.map(event => `
+      <article class="search-result" data-result-name="${event.name}">
+        <img src="${event.image}" alt="">
+        <div><div class="result-name">${event.name}</div><div class="result-meta">${event.meta} · ${event.type}</div></div>
+      </article>`).join('') : '<div class="empty-search">Inga event matchade din sökning.</div>';
+    results.querySelectorAll('.search-result').forEach(result => {
+      result.addEventListener('click', () => {
+        closeOverlay('search-overlay');
+        showToast(result.dataset.resultName + ' öppnas');
+      });
+    });
+  }
+
+  document.querySelectorAll('.navitem[data-screen], .fab').forEach(button => {
+    button.addEventListener('click', () => goTo(button.dataset.screen));
+  });
+
+  document.querySelectorAll('.profile-btn').forEach(button => {
+    button.addEventListener('click', () => goTo('profil'));
+    button.addEventListener('keydown', event => {
+      if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); goTo('profil'); }
+    });
+  });
+
+  document.querySelectorAll('.search-btn').forEach(button => {
+    button.addEventListener('click', () => {
+      openOverlay('search-overlay');
+      const input = document.getElementById('event-search');
+      renderSearchResults();
+      input?.focus();
+    });
+  });
+
+  document.querySelectorAll('.notifications-btn').forEach(button => {
+    button.addEventListener('click', () => openOverlay('notifications-overlay'));
+  });
+
+  document.querySelectorAll('[data-close-overlay]').forEach(button => {
+    button.addEventListener('click', () => closeOverlay(button.dataset.closeOverlay));
+  });
+
+  document.querySelectorAll('.overlay').forEach(overlay => {
+    overlay.addEventListener('click', event => {
+      if(event.target === overlay) closeOverlay(overlay.id);
+    });
+  });
+
+  const searchInput = document.getElementById('event-search');
+  searchInput?.addEventListener('input', event => renderSearchResults(event.target.value));
+  document.querySelector('.search-submit')?.addEventListener('click', () => renderSearchResults(searchInput?.value || ''));
+  searchInput?.addEventListener('keydown', event => {
+    if(event.key === 'Enter') renderSearchResults(event.target.value);
+  });
+
+  document.querySelectorAll('.pill-toggle').forEach(toggle => {
+    toggle.querySelectorAll('button').forEach(button => {
+      button.addEventListener('click', () => {
+        toggle.querySelectorAll('button').forEach(item => item.classList.remove('active'));
+        button.classList.add('active');
+        showToast(button.textContent + ' visas');
+      });
+    });
+  });
+
+  document.querySelectorAll('.chiprow').forEach(row => {
+    row.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        row.querySelectorAll('.chip').forEach(item => item.classList.remove('active'));
+        chip.classList.add('active');
+        showToast('Filter: ' + chip.textContent.trim());
+      });
+    });
+  });
+
+  const mapScreen = document.getElementById('screen-karta');
+  document.querySelectorAll('#screen-karta .seg button').forEach(button => {
+    button.addEventListener('click', () => {
+      const listMode = button.textContent.includes('Lista');
+      document.querySelectorAll('#screen-karta .seg button').forEach(item => item.classList.remove('active'));
+      button.classList.add('active');
+      mapScreen.classList.toggle('list-mode', listMode);
+      showToast(listMode ? 'Eventlista visas' : 'Karta visas');
+    });
+  });
+
+  document.querySelector('.filterbtn')?.addEventListener('click', () => {
+    document.getElementById('filter-panel')?.classList.toggle('open');
+  });
+
+  document.querySelectorAll('.filter-option').forEach(option => {
+    option.addEventListener('click', () => {
+      document.querySelectorAll('.filter-option').forEach(item => item.classList.remove('active'));
+      option.classList.add('active');
+      applyMapFilter(option.dataset.type);
+      showToast(option.textContent.trim() + ' visas på kartan');
+    });
+  });
+
+  document.getElementById('invite-friends')?.addEventListener('click', () => {
+    showToast('Inbjudningslänk redo att delas');
+  });
+
+  document.querySelectorAll('.msg-btn').forEach(button => {
+    button.addEventListener('click', () => {
+      showToast('Meddelande till ' + button.dataset.friend + ' öppnas');
+    });
+  });
+
+  document.querySelectorAll('.trash-btn').forEach(button => {
+    button.addEventListener('click', () => {
+      const row = button.closest('.saved-row');
+      row?.remove();
+      showToast('Event borttaget från Sparat');
+    });
+  });
+
+  document.addEventListener('keydown', event => {
+    if(event.key === 'Escape') document.querySelectorAll('.overlay.open').forEach(overlay => closeOverlay(overlay.id));
+  });
+</script>
+
+</body>
+</html>

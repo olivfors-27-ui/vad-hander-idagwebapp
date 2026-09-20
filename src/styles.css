@@ -1,0 +1,745 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 3px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 6px);
+  --radius-2xl: calc(var(--radius) + 12px);
+  --radius-3xl: calc(var(--radius) + 20px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-map: var(--map);
+  --color-map-road: var(--map-road);
+  --color-map-water: var(--map-water);
+  --color-map-park: var(--map-park);
+  --color-line-red: var(--line-red);
+  --color-line-coral: var(--line-coral);
+  --color-line-orange: var(--line-orange);
+  --color-line-yellow: var(--line-yellow);
+  --color-section-yellow: var(--section-yellow);
+  --color-line-periwinkle: var(--line-periwinkle);
+  --color-line-blue: var(--line-blue);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: "Mont Variable Regular", "Mont Variable", "Montserrat", "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Mont Variable Regular", "Mont Variable", "Montserrat", "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --shadow-pin: 0 8px 20px -6px oklch(0.62 0.2 42 / 0.4);
+  --shadow-card: 0 1px 2px -1px oklch(0.3 0.02 60 / 0.06), 0 8px 24px -14px oklch(0.3 0.02 60 / 0.22);
+  --shadow-float: 0 12px 34px -12px oklch(0.25 0.02 60 / 0.26);
+}
+
+:root {
+  --radius: 1.15rem;
+  --background: #FFFFFF;
+  --foreground: #2A2421;
+  --nav-black: #2A2421;
+  --card: #FFFFFF;
+  --card-foreground: #2A2421;
+  --popover: #FFFFFF;
+  --popover-foreground: #2A2421;
+  --brand: #E57657;
+  --primary: #E57657;
+  --primary-foreground: #FFFDF9;
+  --secondary: #E57657;
+  --secondary-foreground: #FFFDF9;
+  --muted: #F6F6F7;
+  --muted-foreground: #766A63;
+  --accent: #F7E5D5;
+  --accent-foreground: #E45048;
+  --destructive: #E45048;
+  --destructive-foreground: #FFFDF9;
+  --success: #465BC4;
+  --success-foreground: #FFFDF9;
+  --warning: #EAB24F;
+  --warning-foreground: #593B2A;
+  --border: rgba(74,45,36,.14);
+  --input: rgba(74,45,36,.18);
+  --ring: #627BD8;
+  --line-red: #E45048;
+  --line-coral: #E57657;
+  --line-orange: #E7A057;
+  --line-yellow: #EAB24F;
+  --line-periwinkle: #627BD8;
+  --line-blue: #465BC4;
+  --section-orange: #E7A057;
+  --section-red: #E45048;
+  --section-pink: #E57657;
+  --section-yellow: #EAB24F;
+  --section-blue: #465BC4;
+  --map: #FFFFFF;
+  --map-road: #FFFDF9;
+  --map-water: #D7DDF5;
+  --map-park: #E2F0D8;
+  --chart-1: #E57657;
+  --chart-2: #E45048;
+  --chart-3: #465BC4;
+  --chart-4: #627BD8;
+  --chart-5: #E7A057;
+  --sidebar: #FFFDF9;
+  --sidebar-foreground: #2A2421;
+  --sidebar-primary: #E57657;
+  --sidebar-primary-foreground: #FFFDF9;
+  --sidebar-accent: #F7E5D5;
+  --sidebar-accent-foreground: #E45048;
+  --sidebar-border: rgba(74,45,36,.14);
+  --sidebar-ring: #627BD8;
+}
+
+.dark {
+  --background: oklch(0.18 0.01 60);
+  --foreground: oklch(0.97 0.004 60);
+  --card: oklch(0.22 0.012 60);
+  --card-foreground: oklch(0.97 0.004 60);
+  --popover: oklch(0.22 0.012 60);
+  --popover-foreground: oklch(0.97 0.004 60);
+  --primary: oklch(0.72 0.19 42);
+  --primary-foreground: oklch(0.16 0.01 60);
+  --secondary: oklch(0.27 0.012 60);
+  --secondary-foreground: oklch(0.97 0.004 60);
+  --muted: oklch(0.27 0.012 60);
+  --muted-foreground: oklch(0.7 0.01 60);
+  --accent: oklch(0.3 0.04 42);
+  --accent-foreground: oklch(0.85 0.12 42);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --map: oklch(0.24 0.01 90);
+  --map-road: oklch(0.3 0.01 90);
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  body {
+    background: #FFFFFF;
+    color: var(--color-foreground);
+    font-family: "Mont Variable Regular", "Mont Variable", "Montserrat", "Manrope", ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, button, input, textarea, select { font-family: "Mont Variable Regular", "Mont Variable", "Montserrat", "Manrope", ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.015em; font-weight: 600; }
+  body { font-weight: 400; }
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+@utility hander-map-bg {
+  background-color: var(--color-map);
+  background-image:
+    linear-gradient(var(--color-map-road) 6px, transparent 6px),
+    linear-gradient(90deg, var(--color-map-road) 6px, transparent 6px),
+    linear-gradient(var(--color-map-road) 3px, transparent 3px),
+    linear-gradient(90deg, var(--color-map-road) 3px, transparent 3px);
+  background-size: 100% 120px, 120px 100%, 100% 40px, 40px 100%;
+  background-position: 0 30px, 25px 0, 0 0, 0 0;
+}
+
+@keyframes pin-pop { 0% { transform: translate(-50%, -100%) scale(0.6); opacity: 0; } 100% { transform: translate(-50%, -100%) scale(1); opacity: 1; } }
+@keyframes pulse-ring { 0% { transform: translate(-50%, -50%) scale(0.7); opacity: 0.55; } 100% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; } }
+@utility animate-pin-pop { animation: pin-pop 0.28s cubic-bezier(0.2, 1.2, 0.4, 1) both; }
+@utility pulse-ring { animation: pulse-ring 2s ease-out infinite; }
+@utility hander-lines {
+  /* Hela paletten jämnt utspritt: röd, korall, orange, gul, ljusblå, blå. */
+  background-image: linear-gradient(90deg,
+    var(--line-red) 0 16.666%,
+    var(--line-coral) 16.666% 33.333%,
+    var(--line-orange) 33.333% 50%,
+    var(--line-yellow) 50% 66.666%,
+    var(--line-periwinkle) 66.666% 83.333%,
+    var(--line-blue) 83.333% 100%);
+}
+@utility hander-lines-soft {
+  background-image: linear-gradient(90deg,
+    color-mix(in oklab, var(--line-red) 70%, transparent) 0 33.333%,
+    color-mix(in oklab, var(--line-orange) 70%, transparent) 33.333% 66.666%,
+    color-mix(in oklab, var(--line-yellow) 70%, transparent) 66.666% 88.888%,
+    color-mix(in oklab, var(--line-periwinkle) 70%, transparent) 88.888% 94.444%,
+    color-mix(in oklab, var(--line-blue) 70%, transparent) 94.444% 100%);
+}
+
+/* Visuellt skal från den fristående designprototypen: varm telefonram, statusrad, rena ytor och tydliga färgband. */
+.hander-phone { min-height: 800px; }
+.hander-statusbar {
+  display: flex;
+  height: 29px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 25px;
+  color: var(--foreground);
+  font-family: Poppins, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.hander-status-icons { font-size: 8px; letter-spacing: 0; }
+.hander-notch {
+  position: absolute;
+  left: 50%;
+  top: 7px;
+  z-index: 45;
+  width: 94px;
+  height: 18px;
+  transform: translateX(-50%);
+  border-radius: 12px;
+  background: #16161c;
+}
+.hander-topbar {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-bottom: 0;
+  background: transparent;
+}
+.hander-topbar-art {
+  display: none;
+}
+.hander-topbar-ribbons {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  opacity: .96;
+}
+.hander-topbar-ribbons path {
+  vector-effect: non-scaling-stroke;
+}
+.hander-topbar-ribbons::selection { background: transparent; }
+.hander-topbar-inner {
+  position: relative;
+  min-height: 86px;
+  background: var(--nav-black);
+}
+.hander-logo-placeholder {
+  background: #FFFFFF;
+  border: 2px solid #E7A057;
+  box-shadow: 0 2px 5px rgba(42,36,33,.12);
+}
+.hander-topbar-inner h1 { color: #FFFFFF; text-shadow: 0 1px 0 rgba(0,0,0,.18); }
+.hander-topbar-inner p { color: rgba(255,255,255,.72); }
+.hander-topbar-inner > div:last-child a {
+  background: #465BC4;
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(91,36,32,.12);
+}
+.hander-topbar-inner > div:last-child a:hover { background: #F7E5D5; }
+.hander-topbar-rule { position: relative; z-index: 1; }
+.hander-phone .hander-topbar { background: transparent; }
+.hander-phone > .hander-topbar { backdrop-filter: none; }
+/* Flytande pill-bar i samma mörka färg, med rundad highlight för aktiv knapp. */
+.hander-bottom-nav {
+  height: auto;
+  box-sizing: border-box;
+}
+.hander-bottom-nav ul {
+  margin: 0 14px 14px;
+  height: 74px;
+  border-radius: 999px;
+  background: var(--nav-black);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 14px 30px -12px rgba(0,0,0,.55);
+}
+.hander-nav-item--active {
+  background: #FFFFFF;
+  color: #2A2421;
+  box-shadow: 0 4px 12px rgba(0,0,0,.28);
+}
+
+@media (min-width: 520px) {
+  body { padding: 32px 12px; }
+  .hander-phone {
+    width: 388px;
+    height: 800px;
+    min-height: 800px;
+    border-radius: 46px;
+    overflow: hidden;
+    box-shadow: 0 2px 0 rgba(255,255,255,.6) inset, 0 40px 80px -20px rgba(34,34,59,.35), 0 0 0 10px #16161c, 0 0 0 12px rgba(255,255,255,.06);
+  }
+  .hander-phone > main { min-height: 0; overflow-y: auto; overflow-x: hidden; }
+  .hander-bottom-nav { position: absolute; }
+  .hander-bottom-nav ul { margin: 0 18px 18px; }
+}
+
+/* Sektionerna följer de fyra markerade accentfärgerna: stark färg på pill/prick/länk, mjuk ton runt innehållet. */
+.section-pill {
+  position: relative;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #2A2421;
+  padding-bottom: 24px;
+}
+/* Squigglen börjar 5px vänster om prickens vänsterkant (pricken ligger 14px in i px-3.5-rubriken). */
+.section-pill::after {
+  content: "";
+  position: absolute;
+  left: 9px;
+  right: 0;
+  bottom: 1px;
+  height: 20px;
+  border-radius: 0;
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: 100% 20px;
+  pointer-events: none;
+}
+.section-pill--orange { color: #E7A057; }
+.section-pill--red { color: #E45048; }
+.section-pill--pink { color: #E57657; }
+.section-pill--coral { color: #E57657; }
+.section-pill--periwinkle { color: #627BD8; }
+.section-pill--amber { color: #E69F56; }
+.section-pill--yellow { color: #EAB24F; }
+.section-pill--blue { color: #465BC4; }
+/* Squiggles ritade efter referensbilden: blå (kulle + slutloop), rosa (hög topp + stegslut), röd (båge -> loop + döl). */
+.section-pill--orange::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 440 40' preserveAspectRatio='none'%3E%3Cpath d='M10 26 C 20 12 36 8 54 14 C 74 20 96 26 122 24 C 158 21 188 16 222 18 C 256 20 286 26 318 26 C 348 26 372 20 394 18 C 410 16 424 18 432 20' fill='none' stroke='%23E7A057' stroke-width='9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.section-pill--coral::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 440 40' preserveAspectRatio='none'%3E%3Cpath d='M10 28 C 18 14 32 6 46 10 C 60 14 70 24 90 27 C 130 32 162 24 200 22 C 238 20 268 26 308 27 C 338 28 358 24 378 20 C 390 17 398 20 396 26 C 395 30 403 29 411 27 C 419 25 427 26 432 27' fill='none' stroke='%23E57657' stroke-width='9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.section-pill--periwinkle::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 440 40' preserveAspectRatio='none'%3E%3Cpath d='M8 25 C 18 13 36 8 58 10 C 80 12 94 20 116 24 C 148 30 178 27 210 25 C 242 23 272 25 302 26 C 332 27 354 23 372 18 C 386 14 394 13 398 18 C 401 23 394 28 389 24 C 386 21 393 17 402 19 C 412 22 422 27 432 30' fill='none' stroke='%23627BD8' stroke-width='9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.section-pill--amber::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 440 40' preserveAspectRatio='none'%3E%3Cpath d='M10 25 C 24 12 40 9 58 14 C 82 21 104 27 132 24 C 166 20 194 17 226 20 C 260 23 286 27 316 25 C 350 23 382 17 432 22' fill='none' stroke='%23E69F56' stroke-width='9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.section-pill--yellow::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 440 40' preserveAspectRatio='none'%3E%3Cpath d='M10 25 C 24 12 40 9 58 14 C 82 21 104 27 132 24 C 166 20 194 17 226 20 C 260 23 286 27 316 25 C 350 23 382 17 432 22' fill='none' stroke='%23EAB24F' stroke-width='9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.section-pill--blue::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 440 40' preserveAspectRatio='none'%3E%3Cpath d='M8 25 C 18 13 36 8 58 10 C 80 12 94 20 116 24 C 148 30 178 27 210 25 C 242 23 272 25 302 26 C 332 27 354 23 372 18 C 386 14 394 13 398 18 C 401 23 394 28 389 24 C 386 21 393 17 402 19 C 412 22 422 27 432 30' fill='none' stroke='%23465BC4' stroke-width='9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.section-pill--pink::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 440 40' preserveAspectRatio='none'%3E%3Cpath d='M10 28 C 18 14 32 6 46 10 C 60 14 70 24 90 27 C 130 32 162 24 200 22 C 238 20 268 26 308 27 C 338 28 358 24 378 20 C 390 17 398 20 396 26 C 395 30 403 29 411 27 C 419 25 427 26 432 27' fill='none' stroke='%23E57657' stroke-width='9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.section-pill--red::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 440 40' preserveAspectRatio='none'%3E%3Cpath d='M10 30 C 26 14 48 8 66 13 C 80 17 84 27 74 31 C 66 34 58 28 64 22 C 70 16 84 15 102 17 C 140 21 176 27 214 27 C 250 27 272 20 298 16 C 320 13 338 14 356 19 C 380 26 398 30 412 28 C 422 26 428 26 432 29' fill='none' stroke='%23E45048' stroke-width='9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+/* Upptäck-rubrikens squiggle ska följa texten i stället för att sträckas över hela raden. */
+.map-page-toolbar .map-discover-title::after {
+  right: auto;
+  width: 155px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 440 40' preserveAspectRatio='none'%3E%3Cpath d='M8 30 C 20 16 44 8 78 11 C 108 14 118 26 152 26 C 190 26 210 14 254 16 C 300 18 324 26 366 25 C 396 24 416 22 432 21' fill='none' stroke='%23E45048' stroke-width='9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size: 155px 20px;
+}
+/* Upptäck-texten ska vara svart, i stället för sektionens röda färg. */
+.map-page-toolbar .section-pill--red { color: #2A2421; }
+
+/* Privat/Publikt-korten: hover i respektive kortas mjuka accentton. */
+.visibility-card--private:hover { border-color: #E45048; background: #FBD9D6; }
+.visibility-card--public:hover { border-color: #465BC4; background: #DDE3F8; }
+.section-pill > span:not(.section-badge) { color: #2A2421; }
+.section-pill--orange .section-badge,
+.section-pill--red .section-badge,
+.section-pill--pink .section-badge,
+.section-pill--coral .section-badge,
+.section-pill--periwinkle .section-badge,
+.section-pill--yellow .section-badge,
+.section-pill--blue .section-badge { background: rgba(255,255,255,.72); color: #2A2421; }
+.section-action { font-weight: 700; }
+.section-action--orange { color: #E7A057; }
+.section-action--red { color: #E45048; }
+.section-action--pink { color: #E57657; }
+.section-action--coral { color: #E57657; }
+.section-action--periwinkle { color: #627BD8; }
+.section-action--amber { color: #E69F56; }
+.section-action--yellow { color: #EAB24F; }
+.section-action--blue { color: #465BC4; }
+.section-badge { border-radius: 999px; }
+.section-badge--orange { background: #E7A057; color: #2A2421; }
+.section-badge--red { background: #E45048; color: #FFFDF9; }
+.section-badge--pink { background: #E57657; color: #FFFDF9; }
+.section-badge--coral { background: #E57657; color: #FFFDF9; }
+.section-badge--periwinkle { background: #627BD8; color: #FFFDF9; }
+.section-badge--amber { background: #E69F56; color: #2A2421; }
+.section-badge--yellow { background: #EAB24F; color: #2A2421; }
+.section-badge--blue { background: #465BC4; color: #FFFDF9; }
+.section-zone { padding: 0 0 10px; border-radius: 24px; }
+.section-zone--orange { background: color-mix(in srgb, #E7A057 10%, transparent); }
+.section-zone--red { background: color-mix(in srgb, #E45048 8%, transparent); }
+.section-zone--pink { background: color-mix(in srgb, #E57657 9%, transparent); }
+.section-zone--coral { background: color-mix(in srgb, #E57657 9%, transparent); }
+.section-zone--periwinkle { background: color-mix(in srgb, #627BD8 8%, transparent); }
+.section-zone--amber { background: color-mix(in srgb, #E69F56 8%, transparent); }
+.section-zone--yellow { background: color-mix(in srgb, #EAB24F 8%, transparent); }
+.section-zone--blue { background: color-mix(in srgb, #465BC4 8%, transparent); }
+
+/* Toppbaren följer referensbilden: sex rena, vertikala färgfält bakom statusrad och notch. */
+.hander-phone,
+.hander-phone main,
+.hander-phone .section-zone,
+.hander-phone .map-page-toolbar {
+  background-color: #FFFFFF;
+}
+.hander-phone {
+  background-image: none;
+  background-color: #FFFFFF;
+}
+/* Mörkt toppalternativ som delar bottenbarens charcoal-yta och blå primäraccent. */
+.hander-phone .hander-statusbar,
+.hander-phone .hander-topbar,
+.hander-phone .hander-topbar-inner {
+  background: var(--nav-black);
+}
+.hander-phone .hander-statusbar { color: #FFFFFF; }
+.hander-phone .hander-topbar-inner > div:last-child a:hover { background: #627BD8; }
+.hander-phone .hander-logo-placeholder { border-color: #627BD8; }
+.hander-phone .hander-lines {
+  display: block;
+  background-image: linear-gradient(90deg,
+    #E45048 0 16.666%,
+    #E57657 16.666% 33.333%,
+    #E7A057 33.333% 50%,
+    #EAB24F 50% 66.666%,
+    #627BD8 66.666% 83.333%,
+    #465BC4 83.333% 100%);
+  background-color: transparent;
+}
+.hander-phone .hander-topbar-rule { display: none; }
+
+/* Matchar den bifogade appens rubrikkort och mjuka men mindre överdrivna hörn. */
+.hander-phone .rounded-3xl { border-radius: 20px; }
+.hander-phone .rounded-2xl { border-radius: 16px; }
+.hander-phone .rounded-full { border-radius: 999px; }
+.hander-phone .map-shell { border-radius: 18px; }
+.hander-phone .map-filter-heading { padding: 4px 2px; }
+.hander-phone .map-info-card { background: rgba(255,253,249,.9); }
+.hander-phone .map-page-toolbar { background: transparent; }
+
+@media (max-width: 519px) {
+  html, body { min-width: 0; overflow-x: hidden; }
+  body { padding: 0; align-items: stretch; }
+  .hander-phone {
+    width: 100%;
+    max-width: 414px;
+    min-height: 100svh;
+    max-height: 100svh;
+    overflow-x: hidden;
+    border-radius: 0;
+  }
+  .hander-phone main,
+  .hander-phone header,
+  .hander-phone nav { min-width: 0; }
+  .hander-phone .map-shell { max-height: 48svh; }
+  .hander-phone .space-y-7 > :not([hidden]) ~ :not([hidden]) { margin-top: 1.25rem; }
+  .hander-phone .space-y-5 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
+  .hander-phone .p-4 { padding: .875rem; }
+  .hander-phone .map-list-view { min-width: 0; }
+  .hander-phone .map-list-view a { min-width: 0; }
+}
+
+/* Den ursprungliga appen använder en varm, lekfull yta – linjerna ska märkas men aldrig störa läsningen. */
+.hander-phone {
+  background-color: #FFFFFF;
+  background-image: none;
+  background-attachment: local;
+}
+.hander-phone .hander-bottom-nav { background: transparent; }
+.hander-phone .hander-fab { background: #627BD8; }  .hander-phone .rounded-3xl { border-radius: 18px; }
+.hander-phone .rounded-2xl { border-radius: 14px; }
+.hander-phone .font-bold { font-weight: 600; }
+.hander-phone .font-semibold { font-weight: 500; }
+.hander-phone .map-shell { border-radius: 22px; }
+/* Tunna accentramar håller fokus på bilderna och kartan. */
+.hander-phone .popular-event-card,
+.hander-phone .invite-event-card,
+.hander-phone .organized-event-card,
+.hander-phone .map-shell--accent,
+.hander-phone .map-info-card--blue { border-width: 1px; }
+.section-pill { min-height: 42px; margin-bottom: 7px; overflow: visible; }
+.section-pill::after { z-index: 2; opacity: 1; }
+.map-page-toolbar {
+  background: rgba(224,82,77,.07);
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+.map-discover-heading { display: flex; flex-direction: column; align-items: flex-start; }
+.map-discover-title { margin-bottom: 0; }
+.map-discover-subtitle { margin-top: -4px; padding: 0 14px; }
+.map-controls { width: 100%; }
+.map-controls .map-filter-button { margin-left: 0; min-height: 44px; }
+/* KARTA/LISTA-växlaren: röd toggle-pill med glidande ratt i rätt palett. */
+.map-view-toggle-pill {
+  background: #E45048;
+  color: #FFFDF9;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.25),
+    0 3px 0 color-mix(in srgb, #E45048 70%, #000),
+    0 8px 14px -6px rgba(140,44,36,.4);
+  transition: transform .15s ease;
+}
+.map-view-toggle-pill:active { transform: translateY(1px); }
+.map-toggle-track { background: rgba(255,255,255,.28); }
+.map-filter-button { background: #E45048; color: #FFFDF9; }
+.map-filter-button[class*="bg-card"] { background: #E45048; color: #FFFDF9; border-color: #E45048; }
+.map-page-toolbar .map-filter-heading { border-top: 1px solid rgba(224,82,77,.2); padding-top: 10px; }
+.map-page-toolbar .map-filter-heading svg { color: #E45048; }
+.map-page-toolbar .no-scrollbar { padding: 2px 0 4px; }
+.map-page-toolbar .no-scrollbar > button { border-color: #E57657; background: #FFFDF9; color: #8E4A38; border-width: 2px; transition: background .15s ease; }
+.map-page-toolbar .no-scrollbar > button:hover,
+.map-page-toolbar .no-scrollbar > button:active { background: #F5DCD3; }
+.map-page-toolbar .no-scrollbar > button[class*="bg-primary"] { border-color: #E57657; background: #E57657; color: #FFFDF9; border-width: 2px; }
+.map-page-toolbar .no-scrollbar > button[class*="bg-primary"]:hover { background: #D9684D; }
+.map-shell--accent {
+  border-color: #E7A057;
+  border-width: 3px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.32),
+    0 3px 0 color-mix(in srgb, #E7A057 70%, #000),
+    0 10px 18px -8px rgba(139,86,42,.38);
+}
+
+/* Varje kortram följer sin sektions prick: röd, rosa och blå – med tydlig men professionell 3d-effekt: skarp extruderad kant under, svag topp-ljus och mjuk baresskugga. */
+.hander-phone .popular-event-card,
+.hander-phone article.event-card-unified-border,
+.hander-phone a.event-row-unified-border {
+  border-color: #E45048;
+  border-width: 3px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.32),
+    0 3px 0 color-mix(in srgb, #E45048 70%, #000),
+    0 10px 18px -8px rgba(140,44,36,.42);
+}
+.hander-phone .sponsored-event-card {
+  border-color: #E57657;
+  border-width: 3px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.32),
+    0 3px 0 color-mix(in srgb, #E57657 70%, #000),
+    0 10px 18px -8px rgba(150,44,56,.32);
+}
+.hander-phone .invite-event-card {
+  border-color: #E7A057;
+  border-width: 3px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.32),
+    0 3px 0 color-mix(in srgb, #E7A057 70%, #000),
+    0 10px 18px -8px rgba(138,90,34,.42);
+}
+.hander-phone .organized-event-card {
+  border-color: #E57657;
+  border-width: 3px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.32),
+    0 3px 0 color-mix(in srgb, #E57657 70%, #000),
+    0 10px 18px -8px rgba(150,44,56,.42);
+}
+.map-info-card--blue {
+  border-color: #EAB24F;
+  border-width: 3px;
+  background: #FFF3CC;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.32),
+    0 3px 0 color-mix(in srgb, #EAB24F 70%, #000),
+    0 10px 18px -8px rgba(139,86,42,.32);
+}
+.map-info-card--blue .text-muted-foreground { color: #8B6A2E; }
+.map-info-card--blue .text-primary { color: #8B6A2E; }
+
+/* Blad och delningsark ska förankras i telefonramen (sticky shell), inte viewporten.
+   Transform gör .hander-phone till containing block för position: fixed-element inuti. */
+.hander-phone .sheet-backdrop { background: rgba(42,36,33,.32); backdrop-filter: blur(2px); }
+/* Filterbladets bakgrund ska täcka hela telefonen men aldrig ligga över toppbaren. */
+.hander-phone .filter-sheet-backdrop { top: 119px; }
+.hander-phone .sheet-panel {
+  border-radius: 24px 24px 0 0;
+  border: 1px solid rgba(74,45,36,.16);
+  border-bottom: 0;
+  background: #FFFFFF;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.6),
+    0 -10px 34px -14px rgba(34,34,59,.3);
+  /* Viktigt: innehållet ska sluta ovanför botten-navigationen (86px). */
+  padding-bottom: 104px !important;
+}
+.hander-phone .sheet-panel .bg-secondary { background: #F7E5D5; color: #593B2A; }
+.hander-phone .sheet-panel .bg-card { background: #FFFFFF; }
+.hander-phone .sheet-panel .rounded-2xl { border-radius: 14px; }
+.hander-phone .sheet-panel .rounded-3xl { border-radius: 18px; }
+.hander-phone .sheet-panel .rounded-t-3xl { border-radius: 22px 22px 0 0; }
+/* Gör alla fixed-lager till absoluta inom skalet. */
+.hander-phone {
+  position: relative;
+  transform: translateZ(0);
+}
+@media (max-width: 519px) {
+  .hander-phone { transform: none; }
+}
+
+/* Filterbladet: vita ytor med varma chips och röd primärknapp, enligt hem-temat. */
+.hander-phone .filter-sheet-panel {
+  background: #FFFFFF;
+  border: 1px solid rgba(74,45,36,.16);
+  border-bottom: 0;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.6),
+    0 -10px 34px -14px rgba(34,34,59,.3);
+}
+.hander-phone .filter-sheet-panel section p { color: rgba(42,36,33,.6); }
+.hander-phone .filter-sheet-panel .bg-background { background: #FFFFFF; }
+.hander-phone .filter-sheet-panel input[type="range"] { accent-color: #E45048; }
+.hander-phone .filter-sheet-panel button.bg-secondary { background: #F7E5D5; color: #593B2A; }
+.hander-phone .filter-sheet-panel button.bg-primary { background: #E45048; color: #FFFDF9; }
+.hander-phone .filter-sheet-panel .text-primary { color: #E45048; }
+.hander-phone .filter-sheet-panel .border-border { border-color: rgba(74,45,36,.14); }
+.hander-phone .filter-sheet-panel input,
+.hander-phone .filter-sheet-panel textarea { color: #2A2421; }
+
+/* Eventsidans klistrade aktionsmeny ska ligga ovanför botten-navigationen.
+   position: fixed förankras nu i telefonramen (transform ovan) och följer inte med scrollen. */
+.hander-phone .event-actions-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  /* Solid vit yta som extendar ända ner under botten-navigationen på eventsidor. */
+  background: #FFFFFF;
+  padding-bottom: 100px;
+  border-top: 1px solid rgba(74,45,36,.12);
+  max-width: none;
+  margin: 0;
+}
+.hander-phone .event-actions-dock button.bg-primary {
+  background: #E45048;
+  color: #FFFDF9;
+  box-shadow: 0 8px 20px -6px rgba(224,82,77,.42);
+}
+.hander-phone .event-actions-dock button.bg-secondary,
+.hander-phone .event-actions-dock a.bg-secondary { background: #F7E5D5; color: #593B2A; }
+.hander-phone .event-actions-dock button.bg-accent { background: #F7E5D5; color: #E45048; }
+
+/* Eventsidans innehåll använder hem-palettens varma toner.
+   NÄR/PRIS-korten och Sugen?-rutan: vita kort med varm kant och mjuk 3d-effekt,
+   i linje med Plats-kortet och hem-sidans kortstil. */
+.hander-phone .event-page .bg-secondary\/70 {
+  background: #FFFFFF;
+  border: 1px solid rgba(74,45,36,.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.6),
+    0 3px 0 color-mix(in srgb, #F7E5D5 75%, #fff),
+    0 8px 16px -10px rgba(34,34,59,.2);
+}
+.hander-phone .event-page .bg-secondary\/70 p:first-child { color: #B08A6E; }
+.hander-phone .event-page .bg-secondary\/70 p { color: #2A2421; }
+.hander-phone .event-page .bg-secondary\/70 .text-muted-foreground { color: #8C7A6B; }
+.hander-phone .event-page .bg-accent\/50 {
+  background: #FFFFFF;
+  border: 1px dashed rgba(228,80,72,.4);
+}
+.hander-phone .event-page .bg-accent\/50 .text-muted-foreground { color: #8C7A6B; }
+/* Gästlistaknappen (bg-secondary på eventsidan): varm ton med 3d-effekt som knappen på privata events sidan. */
+.hander-phone .event-page a.bg-secondary:not(.event-actions-dock a) {
+  background: #F7E5D5;
+  color: #E45048;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.6),
+    0 3px 0 color-mix(in srgb, #E45048 25%, #F7E5D5),
+    0 8px 16px -10px rgba(140,44,36,.35);
+}
+.hander-phone .event-page a.bg-secondary:not(.event-actions-dock a):active { transform: translateY(2px); box-shadow: inset 0 1px 0 rgba(255,255,255,.6); }
+.hander-phone .event-page .text-primary { color: #E45048; }
+.hander-phone .event-page .text-accent-foreground { color: #E45048; }
+.hander-phone .event-page .border-border { border-color: rgba(74,45,36,.14); }
+.hander-phone .event-page h1 { color: #2A2421; }
+
+/* Kartbladen (EventSheet/PlaceSheet) matchar hem-temat: vitt blad, röd primär, sektionsfärger. */
+.hander-phone .map-sheet-card {
+  border: 1px solid rgba(74,45,36,.14);
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.32),
+    0 3px 0 color-mix(in srgb, var(--sheet-accent, #E45048) 70%, #000),
+    0 10px 18px -8px rgba(34,34,59,.28);
+}
+.hander-phone .map-sheet-card--red { --sheet-accent: #E45048; }
+.hander-phone .map-sheet-card--blue { --sheet-accent: #465BC4; }
+.hander-phone .map-sheet-card--pink { --sheet-accent: #E57657; }
+.hander-phone .map-sheet-card .map-sheet-cover {
+  height: 220px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+.hander-phone .map-sheet-card .map-sheet-cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(20,16,25,.6) 100%);
+}
+.hander-phone .map-sheet-card .map-sheet-cover span {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  z-index: 1;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+.hander-phone .map-sheet-card h3 { color: #2A2421; }
+.hander-phone .map-sheet-card .text-muted-foreground { color: rgba(42,36,33,.62); }
+.hander-phone .map-sheet-card .text-primary { color: var(--sheet-accent, #E45048); }
+.hander-phone .map-sheet-card .map-sheet-primary { background: var(--sheet-accent, #E45048); color: #FFFDF9; box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--sheet-accent, #E45048) 60%, transparent); }
+.hander-phone .map-sheet-card .map-sheet-secondary { background: #F7E5D5; color: #593B2A; }
+.hander-phone .map-sheet-card .map-sheet-ghost { background: rgba(42,36,33,.92); color: #fff; }
+.hander-phone .map-sheet-card .map-sheet-tag { background: rgba(255,255,255,.92); color: #2A2421; border: 1px solid rgba(74,45,36,.12); }
+
+/* Vänerrader följer samma 3d-kortstil som eventkorten på hem: tunn sektionsfärgad ram, extruderad kant under och mjuk skugga. */
+.hander-phone .friend-row {
+  border-width: 3px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.32),
+    0 3px 0 color-mix(in srgb, var(--friend-accent, #E57657) 70%, #000),
+    0 10px 18px -8px rgba(34,34,59,.28);
+}
+.hander-phone .friend-row--red { --friend-accent: #E45048; border-color: #E45048; }
+.hander-phone .friend-row--pink { --friend-accent: #E57657; border-color: #E57657; }
+.hander-phone .friend-row--blue { --friend-accent: #465BC4; border-color: #465BC4; }
+
+/* Flödesrader på Följer: platt vit rektangel utan skugga, separat avatar till vänster. */
+.hander-phone .feed-row .rounded-2xl.bg-card { box-shadow: none; }
+
+/* Primärknapp i hem-stil: extruderad kant under i stället för mjuk dropshadow. */
+.hander-phone .hander-cta-button {
+  background: #E45048;
+  color: #FFFDF9;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.32),
+    0 3px 0 color-mix(in srgb, #E45048 70%, #000),
+    0 10px 18px -8px rgba(140,44,36,.42);
+}
+
+/* Filterchips: hover/tryck i röd palett i stället för orange. */
+.filter-chip:not([class*="bg-primary"]):hover,
+.filter-chip:not([class*="bg-primary"]):active {
+  background: #FBD9D6;
+  border-color: #E45048;
+}
+.filter-chip:active { transform: translateY(1px); }
+

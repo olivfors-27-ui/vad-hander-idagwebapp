@@ -1,0 +1,227 @@
+import { MAP_CENTER, type CategoryId, type EventItem } from "./hander-data";
+
+const VISIT_STOCKHOLM_URL = "https://api.visitstockholm.com/api/public-v1/events/";
+const VISIT_SWEDEN_URL = "https://data.visitsweden.com/store/search";
+const MAX_PAGES = 50;
+const MAX_DISTANCE_KM = 25;
+const STOCKHOLM_QUERY = "public:true AND rdfType:http\\://schema.org\\/Event";
+
+const CATEGORY_IMAGES: Record<CategoryId, string> = {
+  musik: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=900&q=82",
+  fest: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=900&q=82",
+  student: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=900&q=82",
+  sport: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=900&q=82",
+  mat: "https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&fit=crop&w=900&q=82",
+  kultur: "https://images.unsplash.com/photo-1577083552431-6e5fd01988a5?auto=format&fit=crop&w=900&q=82",
+  shopping: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=900&q=82",
+  plugg: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=900&q=82",
+  utomhus: "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=900&q=82",
+  ovrigt: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=900&q=82",
+};
+
+type ApiTitle = string | { sv?: string; en?: string };
+type ApiCategory = { slug?: string; title?: string; subcategories?: ApiCategory[] };
+type ApiScheduleDate = { date?: string; start_time?: string | null; end_time?: string | null };
+
+type VisitStockholmEvent = {
+  id?: string;
+  title?: ApiTitle;
+  description?: ApiTitle;
+  external_website_url?: string | null;
+  address?: string | null;
+  venue_name?: string | null;
+  city?: string | null;
+  location?: { latitude?: number; longitude?: number } | null;
+  start_date?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  categories?: ApiCategory[];
+  schedule?: { dates?: ApiScheduleDate[] } | null;
+};
+
+type VisitStockholmResponse = { results?: VisitStockholmEvent[]; total_pages?: number };
+type JsonLdValue = string | { "@id"?: string; "@value"?: string; "@language"?: string } | undefined;
+type JsonLdNode = { "@id"?: string; "@type"?: string | string[]; [key: string]: JsonLdValue | string | string[] | undefined };
+type VisitSwedenChild = { metadata?: { "@graph"?: JsonLdNode[] }; entryId?: string };
+type VisitSwedenResponse = { resource?: { children?: VisitSwedenChild[] } };
+
+const textFor = (value: ApiTitle | JsonLdValue | null | undefined) => {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "object") return value.sv || value.en || value["@value"] || value["@id"] || "";
+  return "";
+};
+
+const stripHtml = (value: string) =>
+  value.replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/\s+/g, " ").trim();
+
+const validDate = (value: string | null | undefined) => Boolean(value && /^\d{4}-\d{2}-\d{2}/.test(value));
+const dateOnly = (value: string) => value.slice(0, 10);
+
+const addHours = (time: string) => {
+  const [hours, minutes] = time.split(":").map(Number);
+  const total = ((hours || 0) * 60 + (minutes || 0) + 120) % (24 * 60);
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+};
+
+const distanceKm = (lat: number, lng: number) => {
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+  const dLat = toRadians(lat - MAP_CENTER.lat);
+  const dLng = toRadians(lng - MAP_CENTER.lng);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRadians(MAP_CENTER.lat)) * Math.cos(toRadians(lat)) * Math.sin(dLng / 2) ** 2;
+  return Math.round(6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
+};
+
+const categoryFromText = (value: string): CategoryId => {
+  const text = value.toLowerCase();
+  if (/music|musik|konsert|jazz|opera|dj|live/.test(text)) return "musik";
+  if (/club|klubb|party|fest|festival|mingel|disco/.test(text)) return "fest";
+  if (/sport|race|lopp|run|basket|fotboll|yoga|träning|wellbeing/.test(text)) return "sport";
+  if (/food|drink|mat|middag|lunch|öl|vin|restaurant|café|cafe/.test(text)) return "mat";
+  if (/student|campus|university|universitet|föreläsning|seminar/.test(text)) return "student";
+  if (/market|mässa|shopping|loppis|fair|marknad/.test(text)) return "shopping";
+  if (/outdoor|utomhus|vandring|natur|kajak|skärgård|park/.test(text)) return "utomhus";
+  return "kultur";
+};
+
+const categoryFor = (event: VisitStockholmEvent): CategoryId => {
+  const categories = (event.categories ?? []).flatMap((category) => [category.slug, category.title, ...(category.subcategories ?? []).flatMap((sub) => [sub.slug, sub.title])]);
+  return categoryFromText(`${categories.join(" ")} ${textFor(event.title)}`);
+};
+
+const firstFutureSchedule = (event: VisitStockholmEvent) => {
+  const today = new Date().toISOString().slice(0, 10);
+  return (event.schedule?.dates ?? []).filter((slot) => validDate(slot.date) && (slot.date as string) >= today).sort((a, b) => String(a.date).localeCompare(String(b.date)))[0];
+};
+
+const toEvent = ({ id, title, description, address, venue, date, start, end, lat, lng, url, image, organizerId }: {
+  id: string; title: string; description: string; address: string; venue: string; date: string; start?: string | null; end?: string | null;
+  lat: number; lng: number; url?: string; image?: string; organizerId: string;
+}): EventItem | null => {
+  const distance = distanceKm(lat, lng);
+  if (!date || distance > MAX_DISTANCE_KM) return null;
+  const category = categoryFromText(`${title} ${description} ${venue}`);
+  const startTime = start && /^\d{1,2}:\d{2}/.test(start) ? start.slice(0, 5) : "12:00";
+  return {
+    id,
+    name: title || "Event i Stockholm",
+    category,
+    date: dateOnly(date),
+    start: startTime,
+    end: end && /^\d{1,2}:\d{2}/.test(end) ? end.slice(0, 5) : addHours(startTime),
+    place: venue || "Stockholm",
+    address: address || "Stockholm",
+    price: 0,
+    description: description.slice(0, 280),
+    image: image || CATEGORY_IMAGES[category],
+    organizerId,
+    interested: [],
+    visibility: "public",
+    status: "approved",
+    lat,
+    lng,
+    distance,
+    ...(url ? { sourceUrl: url } : {}),
+  };
+};
+
+const fetchJson = async <T,>(url: string, signal?: AbortSignal) => {
+  const response = await fetch(url, { ...(signal ? { signal } : {}), headers: { Accept: "application/json" } });
+  if (!response.ok) throw new Error(`API svarade ${response.status}`);
+  return response.json() as Promise<T>;
+};
+
+const fetchVisitStockholmPage = (page: number, signal?: AbortSignal) => fetchJson<VisitStockholmResponse>(`${VISIT_STOCKHOLM_URL}?page=${page}`, signal);
+
+async function fetchVisitStockholmSource(signal?: AbortSignal): Promise<EventItem[]> {
+  const firstPage = await fetchVisitStockholmPage(1, signal);
+  const pageCount = Math.min(Math.max(firstPage.total_pages ?? 1, 1), MAX_PAGES);
+  const pages: VisitStockholmResponse[] = [firstPage];
+  for (let start = 2; start <= pageCount; start += 6) {
+    pages.push(...await Promise.all(Array.from({ length: Math.min(6, pageCount - start + 1) }, (_, index) => fetchVisitStockholmPage(start + index, signal))));
+  }
+  return pages.flatMap((page) => page.results ?? []).flatMap((event) => {
+    if (!event.id || !event.location || typeof event.location.latitude !== "number" || typeof event.location.longitude !== "number") return [];
+    const slot = firstFutureSchedule(event);
+    const date = slot?.date || (validDate(event.start_date) ? event.start_date : "");
+    const normalized = toEvent({
+      id: `visit-${event.id}`,
+      title: textFor(event.title),
+      description: stripHtml(textFor(event.description)),
+      address: event.address || event.city || "Stockholm",
+      venue: event.venue_name || event.address || event.city || "Stockholm",
+      date,
+      start: slot?.start_time || event.start_time,
+      end: slot?.end_time || event.end_time,
+      lat: event.location.latitude,
+      lng: event.location.longitude,
+      url: event.external_website_url || undefined,
+      organizerId: "visit-stockholm",
+    });
+    return normalized ? [normalized] : [];
+  });
+}
+
+const graphValue = (node: JsonLdNode | undefined, key: string) => textFor(node?.[key]);
+
+function normalizeVisitSwedenChild(child: VisitSwedenChild): EventItem | null {
+  const graph = child.metadata?.["@graph"] ?? [];
+  const event = graph.find((node) => String(node["@type"] ?? "").includes("Event"));
+  if (!event) return null;
+  const geoRef = typeof event["schema:geo"] === "object" ? event["schema:geo"]?.["@id"] : undefined;
+  const addressRef = typeof event["schema:address"] === "object" ? event["schema:address"]?.["@id"] : undefined;
+  const geo = graph.find((node) => node["@id"] === geoRef);
+  const addressNode = graph.find((node) => node["@id"] === addressRef);
+  const lat = Number(graphValue(geo, "schema:latitude"));
+  const lng = Number(graphValue(geo, "schema:longitude"));
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  const startDate = graphValue(event, "schema:startDate");
+  if (!validDate(startDate)) return null;
+  const title = graphValue(event, "schema:name") || "Event i Sverige";
+  const description = stripHtml(graphValue(event, "schema:description") || graphValue(event, "dcterms:abstract"));
+  const address = graphValue(addressNode, "schema:streetAddress") || graphValue(addressNode, "schema:addressLocality") || "Stockholm";
+  const imageValue = event["schema:image"] || event["schema:photo"];
+  const image = typeof imageValue === "object" ? imageValue["@id"] : undefined;
+  return toEvent({
+    id: `sweden-${child.entryId || event["@id"] || title}`,
+    title,
+    description,
+    address,
+    venue: graphValue(addressNode, "schema:addressLocality") || address,
+    date: startDate,
+    start: startDate.includes("T") ? startDate.slice(11, 16) : "12:00",
+    lat,
+    lng,
+    url: graphValue(event, "schema:url") || (typeof event["@id"] === "string" ? event["@id"] : undefined),
+    image,
+    organizerId: "visit-sweden",
+  });
+}
+
+/** Visit Sweden's national schema.org feed is public and adds image-rich tourism events. */
+async function fetchVisitSwedenEvents(signal?: AbortSignal): Promise<EventItem[]> {
+  const events: EventItem[] = [];
+  for (const offset of [0, 100, 200]) {
+    const params = new URLSearchParams({ type: "solr", query: STOCKHOLM_QUERY, limit: "100", offset: String(offset), rdfFormat: "application/ld+json" });
+    const page = await fetchJson<VisitSwedenResponse>(`${VISIT_SWEDEN_URL}?${params.toString()}`, signal);
+    const normalized = (page.resource?.children ?? []).map(normalizeVisitSwedenChild).filter((event): event is EventItem => Boolean(event));
+    events.push(...normalized);
+    if ((page.resource?.children?.length ?? 0) < 100) break;
+  }
+  return events;
+}
+
+export async function fetchVisitStockholmEvents(signal?: AbortSignal): Promise<EventItem[]> {
+  const results = await Promise.allSettled([fetchVisitStockholmSource(signal), fetchVisitSwedenEvents(signal)]);
+  const all = results.flatMap((result) => result.status === "fulfilled" ? result.value : []);
+  const seen = new Set<string>();
+  return all.filter((event) => {
+    const key = `${event.name.toLowerCase()}|${event.date}|${event.place.toLowerCase()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+export const VISIT_STOCKHOLM_API_URL = VISIT_STOCKHOLM_URL;
+export const VISIT_SWEDEN_API_URL = VISIT_SWEDEN_URL;
