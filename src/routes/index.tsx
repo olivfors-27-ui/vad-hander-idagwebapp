@@ -166,7 +166,7 @@ function SponsoredCard({ event }: { event: EventItem }) {
           <span className="rounded-full bg-secondary px-2 py-0.5 font-bold text-secondary-foreground">
             {c.emoji} {c.label}
           </span>
-          <span className="font-bold text-primary">{priceLabel(event.price)}</span>
+          <span className="font-bold text-primary">{priceLabel(event.price, event.priceKnown)}</span>
         </p>
       </div>
     </Link>

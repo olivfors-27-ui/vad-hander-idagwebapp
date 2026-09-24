@@ -309,14 +309,14 @@ function EventSheet({ event, onClose }: { event: EventItem; onClose: () => void 
               className="map-sheet-cover"
               style={{ backgroundImage: `url(${event.image})` }}
             >
-              <span>{priceLabel(event.price)}</span>
+              <span>{priceLabel(event.price, event.priceKnown)}</span>
             </div>
           ) : (
             <div
               className="map-sheet-cover"
               style={{ background: CATEGORY_GRADIENT[event.category] }}
             >
-              <span>{priceLabel(event.price)}</span>
+              <span>{priceLabel(event.price, event.priceKnown)}</span>
             </div>
           )}
           <div className="space-y-4 p-4">
@@ -330,7 +330,7 @@ function EventSheet({ event, onClose }: { event: EventItem; onClose: () => void 
               </div>
               <div className="rounded-2xl bg-secondary/70 p-3">
                 <p className="text-[11px] font-bold uppercase text-muted-foreground">Pris</p>
-                <p className="text-sm font-bold text-primary">{priceLabel(event.price)}</p>
+                <p className="text-sm font-bold text-primary">{priceLabel(event.price, event.priceKnown)}</p>
                 <p className="text-xs text-muted-foreground">Betalas på plats</p>
               </div>
             </div>

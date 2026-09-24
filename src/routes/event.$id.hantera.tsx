@@ -109,7 +109,7 @@ function ManageEventPage() {
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <CategoryChip category={event.category} />
                 <span className="rounded-full bg-[#FBEBDA] px-2 py-0.5 text-[11px] font-bold text-[#8A5A22]">
-                  {priceLabel(event.price)}
+                  {priceLabel(event.price, event.priceKnown)}
                 </span>
                 <span
                   className={cn(

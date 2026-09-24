@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Bookmark, Heart, Lock, MapPin, Share2, Sparkles, User as UserIcon, Users } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { SyntheticEvent } from "react";
 import { ShareSheet, absoluteUrl } from "@/components/hander/ShareSheet";
 import {
   CATEGORY_GRADIENT,
@@ -90,8 +91,55 @@ export function CategoryChip({ category }: { category: EventItem["category"] }) 
   );
 }
 
-export function priceLabel(price: number) {
+export function priceLabel(price: number, priceKnown = true) {
+  if (!priceKnown) return "Pris hos arrangören";
   return price === 0 ? "Gratis" : `${price} kr`;
+}
+
+export function PriceLabel({ event, className }: { event: EventItem; className?: string }) {
+  const label = priceLabel(event.price, event.priceKnown);
+  if (!event.priceKnown || !event.sourceUrl) {
+    return <span className={className}>{label}</span>;
+  }
+  return (
+    <a
+      href={event.sourceUrl}
+      target="_blank"
+      rel="noreferrer"
+      className={cn(className, "underline-offset-2 hover:underline")}
+      onClick={(clickEvent) => clickEvent.stopPropagation()}
+    >
+      {label}
+    </a>
+  );
+}
+
+/**
+ * Hämtar en riktig eventbild från arrangörens officiella sida via vår
+ * serverfunktion (/api/event-image). Returnerar null tills en bild hittats
+ * eller kanske gett upp – fallbacken (kategorigradient) visas tills dess.
+ */
+export function useOfficialEventImage(event: Pick<EventItem, "id" | "image" | "sourceUrl">) {
+  const [image, setImage] = useState<string | undefined>(event.image);
+  const sourceUrl = event.sourceUrl;
+  useEffect(() => {
+    if (image || !sourceUrl) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch(`/api/event-image?url=${encodeURIComponent(sourceUrl)}`);
+        if (!response.ok) return;
+        const payload = (await response.json()) as { image?: string };
+        if (!cancelled && payload.image) setImage(payload.image);
+      } catch {
+        // Ingen bild – neutral fallback visas.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [image, sourceUrl]);
+  return image;
 }
 
 export function EventCover({
@@ -104,13 +152,19 @@ export function EventCover({
   big?: boolean;
 }) {
   const c = categoryById(event.category);
-  if (event.image) {
+  const image = useOfficialEventImage(event);
+  const handleImageError = (imageEvent: SyntheticEvent<HTMLImageElement>) => {
+    imageEvent.currentTarget.style.display = "none";
+    imageEvent.currentTarget.parentElement?.classList.add("event-cover-image-failed");
+  };
+  if (image) {
     return (
       <div className={cn("relative overflow-hidden bg-secondary", className)}>
         <img
-          src={event.image}
+          src={image}
           alt={event.name}
           loading="lazy"
+          onError={handleImageError}
           className="h-full w-full object-cover"
         />
       </div>
@@ -169,7 +223,7 @@ export function EventCard({ event, compact }: { event: EventItem; compact?: bool
             )}
           </div>
           <span className="absolute bottom-2 right-2 rounded-full bg-background/90 px-2 py-0.5 text-[11px] font-bold">
-            {priceLabel(event.price)}
+            <PriceLabel event={event} />
           </span>
         </div>
         <div className="space-y-1.5 p-3">
@@ -303,7 +357,7 @@ export function EventRow({ event }: { event: EventItem }) {
         )}
       </div>
       <span className="shrink-0 rounded-full bg-secondary px-2 py-1 text-[11px] font-bold">
-        {priceLabel(event.price)}
+        <PriceLabel event={event} />
       </span>
     </Link>
   );

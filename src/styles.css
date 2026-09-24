@@ -858,3 +858,20 @@
 }
 .filter-chip:active { transform: translateY(1px); }
 
+/* Neutral fallback när en extern eventbild saknas eller inte kan laddas. */
+.event-cover-image-failed {
+  background: linear-gradient(135deg, #f4eee8 0%, #e8ddd4 100%);
+}
+
+.event-cover-image-failed::after {
+  content: "Bild saknas";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #806f63;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+

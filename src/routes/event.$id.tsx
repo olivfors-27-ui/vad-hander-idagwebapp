@@ -123,9 +123,17 @@ function EventPage() {
           </div>
           <div className="rounded-2xl bg-secondary/70 p-3">
             <p className="text-[11px] font-bold uppercase text-muted-foreground">Pris</p>
-            <p className="text-sm font-bold text-primary">{priceLabel(event.price)}</p>
+            {event.priceKnown ? (
+              <p className="text-sm font-bold text-primary">{priceLabel(event.price, event.priceKnown)}</p>
+            ) : event.sourceUrl ? (
+              <a href={event.sourceUrl} target="_blank" rel="noreferrer" className="text-sm font-bold text-primary underline underline-offset-2">
+                Se pris hos arrangören
+              </a>
+            ) : (
+              <p className="text-sm font-bold text-primary">Pris hos arrangören</p>
+            )}
             <p className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Ticket className="h-3 w-3" /> Betalas på plats
+              <Ticket className="h-3 w-3" /> Priset kan variera
             </p>
           </div>
         </div>

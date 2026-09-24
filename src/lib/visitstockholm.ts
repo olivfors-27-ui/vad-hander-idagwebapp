@@ -6,19 +6,6 @@ const MAX_PAGES = 50;
 const MAX_DISTANCE_KM = 25;
 const STOCKHOLM_QUERY = "public:true AND rdfType:http\\://schema.org\\/Event";
 
-const CATEGORY_IMAGES: Record<CategoryId, string> = {
-  musik: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=900&q=82",
-  fest: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=900&q=82",
-  student: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=900&q=82",
-  sport: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=900&q=82",
-  mat: "https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&fit=crop&w=900&q=82",
-  kultur: "https://images.unsplash.com/photo-1577083552431-6e5fd01988a5?auto=format&fit=crop&w=900&q=82",
-  shopping: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=900&q=82",
-  plugg: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=900&q=82",
-  utomhus: "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=900&q=82",
-  ovrigt: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=900&q=82",
-};
-
 type ApiTitle = string | { sv?: string; en?: string };
 type ApiCategory = { slug?: string; title?: string; subcategories?: ApiCategory[] };
 type ApiScheduleDate = { date?: string; start_time?: string | null; end_time?: string | null };
@@ -28,6 +15,11 @@ type VisitStockholmEvent = {
   title?: ApiTitle;
   description?: ApiTitle;
   external_website_url?: string | null;
+  price?: unknown;
+  price_info?: unknown;
+  cost?: unknown;
+  image?: unknown;
+  images?: unknown;
   address?: string | null;
   venue_name?: string | null;
   city?: string | null;
@@ -41,7 +33,11 @@ type VisitStockholmEvent = {
 
 type VisitStockholmResponse = { results?: VisitStockholmEvent[]; total_pages?: number };
 type JsonLdValue = string | { "@id"?: string; "@value"?: string; "@language"?: string } | undefined;
-type JsonLdNode = { "@id"?: string; "@type"?: string | string[]; [key: string]: JsonLdValue | string | string[] | undefined };
+type JsonLdNode = {
+  "@id"?: string;
+  "@type"?: string | string[];
+  [key: string]: unknown;
+};
 type VisitSwedenChild = { metadata?: { "@graph"?: JsonLdNode[] }; entryId?: string };
 type VisitSwedenResponse = { resource?: { children?: VisitSwedenChild[] } };
 
@@ -54,6 +50,25 @@ const textFor = (value: ApiTitle | JsonLdValue | null | undefined) => {
 
 const stripHtml = (value: string) =>
   value.replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/\s+/g, " ").trim();
+
+function parsePrice(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value) && value >= 0) return value;
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return parsePrice(record.price) ?? parsePrice(record["schema:price"]) ?? parsePrice(record.name) ?? parsePrice(record.description);
+  }
+  if (typeof value !== "string") return undefined;
+  const normalized = value.replace(/\s/g, "").replace(",", ".");
+  if (/gratis|free|kostar inget|kostnadsfritt/i.test(normalized)) return 0;
+  const match = normalized.match(/(\d+(?:\.\d+)?)/);
+  return match ? Number(match[1]) : undefined;
+}
+
+function priceFromText(value: string): number | undefined {
+  if (/gratis|free|kostar inget|kostnadsfritt/i.test(value)) return 0;
+  const match = value.match(/(?:från|from|pris|entr[eé]|biljett)?\s*(\d{2,5})\s*(?:kr|sek)/i);
+  return match ? Number(match[1]) : undefined;
+}
 
 const validDate = (value: string | null | undefined) => Boolean(value && /^\d{4}-\d{2}-\d{2}/.test(value));
 const dateOnly = (value: string) => value.slice(0, 10);
@@ -94,9 +109,9 @@ const firstFutureSchedule = (event: VisitStockholmEvent) => {
   return (event.schedule?.dates ?? []).filter((slot) => validDate(slot.date) && (slot.date as string) >= today).sort((a, b) => String(a.date).localeCompare(String(b.date)))[0];
 };
 
-const toEvent = ({ id, title, description, address, venue, date, start, end, lat, lng, url, image, organizerId }: {
+const toEvent = ({ id, title, description, address, venue, date, start, end, lat, lng, url, image, price, organizerId }: {
   id: string; title: string; description: string; address: string; venue: string; date: string; start?: string | null; end?: string | null;
-  lat: number; lng: number; url?: string; image?: string; organizerId: string;
+  lat: number; lng: number; url?: string; image?: string; price?: number; organizerId: string;
 }): EventItem | null => {
   const distance = distanceKm(lat, lng);
   if (!date || distance > MAX_DISTANCE_KM) return null;
@@ -111,9 +126,10 @@ const toEvent = ({ id, title, description, address, venue, date, start, end, lat
     end: end && /^\d{1,2}:\d{2}/.test(end) ? end.slice(0, 5) : addHours(startTime),
     place: venue || "Stockholm",
     address: address || "Stockholm",
-    price: 0,
+    price: price ?? 0,
+    priceKnown: price !== undefined,
     description: description.slice(0, 280),
-    image: image || CATEGORY_IMAGES[category],
+    ...(typeof image === "string" && /^https?:\/\//i.test(image) ? { image } : {}),
     organizerId,
     interested: [],
     visibility: "public",
@@ -156,6 +172,8 @@ async function fetchVisitStockholmSource(signal?: AbortSignal): Promise<EventIte
       lat: event.location.latitude,
       lng: event.location.longitude,
       url: event.external_website_url || undefined,
+      price: parsePrice(event.price) ?? parsePrice(event.price_info) ?? parsePrice(event.cost) ?? priceFromText(stripHtml(textFor(event.description))),
+      image: firstImage(event.image) || firstImage(event.images),
       organizerId: "visit-stockholm",
     });
     return normalized ? [normalized] : [];
@@ -163,6 +181,25 @@ async function fetchVisitStockholmSource(signal?: AbortSignal): Promise<EventIte
 }
 
 const graphValue = (node: JsonLdNode | undefined, key: string) => textFor(node?.[key]);
+
+function firstImage(value: unknown): string | undefined {
+  if (typeof value === "string") return /^https?:\/\//i.test(value) ? value : undefined;
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const image = firstImage(item);
+      if (image) return image;
+    }
+    return undefined;
+  }
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    for (const key of ["url", "contentUrl", "thumbnailUrl", "@id"]) {
+      const image = firstImage(record[key]);
+      if (image) return image;
+    }
+  }
+  return undefined;
+}
 
 function normalizeVisitSwedenChild(child: VisitSwedenChild): EventItem | null {
   const graph = child.metadata?.["@graph"] ?? [];
@@ -180,8 +217,11 @@ function normalizeVisitSwedenChild(child: VisitSwedenChild): EventItem | null {
   const title = graphValue(event, "schema:name") || "Event i Sverige";
   const description = stripHtml(graphValue(event, "schema:description") || graphValue(event, "dcterms:abstract"));
   const address = graphValue(addressNode, "schema:streetAddress") || graphValue(addressNode, "schema:addressLocality") || "Stockholm";
-  const imageValue = event["schema:image"] || event["schema:photo"];
-  const image = typeof imageValue === "object" ? imageValue["@id"] : undefined;
+  const image =
+    firstImage(event["schema:image"]) ||
+    firstImage(event["schema:photo"]) ||
+    firstImage(event["image"]) ||
+    firstImage(event["photo"]);
   return toEvent({
     id: `sweden-${child.entryId || event["@id"] || title}`,
     title,
@@ -193,6 +233,7 @@ function normalizeVisitSwedenChild(child: VisitSwedenChild): EventItem | null {
     lat,
     lng,
     url: graphValue(event, "schema:url") || (typeof event["@id"] === "string" ? event["@id"] : undefined),
+    price: parsePrice(event["schema:price"]) ?? parsePrice(event["schema:offers"]) ?? priceFromText(description),
     image,
     organizerId: "visit-sweden",
   });

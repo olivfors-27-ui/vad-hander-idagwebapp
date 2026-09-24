@@ -167,7 +167,7 @@ function OrganizerEventCard({ event, onEdit }: { event: EventItem; onEdit: () =>
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <CategoryChip category={event.category} />
-            <span className="text-[11px] font-bold">{priceLabel(event.price)}</span>
+            <span className="text-[11px] font-bold">{priceLabel(event.price, event.priceKnown)}</span>
             {event.promoted && <SponsoredBadge />}
           </div>
         </div>

@@ -111,6 +111,8 @@ export type EventItem = {
   place: string;
   address: string;
   price: number; // 0 = gratis
+  /** Om priset faktiskt bekräftats av källan; saknas för äldre lokal data. */
+  priceKnown?: boolean | undefined;
   description: string;
   /** Egen omslagsbild (data-URL eller länk). Saknas den används kategorins gradient. */
   image?: string | undefined;
