@@ -46,6 +46,31 @@ function normalizeImageUrl(value: unknown): string | undefined {
   return undefined;
 }
 
+/** Samla bildnoder ur ett JSON-LD-record – följt @id-referenser mot @graph. */
+function collectImages(record: Record<string, unknown>, graphIndex: Map<string, Record<string, unknown>>): string[] {
+  const images: string[] = [];
+  const queue: unknown[] = [record.image, record.photo, record.thumbnailUrl];
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (typeof current === "string") {
+      // @id-referens till en annan nod i grafen (t.ex. ImageObject)
+      const referenced = graphIndex.get(current);
+      if (referenced) {
+        queue.push(referenced.url, referenced.contentUrl, referenced["@id"]);
+        continue;
+      }
+      const found = normalizeImageUrl(current);
+      if (found) images.push(found);
+    } else if (Array.isArray(current)) {
+      queue.push(...current);
+    } else if (current && typeof current === "object") {
+      const nested = current as Record<string, unknown>;
+      queue.push(nested.url, nested.contentUrl, nested["@id"]);
+    }
+  }
+  return images;
+}
+
 /** Leta JSON-LD-block och plocka Event-bilder (inkl. offers-baserade sidor). */
 function imagesFromJsonLd(html: string): string[] {
   const images: string[] = [];
@@ -58,21 +83,20 @@ function imagesFromJsonLd(html: string): string[] {
       for (const node of nodes) {
         if (!node || typeof node !== "object") continue;
         const record = node as Record<string, unknown>;
-        for (const key of ["image", "photo", "thumbnailUrl"]) {
-          const found = normalizeImageUrl(record[key]);
-          if (found) images.push(found);
+        const graph = Array.isArray(record["@graph"]) ? (record["@graph"] as Record<string, unknown>[]) : [];
+        // Index för @id-referenser (yoast/wpseo-grafer refererar ImageObject via @id)
+        const graphIndex = new Map<string, Record<string, unknown>>();
+        for (const child of graph) {
+          if (!child || typeof child !== "object") continue;
+          const id = child["@id"];
+          if (typeof id === "string") graphIndex.set(id, child);
         }
-        const graph = record["@graph"];
-        if (Array.isArray(graph)) {
-          for (const child of graph) {
-            if (!child || typeof child !== "object") continue;
-            const childRecord = child as Record<string, unknown>;
-            if (!String(childRecord["@type"] ?? "").includes("Event")) continue;
-            for (const key of ["image", "photo", "thumbnailUrl"]) {
-              const found = normalizeImageUrl(childRecord[key]);
-              if (found) images.push(found);
-            }
-          }
+        images.push(...collectImages(record, graphIndex));
+        for (const child of graph) {
+          if (!child || typeof child !== "object") continue;
+          const childRecord = child as Record<string, unknown>;
+          if (!String(childRecord["@type"] ?? "").includes("Event")) continue;
+          images.push(...collectImages(childRecord, graphIndex));
         }
       }
     } catch {
