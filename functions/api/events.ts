@@ -34,11 +34,15 @@ function json(data: unknown, status = 200, extraHeaders: Record<string, string> 
 
 export const onRequestGet: PagesFunction<Env> = async ({ request }) => {
   const day = new Date().toISOString().slice(0, 10);
-  // Cache-nyckeln hostas på ett internt hostname – den kan aldrig krocka med riktiga URL:er.
-  const cacheKey = new Request(`https://events-cache.hander.internal/?day=${day}&v=${CACHE_STAMP}`, { method: "GET" });
+  // Cache-nyckel: den inkommande URL:en + dagens datum. Nyckeln byts vid midnatt,
+  // så cachen förnyas automatiskt – och CACHE_STAMP ogiltigförklarar vid kodändring.
+  const cacheKey = new URL(request.url);
+  cacheKey.searchParams.set("day", day);
+  cacheKey.searchParams.set("v", CACHE_STAMP);
+  const cacheRequest = new Request(cacheKey.toString(), { method: "GET" });
   const cache = caches.default;
 
-  const cached = await cache.match(cacheKey);
+  const cached = await cache.match(cacheRequest);
   if (cached) {
     return new Response(cached.body, { status: cached.status, headers: { ...cached.headers, "x-hander-cache": "hit" } });
   }
@@ -59,7 +63,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request }) => {
     );
     const cacheResponse = body.clone();
     // fire-and-forget cache-skrivning; svaret till användaren väntar inte på det
-    void cache.put(cacheKey, cacheResponse).catch(() => undefined);
+    void cache.put(cacheRequest, cacheResponse).catch(() => undefined);
     return new Response(body.body, { status: 200, headers: { ...body.headers, "x-hander-cache": "miss" } });
   } catch (error) {
     const reason = error instanceof Error ? error.message : "okänt fel";
