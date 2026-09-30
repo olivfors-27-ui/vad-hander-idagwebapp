@@ -2,7 +2,9 @@ import { MAP_CENTER, type CategoryId, type EventItem } from "./hander-data";
 
 const VISIT_STOCKHOLM_URL = "https://api.visitstockholm.com/api/public-v1/events/";
 const VISIT_SWEDEN_URL = "https://data.visitsweden.com/store/search";
+/** Standardgräns: 50 sidor. Pages Function-kopian kör med lägre gräns (Cloudflare subrequest-tak på 50/anrop). */
 const MAX_PAGES = 50;
+export type FetchEventsOptions = { maxPages?: number };
 const MAX_DISTANCE_KM = 25;
 const STOCKHOLM_QUERY = "public:true AND rdfType:http\\://schema.org\\/Event";
 
@@ -149,9 +151,9 @@ const fetchJson = async <T,>(url: string, signal?: AbortSignal) => {
 
 const fetchVisitStockholmPage = (page: number, signal?: AbortSignal) => fetchJson<VisitStockholmResponse>(`${VISIT_STOCKHOLM_URL}?page=${page}`, signal);
 
-async function fetchVisitStockholmSource(signal?: AbortSignal): Promise<EventItem[]> {
+async function fetchVisitStockholmSource(signal?: AbortSignal, maxPages = MAX_PAGES): Promise<EventItem[]> {
   const firstPage = await fetchVisitStockholmPage(1, signal);
-  const pageCount = Math.min(Math.max(firstPage.total_pages ?? 1, 1), MAX_PAGES);
+  const pageCount = Math.min(Math.max(firstPage.total_pages ?? 1, 1), maxPages);
   const pages: VisitStockholmResponse[] = [firstPage];
   for (let start = 2; start <= pageCount; start += 6) {
     pages.push(...await Promise.all(Array.from({ length: Math.min(6, pageCount - start + 1) }, (_, index) => fetchVisitStockholmPage(start + index, signal))));
@@ -252,8 +254,12 @@ async function fetchVisitSwedenEvents(signal?: AbortSignal): Promise<EventItem[]
   return events;
 }
 
-export async function fetchVisitStockholmEvents(signal?: AbortSignal): Promise<EventItem[]> {
-  const results = await Promise.allSettled([fetchVisitStockholmSource(signal), fetchVisitSwedenEvents(signal)]);
+export async function fetchVisitStockholmEvents(signal?: AbortSignal, options?: FetchEventsOptions): Promise<EventItem[]> {
+  const maxPages = options?.maxPages;
+  const results = await Promise.allSettled([
+    maxPages === undefined ? fetchVisitStockholmSource(signal) : fetchVisitStockholmSource(signal, maxPages),
+    fetchVisitSwedenEvents(signal),
+  ]);
   const all = results.flatMap((result) => result.status === "fulfilled" ? result.value : []);
   const seen = new Set<string>();
   return all.filter((event) => {
@@ -262,6 +268,25 @@ export async function fetchVisitStockholmEvents(signal?: AbortSignal): Promise<E
     seen.add(key);
     return true;
   });
+}
+
+/**
+ * Hämtar events via den delade dags-cachen (/api/events, Pages Function) när den
+ * finns – ett enda anrop istället för ~50 per besökare, en gemensam kopia för
+ * alla besökare per dag. Faller tillbaka på direkta anrop när funktionen
+ * saknas (lokal vite-dev) eller svarar utan data.
+ */
+export async function fetchEventsWithCache(signal?: AbortSignal): Promise<EventItem[]> {
+  try {
+    const response = await fetch("/api/events", { signal: signal ?? null });
+    if (response.ok) {
+      const payload = (await response.json()) as { events?: EventItem[] };
+      if (Array.isArray(payload.events) && payload.events.length > 0) return payload.events;
+    }
+  } catch {
+    /* funktionen saknas eller nere – kör direkta anrop som vanligt */
+  }
+  return fetchVisitStockholmEvents(signal);
 }
 
 export const VISIT_STOCKHOLM_API_URL = VISIT_STOCKHOLM_URL;

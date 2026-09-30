@@ -26,7 +26,8 @@ import {
   baseStats,
 } from "./hander-data";
 import { DEMO_PLAN_GRADIENT, DEMO_PLAN_NOTE, uid, type Plan, type PlanReply } from "./hander-plans";
-import { fetchVisitStockholmEvents } from "./visitstockholm";
+import { fetchEventsWithCache } from "./visitstockholm";
+import { watchAccount, type Account } from "./auth";
 import {
   fetchPlans,
   insertPlan,
@@ -150,7 +151,7 @@ function useStoreValue() {
   useEffect(() => {
     const controller = new AbortController();
     setApiLoading(true);
-    fetchVisitStockholmEvents(controller.signal)
+    fetchEventsWithCache(controller.signal)
       .then((events) => {
         setApiEvents(events);
         setApiError(null);
@@ -182,6 +183,12 @@ function useStoreValue() {
     });
   }, [refreshPlans]);
 
+
+  // Inloggning: håll reda på kontot och använd dess id som "me"-identitet.
+  // Utan konto (eller utan Supabase-konfig) faller allt tillbaka på demo-identiteten.
+  const [account, setAccount] = useState<Account | null>(null);
+  useEffect(() => watchAccount(setAccount), []);
+  const me = account?.id ?? ME;
 
   const patch = useCallback((p: Partial<Persisted>) => setState((s) => ({ ...s, ...p })), []);
 
@@ -409,7 +416,7 @@ function useStoreValue() {
       state.events.filter(
         (e) =>
           e.visibility === "private" &&
-          (e.organizerId === ME || (e.invites ?? []).some((i) => i.userId === ME)),
+          (e.organizerId === me || (e.invites ?? []).some((i) => i.userId === me)),
       ),
     [state.events],
   );
@@ -430,7 +437,7 @@ function useStoreValue() {
     const dynamic: Notification[] = [];
 
     for (const plan of state.plans) {
-      const mine = plan.createdBy === ME || plan.createdBy.toLowerCase() === "du";
+      const mine = plan.createdBy === me || plan.createdBy === ME || plan.createdBy.toLowerCase() === "du";
       if (mine && plan.replies.length > 0) {
         const last = plan.replies[plan.replies.length - 1];
         dynamic.push({
@@ -474,6 +481,8 @@ function useStoreValue() {
     ...state,
     hydrated,
     patch,
+    account,
+    me,
     events: [...state.events, ...apiEvents],
     publicEvents,
     myPrivateEvents,
@@ -487,7 +496,7 @@ function useStoreValue() {
     toggleSavedPlace,
     toggleInterested,
     toggleFollow,
-    addEvent,
+    addEvent: (e: EventItem) => addEvent({ ...e, organizerId: me }),
     updateEvent,
     setStatus,
     setInviteStatus,

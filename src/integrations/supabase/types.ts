@@ -24,6 +24,7 @@ export type Database = {
           option_ids: Json
           plan_id: string
           slot_ids: Json
+          user_id: string | null
         }
         Insert: {
           answers?: Json
@@ -34,6 +35,7 @@ export type Database = {
           option_ids?: Json
           plan_id: string
           slot_ids?: Json
+          user_id?: string | null
         }
         Update: {
           answers?: Json
@@ -44,6 +46,7 @@ export type Database = {
           option_ids?: Json
           plan_id?: string
           slot_ids?: Json
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -54,6 +57,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      profiles: {
+        Row: {
+          avatar_emoji: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_emoji?: string
+          created_at?: string
+          id: string
+          name?: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_emoji?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       plans: {
         Row: {

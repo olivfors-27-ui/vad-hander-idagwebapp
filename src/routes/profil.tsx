@@ -5,6 +5,7 @@ import { AppShell } from "@/components/hander/AppShell";
 import { Avatar, EventRow } from "@/components/hander/EventBits";
 import { ME, USERS, userById } from "@/lib/hander-data";
 import { hasEnded, useHander } from "@/lib/hander-store";
+import { signOut } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/profil")({
@@ -25,27 +26,55 @@ function ProfilePage() {
   const [tab, setTab] = useState<"kommande" | "mina">("kommande");
 
   // Kommande = event jag följer (intresserad av), Mina event = event jag organiserar.
+  const meId = store.me;
   const upcoming = store.events.filter(
-    (e) => !hasEnded(e) && (store.interested.includes(e.id) || e.interested.includes(ME)),
+    (e) => !hasEnded(e) && (store.interested.includes(e.id) || e.interested.includes(meId)),
   );
-  const mine = store.events.filter((e) => e.organizerId === ME);
+  // Inloggade ser sina riktiga event (organizerId = användar-id); fallback till
+  // ME fångar demo-event skapade före kontosystemet.
+  const mine = store.events.filter((e) => e.organizerId === meId || e.organizerId === ME);
   const followingUsers = USERS.filter((u) => store.following.includes(u.id));
 
   return (
     <AppShell title="Profil" subtitle={`${store.following.length} du följer · ${me.followers} följare`}>
       <div className="space-y-5 p-4">
-        <div className="flex items-center gap-4">
-          <Avatar user={me} size={64} />
-          <div className="flex-1">
-            <h2 className="font-display text-lg font-bold">{me.name}</h2>
-            <p className="text-xs text-muted-foreground">{me.username}</p>
-            <p className="mt-1 text-xs">
-              <span className="font-bold">{me.followers}</span> följare ·{" "}
-              <span className="font-bold">{store.following.length}</span> följer
-            </p>
+        {store.account ? (
+          <div className="flex items-center gap-4">
+            <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-accent text-4xl">
+              {store.account.avatarEmoji}
+            </div>
+            <div className="flex-1">
+              <h2 className="font-display text-lg font-bold">{store.account.name}</h2>
+              <p className="text-xs text-muted-foreground">{store.account.email}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void signOut()}
+              className="rounded-xl border border-border px-3 py-2 text-[11px] font-bold text-muted-foreground"
+            >
+              Logga ut
+            </button>
           </div>
-        </div>
-        <p className="text-sm text-muted-foreground">{me.bio}</p>
+        ) : (
+          <div className="flex items-center gap-4">
+            <Avatar user={me} size={64} />
+            <div className="flex-1">
+              <h2 className="font-display text-lg font-bold">{me.name}</h2>
+              <p className="text-xs text-muted-foreground">{me.username}</p>
+              <p className="mt-1 text-xs">
+                <span className="font-bold">{me.followers}</span> följare ·{" "}
+                <span className="font-bold">{store.following.length}</span> följer
+              </p>
+            </div>
+            <Link
+              to="/loggain"
+              className="rounded-xl bg-primary px-3 py-2 text-[11px] font-bold text-primary-foreground shadow-[var(--shadow-pin)]"
+            >
+              Logga in
+            </Link>
+          </div>
+        )}
+        {!store.account && <p className="text-sm text-muted-foreground">{me.bio}</p>}
 
         <div className="grid grid-cols-2 gap-2">
           <Link

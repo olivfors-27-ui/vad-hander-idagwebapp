@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/hander/AppShell";
 import {
   CATEGORY_GRADIENT,
-  ME,
   PLACES,
   PLACE_TYPES,
   TODAY,
@@ -163,7 +162,7 @@ function CreatePlanPage() {
     }
     const plan = createPlan({
       title: finalTitle,
-      createdBy: ME,
+      createdBy: store.me,
       note: note.trim(),
       place: place.trim(),
       emoji,

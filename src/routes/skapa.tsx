@@ -8,7 +8,6 @@ import { distanceFromHome, type GeoHit } from "@/lib/geocode";
 import {
   CATEGORIES,
   CATEGORY_GRADIENT,
-  ME,
   TODAY,
   type CategoryId,
   type EventItem,
@@ -46,7 +45,7 @@ const DIVIDER_COLORS = {
 } as const;
 
 function CreatePage() {
-  const { addEvent } = useHander();
+  const { addEvent, me } = useHander();
   const [visibility, setVisibility] = useState<"public" | "private">("private");
   const [name, setName] = useState("");
   const [category, setCategory] = useState<CategoryId>("fest");
@@ -85,7 +84,7 @@ function CreatePage() {
       price: Number(price) || 0,
       description: description.trim(),
       image: image ?? undefined,
-      organizerId: ME,
+      organizerId: me,
       interested: [],
       visibility,
       status: visibility === "public" ? "pending" : "approved",

@@ -15,6 +15,7 @@ import { Route as ArrangorRouteImport } from './routes/arrangor'
 import { Route as FoljerRouteImport } from './routes/foljer'
 import { Route as ForeslaPlatsRouteImport } from './routes/foresla-plats'
 import { Route as KartaRouteImport } from './routes/karta'
+import { Route as LoggainRouteImport } from './routes/loggain'
 import { Route as NotiserRouteImport } from './routes/notiser'
 import { Route as OverraskaRouteImport } from './routes/overraska'
 import { Route as PlanerRouteImport } from './routes/planer'
@@ -25,6 +26,7 @@ import { Route as SokRouteImport } from './routes/sok'
 import { Route as SparatRouteImport } from './routes/sparat'
 import { Route as VannerRouteImport } from './routes/vanner'
 import { Route as AnvandareUsernameRouteImport } from './routes/anvandare.$username'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as EventIdRouteImport } from './routes/event.$id'
 import { Route as JoinCodeRouteImport } from './routes/join.$code'
 import { Route as PCodeRouteImport } from './routes/p.$code'
@@ -60,6 +62,11 @@ const ForeslaPlatsRoute = ForeslaPlatsRouteImport.update({
 const KartaRoute = KartaRouteImport.update({
   id: '/karta',
   path: '/karta',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoggainRoute = LoggainRouteImport.update({
+  id: '/loggain',
+  path: '/loggain',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NotiserRoute = NotiserRouteImport.update({
@@ -112,6 +119,11 @@ const AnvandareUsernameRoute = AnvandareUsernameRouteImport.update({
   path: '/anvandare/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EventIdRoute = EventIdRouteImport.update({
   id: '/event/$id',
   path: '/event/$id',
@@ -150,6 +162,7 @@ export interface FileRoutesByFullPath {
   '/foljer': typeof FoljerRoute
   '/foresla-plats': typeof ForeslaPlatsRoute
   '/karta': typeof KartaRoute
+  '/loggain': typeof LoggainRoute
   '/notiser': typeof NotiserRoute
   '/overraska': typeof OverraskaRoute
   '/planer': typeof PlanerRoute
@@ -160,6 +173,7 @@ export interface FileRoutesByFullPath {
   '/sparat': typeof SparatRoute
   '/vanner': typeof VannerRoute
   '/anvandare/$username': typeof AnvandareUsernameRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/event/$id': typeof EventIdRouteWithChildren
   '/join/$code': typeof JoinCodeRoute
   '/p/$code': typeof PCodeRoute
@@ -174,6 +188,7 @@ export interface FileRoutesByTo {
   '/foljer': typeof FoljerRoute
   '/foresla-plats': typeof ForeslaPlatsRoute
   '/karta': typeof KartaRoute
+  '/loggain': typeof LoggainRoute
   '/notiser': typeof NotiserRoute
   '/overraska': typeof OverraskaRoute
   '/planer': typeof PlanerRoute
@@ -184,6 +199,7 @@ export interface FileRoutesByTo {
   '/sparat': typeof SparatRoute
   '/vanner': typeof VannerRoute
   '/anvandare/$username': typeof AnvandareUsernameRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/event/$id': typeof EventIdRouteWithChildren
   '/join/$code': typeof JoinCodeRoute
   '/p/$code': typeof PCodeRoute
@@ -199,6 +215,7 @@ export interface FileRoutesById {
   '/foljer': typeof FoljerRoute
   '/foresla-plats': typeof ForeslaPlatsRoute
   '/karta': typeof KartaRoute
+  '/loggain': typeof LoggainRoute
   '/notiser': typeof NotiserRoute
   '/overraska': typeof OverraskaRoute
   '/planer': typeof PlanerRoute
@@ -209,6 +226,7 @@ export interface FileRoutesById {
   '/sparat': typeof SparatRoute
   '/vanner': typeof VannerRoute
   '/anvandare/$username': typeof AnvandareUsernameRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/event/$id': typeof EventIdRouteWithChildren
   '/join/$code': typeof JoinCodeRoute
   '/p/$code': typeof PCodeRoute
@@ -225,6 +243,7 @@ export interface FileRouteTypes {
     | '/foljer'
     | '/foresla-plats'
     | '/karta'
+    | '/loggain'
     | '/notiser'
     | '/overraska'
     | '/planer'
@@ -235,6 +254,7 @@ export interface FileRouteTypes {
     | '/sparat'
     | '/vanner'
     | '/anvandare/$username'
+    | '/auth/callback'
     | '/event/$id'
     | '/join/$code'
     | '/p/$code'
@@ -249,6 +269,7 @@ export interface FileRouteTypes {
     | '/foljer'
     | '/foresla-plats'
     | '/karta'
+    | '/loggain'
     | '/notiser'
     | '/overraska'
     | '/planer'
@@ -259,6 +280,7 @@ export interface FileRouteTypes {
     | '/sparat'
     | '/vanner'
     | '/anvandare/$username'
+    | '/auth/callback'
     | '/event/$id'
     | '/join/$code'
     | '/p/$code'
@@ -273,6 +295,7 @@ export interface FileRouteTypes {
     | '/foljer'
     | '/foresla-plats'
     | '/karta'
+    | '/loggain'
     | '/notiser'
     | '/overraska'
     | '/planer'
@@ -283,6 +306,7 @@ export interface FileRouteTypes {
     | '/sparat'
     | '/vanner'
     | '/anvandare/$username'
+    | '/auth/callback'
     | '/event/$id'
     | '/join/$code'
     | '/p/$code'
@@ -298,6 +322,7 @@ export interface RootRouteChildren {
   FoljerRoute: typeof FoljerRoute
   ForeslaPlatsRoute: typeof ForeslaPlatsRoute
   KartaRoute: typeof KartaRoute
+  LoggainRoute: typeof LoggainRoute
   NotiserRoute: typeof NotiserRoute
   OverraskaRoute: typeof OverraskaRoute
   PlanerRoute: typeof PlanerRoute
@@ -308,6 +333,7 @@ export interface RootRouteChildren {
   SparatRoute: typeof SparatRoute
   VannerRoute: typeof VannerRoute
   AnvandareUsernameRoute: typeof AnvandareUsernameRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
   EventIdRoute: typeof EventIdRouteWithChildren
   JoinCodeRoute: typeof JoinCodeRoute
   PCodeRoute: typeof PCodeRoute
@@ -357,6 +383,13 @@ declare module '@tanstack/react-router' {
       path: '/karta'
       fullPath: '/karta'
       preLoaderRoute: typeof KartaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/loggain': {
+      id: '/loggain'
+      path: '/loggain'
+      fullPath: '/loggain'
+      preLoaderRoute: typeof LoggainRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/notiser': {
@@ -429,6 +462,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnvandareUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/event/$id': {
       id: '/event/$id'
       path: '/event/$id'
@@ -492,6 +532,7 @@ const rootRouteChildren: RootRouteChildren = {
   FoljerRoute: FoljerRoute,
   ForeslaPlatsRoute: ForeslaPlatsRoute,
   KartaRoute: KartaRoute,
+  LoggainRoute: LoggainRoute,
   NotiserRoute: NotiserRoute,
   OverraskaRoute: OverraskaRoute,
   PlanerRoute: PlanerRoute,
@@ -502,6 +543,7 @@ const rootRouteChildren: RootRouteChildren = {
   SparatRoute: SparatRoute,
   VannerRoute: VannerRoute,
   AnvandareUsernameRoute: AnvandareUsernameRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
   EventIdRoute: EventIdRouteWithChildren,
   JoinCodeRoute: JoinCodeRoute,
   PCodeRoute: PCodeRoute,
