@@ -272,21 +272,52 @@ export async function fetchVisitStockholmEvents(signal?: AbortSignal, options?: 
 
 /**
  * Hämtar events via den delade dags-cachen (/api/events, Pages Function) när den
- * finns – ett enda anrop istället för ~50 per besökare, en gemensam kopia för
- * alla besökare per dag. Faller tillbaka på direkta anrop när funktionen
- * saknas (lokal vite-dev) eller svarar utan data.
+ * finns – ett enda anrop istället för ~50 per besökare. Sparar dessutom resultatet
+ * i webbläsaren under resten av dagen (localStorage), så återbesök samma dag
+ * gör noll nätverksanrop. Faller tillbaka på direkta anrop när funktionen
+ * saknas (lokal vite-dev) eller svarar tomt.
  */
+const BROWSER_CACHE_KEY = "hander-events-cache-v1";
+const todayUtc = () => new Date().toISOString().slice(0, 10);
+
+function readBrowserDayCache(): EventItem[] | null {
+  try {
+    const raw = localStorage.getItem(BROWSER_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { day?: string; events?: EventItem[] };
+    if (parsed.day !== todayUtc() || !Array.isArray(parsed.events) || parsed.events.length === 0) return null;
+    return parsed.events;
+  } catch {
+    return null;
+  }
+}
+
+function writeBrowserDayCache(events: EventItem[]): void {
+  try {
+    localStorage.setItem(BROWSER_CACHE_KEY, JSON.stringify({ day: todayUtc(), events }));
+  } catch {
+    /* lagringskvot eller privat läge – hoppa över */
+  }
+}
+
 export async function fetchEventsWithCache(signal?: AbortSignal): Promise<EventItem[]> {
+  const fromBrowser = readBrowserDayCache();
+  if (fromBrowser) return fromBrowser;
   try {
     const response = await fetch("/api/events", { signal: signal ?? null });
     if (response.ok) {
       const payload = (await response.json()) as { events?: EventItem[] };
-      if (Array.isArray(payload.events) && payload.events.length > 0) return payload.events;
+      if (Array.isArray(payload.events) && payload.events.length > 0) {
+        writeBrowserDayCache(payload.events);
+        return payload.events;
+      }
     }
   } catch {
     /* funktionen saknas eller nere – kör direkta anrop som vanligt */
   }
-  return fetchVisitStockholmEvents(signal);
+  const direct = await fetchVisitStockholmEvents(signal);
+  if (direct.length > 0) writeBrowserDayCache(direct);
+  return direct;
 }
 
 export const VISIT_STOCKHOLM_API_URL = VISIT_STOCKHOLM_URL;
