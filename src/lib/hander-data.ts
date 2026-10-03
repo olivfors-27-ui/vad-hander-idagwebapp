@@ -181,156 +181,29 @@ export function weekendDates(): string[] {
   return out.slice(0, 2);
 }
 
-export const USERS: User[] = [
-  {
-    id: "demoeventkompis1",
-    name: "Demoeventkompis 1",
-    username: "@demoeventkompis1",
-    bio: "Testkompis som skickar demoevent.",
-    avatar: "🎈",
-    color: "#E57657",
-    followers: 12,
-    following: 3,
-  },
-  {
-    id: "u1",
-    name: "Du",
-    username: "@dumig",
-    bio: "Pluggar i Lindstad. Alltid sugen på något som händer.",
-    avatar: "🙂",
-    color: "#E57657",
-    followers: 128,
-    following: 96,
-  },
-  {
-    id: "u2",
-    name: "Emma Lindqvist",
-    username: "@emmalind",
-    bio: "Ekonom, kaffeberoende, arrangerar förfester.",
-    avatar: "🦊",
-    color: "#E7A057",
-    followers: 842,
-    following: 311,
-  },
-  {
-    id: "u3",
-    name: "Lucas Berg",
-    username: "@lucasb",
-    bio: "Basket & grillfester 🏀",
-    avatar: "🐻",
-    color: "#627BD8",
-    followers: 431,
-    following: 208,
-  },
-  {
-    id: "u4",
-    name: "Nora Åkesson",
-    username: "@noraa",
-    bio: "Konst, poesi och långa promenader.",
-    avatar: "🐧",
-    color: "#EAB24F",
-    followers: 1290,
-    following: 140,
-  },
-  {
-    id: "u5",
-    name: "Ali Hassan",
-    username: "@alih",
-    bio: "DJ på fritiden. Musik > allt.",
-    avatar: "🎧",
-    color: "#465BC4",
-    followers: 2100,
-    following: 402,
-  },
-  {
-    id: "u6",
-    name: "Saga Nyström",
-    username: "@sagan",
-    bio: "Studentkåren. Fixar kårkvällar.",
-    avatar: "🐝",
-    color: "#E57657",
-    followers: 610,
-    following: 187,
-  },
-  {
-    id: "u7",
-    name: "Campus Events",
-    username: "@campusevents",
-    bio: "Officiella eventarrangören på Lindstads universitet.",
-    avatar: "🎪",
-    color: "#E45048",
-    followers: 234,
-    following: 12,
-    organizer: true,
-    verified: true,
-  },
-  {
-    id: "u8",
-    name: "Kulturhuset Vågen",
-    username: "@vagen",
-    bio: "Scen, konst och klubb mitt i stan.",
-    avatar: "🌊",
-    color: "#465BC4",
-    followers: 1875,
-    following: 44,
-    organizer: true,
-    verified: true,
-  },
-];
+/** Ingen demodata: en ny användare börjar helt tomt. Kontakter skapas via riktiga konton. */
+export const USERS: User[] = [];
 
-export const userById = (id: string): User => USERS.find((u) => u.id === id) ?? (USERS[0] as User);
-export const ME = "u1";
-/** Personer som "du" följer från start. */
-export const INITIAL_FOLLOWING = ["u2", "u3", "u5", "u7"];
-
-const ME_USER_ID = "u1";
-
-/** Inbjudan via länk i demon – visar hur inbjudna event ser ut för en gäst. */
-const DEMO_INVITED_EVENT: EventItem = {
-  id: "demoevent-1",
-  name: "Demoevent 1",
-  category: "fest",
-  date: TODAY,
-  start: "19:00",
-  end: "23:00",
-  place: "Demoeventplatsen",
-  address: "Demovägen 1, Stockholm",
-  price: 0,
-  description: "Ett demoevent du är inbjuden till via länk.",
-  image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=900&q=82",
-  organizerId: "demoeventkompis1",
-  interested: ["u2", "u5"],
-  visibility: "private",
-  status: "approved",
-  inviteCode: "DEMOEV1",
-  invites: [{ userId: ME_USER_ID, status: "invited" }],
-  distance: 1.4,
+const UNKNOWN_USER: User = {
+  id: "unknown",
+  name: "Okänd användare",
+  username: "@okand",
+  bio: "",
+  avatar: "👤",
+  color: "#8C7A6B",
+  followers: 0,
+  following: 0,
 };
 
-/** Ett litet lokalt exempel så att Mina event och Inbjudna events aldrig känns tomma i testläget. */
-export const EVENTS: EventItem[] = [
-  DEMO_INVITED_EVENT,
-  {
-    id: "demo-mysig-kvall",
-    name: "Mysig kväll vid vattnet",
-    category: "utomhus",
-    date: TODAY,
-    start: "18:30",
-    end: "21:00",
-    place: "Mysig kväll vid vattnet",
-    address: "Norr Mälarstrand, Stockholm",
-    price: 0,
-    description: "Ett enkelt exempel-event för att testa hur egna event visas i appen.",
-    image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=82",
-    organizerId: "u1",
-    interested: ["u2", "u3"],
-    visibility: "public",
-    status: "approved",
-    lat: 59.3298,
-    lng: 18.0353,
-    distance: 2.1,
-  },
-];
+/** Slå upp användare; okända id:n (t.ex. riktiga konton) får en neutral fallback. */
+export const userById = (id: string): User =>
+  USERS.find((u) => u.id === id) ?? (id ? { ...UNKNOWN_USER, id } : UNKNOWN_USER);
+export const ME = "me";
+/** Ingen följs från start. */
+export const INITIAL_FOLLOWING: string[] = [];
+
+/** Ingen demodata: events skapas av riktiga användare eller hämtas från riktiga källor. */
+export const EVENTS: EventItem[] = [];
 
 /** Inga demoplatser. Platser läggs till via förslag med riktig adress. */
 export const PLACES: Place[] = [];
@@ -360,29 +233,8 @@ export type Notification = {
   eventId?: string | undefined;
 };
 
-export const NOTIFICATIONS: Notification[] = [
-  {
-    id: "n2",
-    kind: "follow",
-    text: "Emma skapade ett nytt event: Mysig kväll vid vattnet.",
-    time: "1 tim sedan",
-    eventId: "demo-mysig-kvall",
-  },
-  {
-    id: "n4",
-    kind: "reminder",
-    text: "⏰ Mysig kväll vid vattnet börjar 18:30 idag.",
-    time: "3 tim sedan",
-    eventId: "demo-mysig-kvall",
-  },
-  {
-    id: "n5",
-    kind: "social",
-    text: "🎉 5 personer du följer är intresserade av Mysig kväll vid vattnet.",
-    time: "igår",
-    eventId: "demo-mysig-kvall",
-  },
-];
+/** Ingen mockad notisdata. */
+export const NOTIFICATIONS: Notification[] = [];
 
 export type FeedItem = {
   id: string;
@@ -392,14 +244,8 @@ export type FeedItem = {
   eventId?: string | undefined;
 };
 
-export const FEED: FeedItem[] = [
-  { id: "f1", userId: "u2", text: "Emma skapade ett event", time: "35 min", eventId: "e20" },
-  { id: "f2", userId: "u3", text: "Lucas är intresserad av Studentpub", time: "1 tim", eventId: "e2" },
-  { id: "f3", text: "3 personer du följer är intresserade av Live på Campus", time: "2 tim", eventId: "e1" },
-  { id: "f4", userId: "u5", text: "Ali spelar på Studentfest på Vågen", time: "4 tim", eventId: "e3" },
-  { id: "f5", userId: "u7", text: "Campus Events skapade ett event", time: "igår", eventId: "e18" },
-  { id: "f6", text: "4 personer du följer sparade Foodtruck-festival", time: "igår", eventId: "e7" },
-];
+/** Ingen mockad flödesdata. */
+export const FEED: FeedItem[] = [];
 
 /** Solid färg per kategori – används bl.a. för kartpins. */
 export const CATEGORY_COLOR: Record<CategoryId, string> = {

@@ -3,7 +3,7 @@ import { Check, Lock, MapPin, Users } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/hander/AppShell";
 import { Avatar, EventCover } from "@/components/hander/EventBits";
-import { ME, userById, type InviteStatus } from "@/lib/hander-data";
+import { userById, type InviteStatus } from "@/lib/hander-data";
 import { formatDay, useHander } from "@/lib/hander-store";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +39,7 @@ function JoinPage() {
 
   const host = userById(event.organizerId);
   const invites = event.invites ?? [];
-  const myStatus = invites.find((i) => i.userId === ME)?.status;
+  const myStatus = invites.find((i) => i.userId === store.me)?.status;
   const going = invites.filter((i) => i.status === "accepted");
 
   return (
@@ -78,17 +78,18 @@ function JoinPage() {
           </p>
         )}
 
-        <div className="flex gap-2">
-          {([
-            ["accepted", "Kommer", "#3E9B5F", "rgba(62,155,95,.35)", "#EAF6EE"],
-            ["maybe", "Kanske", "#D9A13B", "rgba(217,161,59,.4)", "#FBF3E2"],
-            ["declined", "Kan inte", "#D9534F", "rgba(217,83,79,.35)", "#FBECEB"],
-          ] as const).map(([s, lbl, tone, shadow, soft]) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => {
-                store.setInviteStatus(event.id, ME, s);
+        {store.account ? (
+          <div className="flex gap-2">
+            {([
+              ["accepted", "Kommer", "#3E9B5F", "rgba(62,155,95,.35)", "#EAF6EE"],
+              ["maybe", "Kanske", "#D9A13B", "rgba(217,161,59,.4)", "#FBF3E2"],
+              ["declined", "Kan inte", "#D9534F", "rgba(217,83,79,.35)", "#FBECEB"],
+            ] as const).map(([s, lbl, tone, shadow, soft]) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => {
+                  store.setInviteStatus(event.id, store.me, s);
                 toast.success(
                   s === "accepted" ? "Du kommer!" : s === "maybe" ? "Svarat kanske" : "Du tackade nej",
                 );
@@ -108,8 +109,16 @@ function JoinPage() {
               {myStatus === s && <Check className="h-3.5 w-3.5" />}
               {lbl}
             </button>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <Link
+            to="/loggain"
+            className="flex items-center justify-center gap-2 rounded-2xl bg-[#627BD8] px-4 py-3.5 text-center text-sm font-bold text-[#FFFDF9] shadow-[0_3px_0_rgba(68,88,197,.3)] active:translate-y-[2px]"
+          >
+            Logga in för att svara
+          </Link>
+        )}
 
         <Link
           to="/privat/$id"

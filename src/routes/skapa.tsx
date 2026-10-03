@@ -13,6 +13,7 @@ import {
   type EventItem,
 } from "@/lib/hander-data";
 import { useHander } from "@/lib/hander-store";
+import { appUrl } from "@/lib/app-url";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/skapa")({
@@ -105,7 +106,7 @@ function CreatePage() {
   };
 
   if (created) {
-    const link = `HANDER.APP/JOIN/${created.inviteCode ?? ""}`;
+    const link = appUrl(`/join/${created.inviteCode ?? ""}`);
     return (
       <AppShell title="Klart!">
         <div className="space-y-5 p-4">

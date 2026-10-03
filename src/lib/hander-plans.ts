@@ -1,12 +1,7 @@
 // Planer: kärnflödet "hitta något → skapa plan → dela → kompisar svarar → bestäm".
 import { CATEGORY_GRADIENT, PLACE_TYPES, TODAY, TOMORROW, formatShortDay } from "./hander-data";
 import type { EventItem, Place } from "./hander-data";
-
-/** Demo-inbjudans omslag använder hela den varma Händer-paletten. */
-export const DEMO_PLAN_GRADIENT =
-  "linear-gradient(135deg, #E45048 0%, #E57657 28%, #E7A057 52%, #627BD8 78%, #465BC4 100%)";
-export const DEMO_PLAN_NOTE =
-  "Du är inbjuden till Demoeventkompis 1 att delta i Demoevent 1";
+import { appUrl } from "./app-url";
 
 export type PlanOption = {
   id: string;
@@ -169,7 +164,8 @@ export const randomCode = (n = 6) =>
 export const uid = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 
-export const planLink = (code: string) => `HANDER.APP/PLAN/${code}`;
+/** Publik, delbar länk till en plan (absolut URL som fungerar i SMS/mejl). */
+export const planLink = (code: string) => appUrl(`/plan/${code}`);
 
 export function optionFromEvent(e: EventItem): PlanOption {
   return {

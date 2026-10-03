@@ -318,7 +318,7 @@ export function EventCard({ event, compact }: { event: EventItem; compact?: bool
           meta: `${formatDay(event.date)} ${event.start} · ${event.place}`,
           cta: "Tryck för att se eventet i Händer.",
           url: absoluteUrl(`/event/${event.id}`),
-          displayUrl: `HANDER.APP/E/${event.id.toUpperCase()}`,
+          displayUrl: absoluteUrl(`/event/${event.id}`),
           shareText: `Kolla in ${event.name} – ${formatDay(event.date)} ${event.start} på ${event.place}!`,
         }}
       />

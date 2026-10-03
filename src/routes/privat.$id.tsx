@@ -6,6 +6,7 @@ import { AppShell } from "@/components/hander/AppShell";
 import { Avatar, EventCover } from "@/components/hander/EventBits";
 import { ME, USERS, userById, type InviteStatus } from "@/lib/hander-data";
 import { formatDay, useHander } from "@/lib/hander-store";
+import { appUrl } from "@/lib/app-url";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/privat/$id")({
@@ -42,7 +43,7 @@ function PrivateEventPage() {
   }
 
   const invites = event.invites ?? [];
-  const link = `HANDER.APP/JOIN/${event.inviteCode}`;
+  const link = appUrl(`/join/${event.inviteCode}`);
   const isHost = event.organizerId === ME;
   const notInvited = USERS.filter((u) => u.id !== ME && !invites.some((i) => i.userId === u.id));
 

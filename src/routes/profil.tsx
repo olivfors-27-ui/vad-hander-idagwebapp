@@ -181,14 +181,6 @@ function ProfilePage() {
             ))}
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={store.reset}
-          className="w-full rounded-2xl bg-[#E7A057] px-4 py-3 text-xs font-bold text-[#FFFDF9] shadow-[0_3px_0_rgba(138,90,34,.3)] active:translate-y-[2px]"
-        >
-          Återställ demodata
-        </button>
       </div>
     </AppShell>
   );

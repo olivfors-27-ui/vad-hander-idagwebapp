@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/hander/AppShell";
 import { PlanNotFound, PublicPlan } from "@/components/hander/PublicPlan";
 import { ShareSheet, absoluteUrl } from "@/components/hander/ShareSheet";
-import { DEMO_PLAN_GRADIENT, bestSlotId, bestSlotSummary, customOption, planLink, slotStats, tally, topOf, uid } from "@/lib/hander-plans";
+import { bestSlotId, bestSlotSummary, customOption, planLink, slotStats, tally, topOf, uid } from "@/lib/hander-plans";
 import { useHander } from "@/lib/hander-store";
 import { cn } from "@/lib/utils";
 
@@ -78,8 +78,7 @@ function PlanPage() {
   const decidedSlot = plan.decidedSlotId
     ? plan.slots.find((s) => s.id === plan.decidedSlotId)
     : undefined;
-  const coverGradient =
-    plan.id === "demo-inbjudan" ? DEMO_PLAN_GRADIENT : plan.gradient ?? "var(--accent)";
+  const coverGradient = plan.gradient ?? "var(--accent)";
 
   const share = () => {
     navigator.clipboard?.writeText(absoluteUrl(`/plan/${plan.code}`));

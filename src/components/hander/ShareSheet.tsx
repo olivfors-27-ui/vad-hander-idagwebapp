@@ -1,6 +1,7 @@
 import { Check, Copy, Send, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { appUrl } from "@/lib/app-url";
 
 export type SharePreview = {
   /** Rubrik i förhandsvisningen, t.ex. "Vi borde göra något! 👀" */
@@ -124,10 +125,7 @@ export function ShareSheet({
   );
 }
 
-/** Absolut URL till appen (fungerar i SSR genom fallback). */
+/** Absolut URL till appen (miljövariabel i produktion, aktuell origin i dev). */
 export function absoluteUrl(path: string): string {
-  if (typeof window !== "undefined" && window.location?.origin) {
-    return `${window.location.origin}${path}`;
-  }
-  return `https://hander.app${path}`;
+  return appUrl(path);
 }

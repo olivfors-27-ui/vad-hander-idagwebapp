@@ -25,7 +25,7 @@ import {
   type StatKey,
   baseStats,
 } from "./hander-data";
-import { DEMO_PLAN_GRADIENT, DEMO_PLAN_NOTE, uid, type Plan, type PlanReply } from "./hander-plans";
+import { uid, type Plan, type PlanReply } from "./hander-plans";
 import { fetchEventsWithCache } from "./visitstockholm";
 import { watchAccount, type Account } from "./auth";
 import {
@@ -63,39 +63,14 @@ type Persisted = {
 };
 
 const initial = (): Persisted => ({
-  events: EVENTS.map((e) => ({ ...e })),
-  saved: ["e1", "e7"],
-  savedPlaces: ["pl1"],
-  interested: ["e2"],
-  following: [...INITIAL_FOLLOWING],
+  events: [],
+  saved: [],
+  savedPlaces: [],
+  interested: [],
+  following: [],
   notifSettings: { nearby: true, follow: true, reminder: true, social: true, plan: true },
   readNotifications: [],
-  plans: [
-    {
-      id: "demo-inbjudan",
-      code: "DEMOEV1",
-      title: "Demoevent 1",
-      note: DEMO_PLAN_NOTE,
-      createdBy: "Demoeventkompis 1",
-      createdAt: new Date().toISOString(),
-      options: [
-        {
-          id: "demo-inbjudan-option",
-          title: "Demoevent 1",
-          subtitle: "Demoeventplatsen · Idag 19:00",
-          emoji: "🎉",
-          gradient: "linear-gradient(135deg,#E45048,#E7A057)",
-          eventId: "demoevent-1",
-        },
-      ],
-      slots: [{ id: "demo-inbjudan-slot", label: "Idag 19:00–23:00", date: TODAY, start: "19:00", end: "23:00", kind: "range" }],
-      replies: [],
-      emoji: "🎉",
-      gradient: DEMO_PLAN_GRADIENT,
-      place: "Demoeventplatsen",
-      eventId: "demoevent-1",
-    },
-  ],
+  plans: [],
   placeSuggestions: [],
   stats: {},
 });
@@ -113,25 +88,15 @@ function useStoreValue() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Persisted;
-        setState((s) => {
-          const storedEvents = Array.isArray(parsed.events) ? parsed.events : [];
-          const mergedEvents = [...storedEvents];
-          for (const demo of EVENTS) {
-            if (!mergedEvents.some((event) => event.id === demo.id)) mergedEvents.push({ ...demo });
-          }
-          const storedPlans = Array.isArray(parsed.plans) ? parsed.plans : [];
-          const demoPlan = initial().plans[0];
-          const mergedPlans =
-            storedPlans.some((plan) => plan.id === "demo-inbjudan") || !demoPlan
-              ? storedPlans
-              : [...storedPlans, demoPlan];
-          const normalizedPlans = mergedPlans.map((plan) =>
-            plan.id === "demo-inbjudan" ? { ...plan, note: DEMO_PLAN_NOTE } : plan,
-          );
-          return { ...s, ...parsed, events: mergedEvents, plans: normalizedPlans };
-        });
+      if (raw) {        const parsed = JSON.parse(raw) as Persisted;
+          setState((s) => {
+            const storedEvents = Array.isArray(parsed.events) ? parsed.events : [];
+            const storedPlans = Array.isArray(parsed.plans) ? parsed.plans : [];
+            // Ingen demodata slås på igen – gamla demo-id:n ignoreras.
+            const cleanEvents = storedEvents.filter((e) => !e.id.startsWith("demo"));
+            const cleanPlans = storedPlans.filter((p) => !p.id.startsWith("demo"));
+            return { ...s, ...parsed, events: cleanEvents, plans: cleanPlans };
+          });
       }
     } catch {
       /* ignorera */

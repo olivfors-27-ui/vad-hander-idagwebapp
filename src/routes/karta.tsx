@@ -23,6 +23,7 @@ import {
   type SortMode,
 } from "@/lib/hander-store";
 import { cn } from "@/lib/utils";
+import { appUrl } from "@/lib/app-url";
 
 export const Route = createFileRoute("/karta")({
   head: () => ({
@@ -380,7 +381,7 @@ function EventSheet({ event, onClose }: { event: EventItem; onClose: () => void 
           meta: `${formatDay(event.date)} ${event.start} · ${event.place}`,
           cta: "Öppna eventet",
           url,
-          displayUrl: `HANDER.APP/EVENT/${event.id.toUpperCase()}`,
+          displayUrl: appUrl(`/event/${event.id}`),
           shareText: `${event.name} – ${formatDay(event.date)} ${event.start} på ${event.place}`,
         }}
       />
@@ -476,7 +477,7 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
           meta: `${meta.label} · ${place.address}`,
           cta: "Se på kartan",
           url,
-          displayUrl: `HANDER.APP/KARTA/${place.id.toUpperCase()}`,
+          displayUrl: appUrl(`/plats/${place.id}`),
           shareText: `${place.name} – ${meta.label} på ${place.address}`,
         }}
       />

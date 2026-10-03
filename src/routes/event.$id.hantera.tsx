@@ -14,6 +14,7 @@ import {
   type InviteStatus,
 } from "@/lib/hander-data";
 import { formatDay, useHander } from "@/lib/hander-store";
+import { appUrl } from "@/lib/app-url";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/event/$id/hantera")({
@@ -52,7 +53,7 @@ function ManageEventPage() {
     );
   }
 
-  if (event.organizerId !== ME) {
+  if (event.organizerId !== ME && event.organizerId !== store.me) {
     return (
       <AppShell title={event.name}>
         <p className="p-8 text-center text-sm text-muted-foreground">
@@ -293,7 +294,7 @@ function GuestsTab({
     { id: "invited", label: "Inbjudna", tone: "#E45048" },
     { id: "declined", label: "Kan inte", tone: "#EAB24F" },
   ];
-  const link = `HANDER.APP/JOIN/${event.inviteCode ?? ""}`;
+  const link = appUrl(`/join/${event.inviteCode ?? ""}`);
   const notInvited = USERS.filter((u) => u.id !== ME && !invites.some((i) => i.userId === u.id));
 
   return (

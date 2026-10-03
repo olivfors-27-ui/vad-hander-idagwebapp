@@ -6,7 +6,7 @@ import { AppShell } from "@/components/hander/AppShell";
 import { ShareSheet, absoluteUrl } from "@/components/hander/ShareSheet";
 import { userById } from "@/lib/hander-data";
 import type { Availability, Plan } from "@/lib/hander-plans";
-import { DEMO_PLAN_GRADIENT, DEMO_PLAN_NOTE, planLink, slotStats, tally, topOf } from "@/lib/hander-plans";
+import { planLink, slotStats, tally, topOf } from "@/lib/hander-plans";
 import { useHander } from "@/lib/hander-store";
 import { cn } from "@/lib/utils";
 
@@ -66,11 +66,8 @@ export function PublicPlan({ plan }: { plan: Plan }) {
     ? plan.slots.find((s) => s.id === plan.decidedSlotId)
     : undefined;
   const firstOption = plan.options[0];
-  const coverGradient =
-    plan.id === "demo-inbjudan"
-      ? DEMO_PLAN_GRADIENT
-      : plan.gradient ?? firstOption?.gradient ?? "var(--accent)";
-  const displayNote = plan.id === "demo-inbjudan" ? DEMO_PLAN_NOTE : plan.note;
+  const coverGradient = plan.gradient ?? firstOption?.gradient ?? "var(--accent)";
+  const displayNote = plan.note;
 
   const submit = () => {
     if (!name.trim()) {
