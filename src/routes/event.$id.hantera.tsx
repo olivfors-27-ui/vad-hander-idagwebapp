@@ -8,11 +8,12 @@ import {
   CATEGORIES,
   ME,
   STAT_LABELS,
-  USERS,
   userById,
   type CategoryId,
   type InviteStatus,
+  type User,
 } from "@/lib/hander-data";
+import { useProfileName } from "@/lib/auth";
 import { formatDay, useHander } from "@/lib/hander-store";
 import { appUrl } from "@/lib/app-url";
 import { cn } from "@/lib/utils";
@@ -44,6 +45,8 @@ function ManageEventPage() {
   const store = useHander();
   const [tab, setTab] = useState<TabId>("oversikt");
   const event = store.events.find((e) => e.id === id);
+  // Arrangörens visningsnamn: sparat på eventet, annars från profilen.
+  const organizerName = useProfileName(event?.organizerId, event?.organizerName);
 
   if (!event) {
     return (
@@ -70,7 +73,7 @@ function ManageEventPage() {
 
   const stats = store.eventStats(event);
   const invites = event.invites ?? [];
-  const organizer = userById(event.organizerId);
+  const organizer = userById(event.organizerId, organizerName);
 
   return (
     <AppShell title={event.name} subtitle="Hantera ditt event">
@@ -295,7 +298,7 @@ function GuestsTab({
     { id: "declined", label: "Kan inte", tone: "#EAB24F" },
   ];
   const link = appUrl(`/join/${event.inviteCode ?? ""}`);
-  const notInvited = USERS.filter((u) => u.id !== ME && !invites.some((i) => i.userId === u.id));
+  const notInvited: User[] = [];
 
   return (
     <div className="space-y-4">

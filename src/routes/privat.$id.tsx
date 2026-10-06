@@ -1,13 +1,14 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { Check, Copy, Lock, UserMinus, UserPlus } from "lucide-react";
+import { Copy, Lock, UserMinus, UserPlus } from "lucide-react";
+
 import { useState } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/hander/AppShell";
 import { Avatar, EventCover } from "@/components/hander/EventBits";
-import { ME, USERS, userById, type InviteStatus } from "@/lib/hander-data";
+import { InviteReply } from "@/components/hander/InviteReply";
+import { userById, type InviteStatus, type User } from "@/lib/hander-data";
 import { formatDay, useHander } from "@/lib/hander-store";
 import { appUrl } from "@/lib/app-url";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/privat/$id")({
   head: () => ({
@@ -44,8 +45,8 @@ function PrivateEventPage() {
 
   const invites = event.invites ?? [];
   const link = appUrl(`/join/${event.inviteCode}`);
-  const isHost = event.organizerId === ME;
-  const notInvited = USERS.filter((u) => u.id !== ME && !invites.some((i) => i.userId === u.id));
+  const isHost = event.organizerId === store.me;
+  const notInvited: User[] = []; // Vänner-brist: inga demoanvändare att bjuda in
 
   return (
     <AppShell title={event.name} subtitle="Privat event – syns inte på kartan">
@@ -116,7 +117,9 @@ function PrivateEventPage() {
                   {g.label} ({list.length})
                 </p>
                 {list.map((i) => {
-                  const u = userById(i.userId);
+                  // Namnet gästen svarade med sparas på inbjudan – använd det
+                  // istället för att falla tillbaka på "Okänd användare".
+                  const u = userById(i.userId, i.name);
                   return (
                     <div
                       key={i.userId}
@@ -124,8 +127,10 @@ function PrivateEventPage() {
                     >
                       <Avatar user={u} size={36} />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold">{u.name}</p>
-                        <p className="truncate text-xs text-muted-foreground">{u.username}</p>
+                        <p className="truncate text-sm font-semibold">{i.name ?? u.name}</p>
+                        {u.username !== "@okand" && (
+                          <p className="truncate text-xs text-muted-foreground">{u.username}</p>
+                        )}
                       </div>
                       {isHost && (
                         <button
@@ -189,36 +194,18 @@ function PrivateEventPage() {
         )}
 
         {!isHost && (
-          <div className="flex gap-2">
-            {([
-              ["accepted", "Kommer", "#3E9B5F", "rgba(62,155,95,.35)", "#EAF6EE"],
-              ["maybe", "Kanske", "#D9A13B", "rgba(217,161,59,.4)", "#FBF3E2"],
-              ["declined", "Kan inte", "#D9534F", "rgba(217,83,79,.35)", "#FBECEB"],
-            ] as const).map(([s, lbl, tone, shadow, soft]) => {
-              const mine = invites.find((i) => i.userId === ME)?.status;
-              return (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => store.setInviteStatus(event.id, ME, s)}
-                  className={cn(
-                    "flex flex-1 items-center justify-center gap-1 rounded-2xl px-3 py-3 text-xs font-bold transition-colors active:translate-y-[2px]",
-                    mine === s
-                      ? "text-[#FFFDF9] shadow-[0_3px_0_var(--tw-shadow-color)]"
-                      : "border border-border",
-                  )}
-                  style={
-                    mine === s
-                      ? { backgroundColor: tone, "--tw-shadow-color": shadow } as React.CSSProperties
-                      : { backgroundColor: soft, color: tone }
-                  }
-                >
-                  {mine === s && <Check className="h-3.5 w-3.5" />}
-                  {lbl}
-                </button>
+          <InviteReply
+            loggedIn={Boolean(store.account)}
+            accountName={store.account?.name}
+            answered={invites.find((i) => i.userId === store.me)?.status}
+            savedName={invites.find((i) => i.userId === store.me)?.name}
+            onReply={(s, name) => {
+              store.setInviteStatus(event.id, store.me, s, name);
+              toast.success(
+                s === "accepted" ? "Du kommer!" : s === "maybe" ? "Svarat kanske" : "Du tackade nej",
               );
-            })}
-          </div>
+            }}
+          />
         )}
       </div>
     </AppShell>

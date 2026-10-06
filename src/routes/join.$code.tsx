@@ -1,11 +1,12 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { Check, Lock, MapPin, Users } from "lucide-react";
+import { Lock, MapPin, Users } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/hander/AppShell";
 import { Avatar, EventCover } from "@/components/hander/EventBits";
-import { userById, type InviteStatus } from "@/lib/hander-data";
+import { InviteReply } from "@/components/hander/InviteReply";
+import { useProfileName } from "@/lib/auth";
+import { ME, userById, type User } from "@/lib/hander-data";
 import { formatDay, useHander } from "@/lib/hander-store";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/join/$code")({
   head: () => ({
@@ -24,6 +25,12 @@ function JoinPage() {
   const store = useHander();
   const event = store.events.find((e) => e.inviteCode?.toUpperCase() === code.toUpperCase());
 
+  // Inbjudarens namn: sparad på eventet (organizerName) – annars hämtas
+  // profilen via RLS-publicerad profiles-tabell. Hook anropas före tidig
+  // return så hook-ordningen är stabil.
+  const profileName = useProfileName(event?.organizerId, event?.organizerName);
+  const isSelf = event ? event.organizerId === store.me : false;
+
   if (!event) {
     return (
       <AppShell title="Inbjudan">
@@ -37,10 +44,22 @@ function JoinPage() {
     );
   }
 
-  const host = userById(event.organizerId);
+  // Aldrig "Okänd" för en riktig användare: organizerName → profiluppslag →
+  // inloggat eget konto. "me"/legacy utan namn får en neutral etikett.
+  const hostName =
+    event.organizerName ??
+    profileName ??
+    (isSelf ? store.account?.name ?? "Du" : undefined);
+  const host: User = userById(event.organizerId, hostName);
+  const hostLabel = hostName ?? (isSelf ? "Du" : "Arrangör");
+
   const invites = event.invites ?? [];
-  const myStatus = invites.find((i) => i.userId === store.me)?.status;
+  const myInvite = invites.find((i) => i.userId === store.me);
+  const myStatus = myInvite?.status;
   const going = invites.filter((i) => i.status === "accepted");
+  const goingNames = going
+    .map((g) => g.name?.trim().split(" ")[0])
+    .filter((n): n is string => Boolean(n));
 
   return (
     <AppShell title="Du är inbjuden">
@@ -67,57 +86,43 @@ function JoinPage() {
         <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3">
           <Avatar user={host} size={40} />
           <div>
-            <p className="text-sm font-bold text-[#2A2421]">{host.name}</p>
-            <p className="text-xs text-muted-foreground">bjöd in dig</p>
+            <p className="text-sm font-bold text-[#2A2421]">{hostLabel}</p>
+            <p className="text-xs text-muted-foreground">{isSelf ? "Du bjöd in dig" : "bjöd in dig"}</p>
           </div>
         </div>
 
-        {going.length > 0 && (
+        {goingNames.length > 0 && (
           <p className="text-sm text-muted-foreground">
-            {going.map((g) => userById(g.userId).name.split(" ")[0]).join(", ")} kommer redan.
+            {goingNames.join(", ")} kommer redan.
           </p>
         )}
 
-        {store.account ? (
-          <div className="flex gap-2">
-            {([
-              ["accepted", "Kommer", "#3E9B5F", "rgba(62,155,95,.35)", "#EAF6EE"],
-              ["maybe", "Kanske", "#D9A13B", "rgba(217,161,59,.4)", "#FBF3E2"],
-              ["declined", "Kan inte", "#D9534F", "rgba(217,83,79,.35)", "#FBECEB"],
-            ] as const).map(([s, lbl, tone, shadow, soft]) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => {
-                  store.setInviteStatus(event.id, store.me, s);
-                toast.success(
-                  s === "accepted" ? "Du kommer!" : s === "maybe" ? "Svarat kanske" : "Du tackade nej",
-                );
-              }}
-              className={cn(
-                "flex flex-1 items-center justify-center gap-1 rounded-2xl px-3 py-3 text-xs font-bold transition-colors active:translate-y-[2px]",
-                myStatus === s
-                  ? "text-[#FFFDF9] shadow-[0_3px_0_var(--tw-shadow-color)]"
-                  : "border border-border",
-              )}
-              style={
-                myStatus === s
-                  ? { backgroundColor: tone, "--tw-shadow-color": shadow } as React.CSSProperties
-                  : { backgroundColor: soft, color: tone }
-              }
+        <InviteReply
+          loggedIn={Boolean(store.account)}
+          accountName={store.account?.name}
+          answered={myStatus}
+          savedName={myInvite?.name}
+          onReply={(s, name) => {
+            const ok = s;
+            store.setInviteStatus(event.id, store.me, ok, name);
+            toast.success(
+              ok === "accepted" ? "Du kommer!" : ok === "maybe" ? "Svarat kanske" : "Du tackade nej",
+            );
+          }}
+        />
+
+        {!store.account && (
+          <p className="text-center text-xs text-muted-foreground">
+            Har du ett konto?{" "}
+            <Link
+              to="/loggain"
+              search={{ redirect: `/join/${code}` }}
+              className="font-bold text-primary"
             >
-              {myStatus === s && <Check className="h-3.5 w-3.5" />}
-              {lbl}
-            </button>
-            ))}
-          </div>
-        ) : (
-          <Link
-            to="/loggain"
-            className="flex items-center justify-center gap-2 rounded-2xl bg-[#627BD8] px-4 py-3.5 text-center text-sm font-bold text-[#FFFDF9] shadow-[0_3px_0_rgba(68,88,197,.3)] active:translate-y-[2px]"
-          >
-            Logga in för att svara
-          </Link>
+              Logga in
+            </Link>{" "}
+            så svarar ditt namn automatiskt.
+          </p>
         )}
 
         <Link

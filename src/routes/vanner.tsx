@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { CalendarPlus, Search, UserCheck, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/hander/AppShell";
+import { useIsLoggedIn } from "@/lib/auth-guard";
 import { ME, USERS, type User } from "@/lib/hander-data";
 import { useHander } from "@/lib/hander-store";
 import { cn } from "@/lib/utils";
@@ -40,7 +41,7 @@ const USER_COVERS: Record<string, string> = {
   u8: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=200&q=80",
 };
 
-const userCover = (id: string) => USER_COVERS[id] ?? USER_COVERS.u1;
+const userCover = (id: string) => USER_COVERS[id] ?? USER_COVERS["u1"];
 
 /** Ljus palettvariant + mörk textton, samma familj som sektionsfärgerna. */
 const TONE_SOFT = {
@@ -134,6 +135,8 @@ const TABS: { id: Tab; label: string }[] = [
 
 function FriendsPage() {
   const store = useHander();
+  // UI-guard: skapa-event-knappen visas bara för inloggade.
+  const loggedIn = useIsLoggedIn();
   const [q, setQ] = useState("");
   const [tab, setTab] = useState<Tab>("foljer");
 
@@ -237,12 +240,14 @@ function FriendsPage() {
         </section>
 
         <div className="space-y-2 px-4">
-          <Link
-            to="/skapa"
-            className="flex items-center justify-center gap-2 rounded-2xl bg-[#E45048] px-4 py-3.5 text-center text-sm font-bold text-white shadow-[0_3px_0_rgba(112,28,23,.25)]"
-          >
-            <CalendarPlus className="h-4 w-4" /> Planera något med gänget
-          </Link>
+          {loggedIn && (
+            <Link
+              to="/skapa"
+              className="flex items-center justify-center gap-2 rounded-2xl bg-[#E45048] px-4 py-3.5 text-center text-sm font-bold text-white shadow-[0_3px_0_rgba(112,28,23,.25)]"
+            >
+              <CalendarPlus className="h-4 w-4" /> Planera något med gänget
+            </Link>
+          )}
           <Link
             to="/foljer"
             className="block rounded-2xl bg-[#DDE3F8] px-4 py-3 text-center text-sm font-bold text-[#3B4CAD]"

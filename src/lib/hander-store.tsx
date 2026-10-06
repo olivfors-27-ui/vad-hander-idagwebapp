@@ -151,9 +151,37 @@ function useStoreValue() {
 
   // Inloggning: håll reda på kontot och använd dess id som "me"-identitet.
   // Utan konto (eller utan Supabase-konfig) faller allt tillbaka på demo-identiteten.
+  // authChecked blir true när första sessionklockan svarat (inloggad eller inte),
+  // så att skyddade sidor kan vänta in en eventuell inloggning innan de avvisar.
   const [account, setAccount] = useState<Account | null>(null);
-  useEffect(() => watchAccount(setAccount), []);
+  const [authChecked, setAuthChecked] = useState(false);
+  useEffect(
+    () =>
+      watchAccount((a) => {
+        setAccount(a);
+        setAuthChecked(true);
+      }),
+    [],
+  );
   const me = account?.id ?? ME;
+
+  // Reparera äldre event: när vi vet vilket konto som är inloggat fylls
+  // organizerName i på egna event som skapades innan namnet sparades –
+  // då visas "inbjudare"/aldrig "Okänd" för skaparen på egen enhet.
+  useEffect(() => {
+    if (!account) return;
+    setState((s) => {
+      let changed = false;
+      const events = s.events.map((e) => {
+        if (e.organizerId === account.id && e.organizerName !== account.name) {
+          changed = true;
+          return { ...e, organizerName: account.name };
+        }
+        return e;
+      });
+      return changed ? { ...s, events } : s;
+    });
+  }, [account]);
 
   const patch = useCallback((p: Partial<Persisted>) => setState((s) => ({ ...s, ...p })), []);
 
@@ -217,18 +245,24 @@ function useStoreValue() {
   );
 
   const setInviteStatus = useCallback(
-    (eventId: string, userId: string, status: InviteStatus) => {
+    (eventId: string, userId: string, status: InviteStatus, guestName?: string | undefined) => {
       setState((s) => ({
         ...s,
         events: s.events.map((e) => {
           if (e.id !== eventId) return e;
           const invites = e.invites ?? [];
           const exists = invites.some((i) => i.userId === userId);
+          // Namnet gästen skrev vid svar sparas på inbjudan så att värdens
+          // gästlista visar riktigt namn – bevaras om ett nytt svar saknar namn.
+          const name =
+            guestName?.trim() || invites.find((i) => i.userId === userId)?.name;
           return {
             ...e,
             invites: exists
-              ? invites.map((i) => (i.userId === userId ? { ...i, status } : i))
-              : [...invites, { userId, status }],
+              ? invites.map((i) =>
+                  i.userId === userId ? { ...i, status, name } : i,
+                )
+              : [...invites, { userId, status, name }],
           };
         }),
       }));
@@ -447,6 +481,7 @@ function useStoreValue() {
     hydrated,
     patch,
     account,
+    authChecked,
     me,
     events: [...state.events, ...apiEvents],
     publicEvents,
@@ -461,7 +496,17 @@ function useStoreValue() {
     toggleSavedPlace,
     toggleInterested,
     toggleFollow,
-    addEvent: (e: EventItem) => addEvent({ ...e, organizerId: me }),
+    // Skapa event kräver inloggat konto (datalager-skydd – speglar
+    // kravet i UI och på sidan /skapa). Utan session skrivs inget in.
+    addEvent: (e: EventItem): boolean => {
+      if (!account) return false;
+      addEvent({
+        ...e,
+        organizerId: account.id,
+        organizerName: e.organizerName ?? account.name,
+      });
+      return true;
+    },
     updateEvent,
     setStatus,
     setInviteStatus,

@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate, useParams, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useParams, useRouter } from "@tanstack/react-router";
 import { ArrowLeft, Bookmark, Heart, MapPin, Share2, Ticket, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -13,6 +13,7 @@ import {
   SponsoredBadge,
 } from "@/components/hander/EventBits";
 import { MapCanvas } from "@/components/hander/MapCanvas";
+import { useGoCreate } from "@/lib/auth-guard";
 import { CATEGORY_GRADIENT, ME, userById } from "@/lib/hander-data";
 import { formatDay, useHander } from "@/lib/hander-store";
 import { cn } from "@/lib/utils";
@@ -32,7 +33,8 @@ export const Route = createFileRoute("/event/$id")({
 function EventPage() {
   const { id } = useParams({ from: "/event/$id" });
   const store = useHander();
-  const navigate = useNavigate();
+  // UI-guard: "Planera med kompisar" kräver inloggning.
+  const { go: goCreate } = useGoCreate();
   const router = useRouter();
   const [shareOpen, setShareOpen] = useState(false);
   const event = store.events.find((e) => e.id === id);
@@ -233,7 +235,7 @@ function EventPage() {
           type="button"
           onClick={() => {
             store.track(event.id, "plans");
-            void navigate({ to: "/skapa" });
+            goCreate();
           }}
           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3.5 text-sm font-bold text-primary-foreground shadow-[var(--shadow-pin)]"
         >

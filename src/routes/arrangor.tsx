@@ -19,6 +19,7 @@ import {
   type EventItem,
   type StatKey,
 } from "@/lib/hander-data";
+import { useIsLoggedIn } from "@/lib/auth-guard";
 import { formatDay, hasEnded, useHander } from "@/lib/hander-store";
 import { cn } from "@/lib/utils";
 
@@ -49,6 +50,8 @@ const STAT_ORDER: StatKey[] = ["views", "clicks", "saves", "interested", "shares
 
 function OrganizerPage() {
   const store = useHander();
+  // UI-guard: "Skapa nytt event" visas bara för inloggade.
+  const loggedIn = useIsLoggedIn();
   const me = userById(ME);
   const [editing, setEditing] = useState<string | null>(null);
 
@@ -83,7 +86,7 @@ function OrganizerPage() {
           </div>
           <p className="mt-3 text-sm text-muted-foreground">{me.bio}</p>
           <span className="mt-3 inline-block rounded-full bg-accent px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-accent-foreground">
-            Verifierad arrangör
+            Arrangörsprofil
           </span>
         </section>
 
@@ -101,12 +104,14 @@ function OrganizerPage() {
           </div>
         </section>
 
-        <Link
-          to="/skapa"
-          className="flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3.5 text-sm font-bold text-primary-foreground shadow-[var(--shadow-pin)]"
-        >
-          <Plus className="h-4 w-4" /> Skapa nytt event
-        </Link>
+        {loggedIn && (
+          <Link
+            to="/skapa"
+            className="flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3.5 text-sm font-bold text-primary-foreground shadow-[var(--shadow-pin)]"
+          >
+            <Plus className="h-4 w-4" /> Skapa nytt event
+          </Link>
+        )}
 
         <section className="space-y-3">
           <h2 className="font-display text-base font-bold">Dina event ({mine.length})</h2>

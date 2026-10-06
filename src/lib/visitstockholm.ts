@@ -43,10 +43,14 @@ type JsonLdNode = {
 type VisitSwedenChild = { metadata?: { "@graph"?: JsonLdNode[] }; entryId?: string };
 type VisitSwedenResponse = { resource?: { children?: VisitSwedenChild[] } };
 
-const textFor = (value: ApiTitle | JsonLdValue | null | undefined) => {
-  if (!value) return "";
+const textFor = (value: unknown): string => {
   if (typeof value === "string") return value;
-  if (typeof value === "object") return value.sv || value.en || value["@value"] || value["@id"] || "";
+  if (value && typeof value === "object") {
+    // JSON-LD-objekt: locale-strängar eller {@id,@value}-noder.
+    const record = value as Record<string, unknown>;
+    const pick = (key: string) => (typeof record[key] === "string" ? (record[key] as string) : "");
+    return pick("sv") || pick("en") || pick("@value") || pick("@id") || "";
+  }
   return "";
 };
 
@@ -57,7 +61,7 @@ function parsePrice(value: unknown): number | undefined {
   if (typeof value === "number" && Number.isFinite(value) && value >= 0) return value;
   if (value && typeof value === "object") {
     const record = value as Record<string, unknown>;
-    return parsePrice(record.price) ?? parsePrice(record["schema:price"]) ?? parsePrice(record.name) ?? parsePrice(record.description);
+    return parsePrice(record["price"]) ?? parsePrice(record["schema:price"]) ?? parsePrice(record["name"]) ?? parsePrice(record["description"]);
   }
   if (typeof value !== "string") return undefined;
   const normalized = value.replace(/\s/g, "").replace(",", ".");
@@ -112,8 +116,9 @@ const firstFutureSchedule = (event: VisitStockholmEvent) => {
 };
 
 const toEvent = ({ id, title, description, address, venue, date, start, end, lat, lng, url, image, price, organizerId }: {
-  id: string; title: string; description: string; address: string; venue: string; date: string; start?: string | null; end?: string | null;
-  lat: number; lng: number; url?: string; image?: string; price?: number; organizerId: string;
+  id: string; title: string; description: string; address: string; venue: string; date: string;
+  start?: string | null | undefined; end?: string | null | undefined;
+  lat: number; lng: number; url?: string | undefined; image?: string | undefined; price?: number | undefined; organizerId: string;
 }): EventItem | null => {
   const distance = distanceKm(lat, lng);
   if (!date || distance > MAX_DISTANCE_KM) return null;
@@ -161,7 +166,8 @@ async function fetchVisitStockholmSource(signal?: AbortSignal, maxPages = MAX_PA
   return pages.flatMap((page) => page.results ?? []).flatMap((event) => {
     if (!event.id || !event.location || typeof event.location.latitude !== "number" || typeof event.location.longitude !== "number") return [];
     const slot = firstFutureSchedule(event);
-    const date = slot?.date || (validDate(event.start_date) ? event.start_date : "");
+    const candidate = slot?.date || event.start_date || "";
+    const date = validDate(candidate) ? candidate : "";
     const normalized = toEvent({
       id: `visit-${event.id}`,
       title: textFor(event.title),
@@ -183,6 +189,15 @@ async function fetchVisitStockholmSource(signal?: AbortSignal, maxPages = MAX_PA
 }
 
 const graphValue = (node: JsonLdNode | undefined, key: string) => textFor(node?.[key]);
+
+/** JSON-LD-referens: hämta strängvärdet på {@id} om noden är ett objekt. */
+const refId = (value: unknown): string | undefined => {
+  if (value && typeof value === "object") {
+    const id = (value as { "@id"?: unknown })["@id"];
+    return typeof id === "string" ? id : undefined;
+  }
+  return undefined;
+};
 
 function firstImage(value: unknown): string | undefined {
   if (typeof value === "string") return /^https?:\/\//i.test(value) ? value : undefined;
@@ -207,8 +222,8 @@ function normalizeVisitSwedenChild(child: VisitSwedenChild): EventItem | null {
   const graph = child.metadata?.["@graph"] ?? [];
   const event = graph.find((node) => String(node["@type"] ?? "").includes("Event"));
   if (!event) return null;
-  const geoRef = typeof event["schema:geo"] === "object" ? event["schema:geo"]?.["@id"] : undefined;
-  const addressRef = typeof event["schema:address"] === "object" ? event["schema:address"]?.["@id"] : undefined;
+  const geoRef = refId(event["schema:geo"]);
+  const addressRef = refId(event["schema:address"]);
   const geo = graph.find((node) => node["@id"] === geoRef);
   const addressNode = graph.find((node) => node["@id"] === addressRef);
   const lat = Number(graphValue(geo, "schema:latitude"));

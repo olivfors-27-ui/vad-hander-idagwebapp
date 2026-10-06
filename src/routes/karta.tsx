@@ -22,6 +22,7 @@ import {
   type Filters,
   type SortMode,
 } from "@/lib/hander-store";
+import { useIsLoggedIn } from "@/lib/auth-guard";
 import { cn } from "@/lib/utils";
 import { appUrl } from "@/lib/app-url";
 
@@ -257,14 +258,18 @@ function ActionRow({
   planSearch: { event?: string; place?: string };
   moreTo: React.ReactNode;
 }) {
+  // UI-guard: "Planera med kompisar" kräver inloggning.
+  const loggedIn = useIsLoggedIn();
   return (
     <div className="map-sheet-actions sticky bottom-0 z-10 mt-4 space-y-2 bg-card/95 pb-2 pt-2 backdrop-blur">
-      <Link
-        to="/skapa"
-        className="map-sheet-primary flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold"
-      >
-        <CalendarHeart className="h-4 w-4" /> Planera med kompisar
-      </Link>
+      {loggedIn && (
+        <Link
+          to="/skapa"
+          className="map-sheet-primary flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold"
+        >
+          <CalendarHeart className="h-4 w-4" /> Planera med kompisar
+        </Link>
+      )}
       <div className="flex gap-2">
         {moreTo}
         <button

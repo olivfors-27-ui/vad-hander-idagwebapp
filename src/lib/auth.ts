@@ -149,3 +149,30 @@ export function useAccount(): Account | null {
   useEffect(() => watchAccount(setAccount), []);
   return account;
 }
+
+/**
+ * Hämta visningsnamnet för ett användar-id via profil-tabellen (läsbar publikt
+ * enligt RLS-politiken "Profiles are public"). Används för att säkerställa att
+ * arrangör/inbjudare aldrig visas som "Okänd" för riktiga konton – även för
+ * event som skapades innan organizerName sparades på eventet.
+ */
+export function useProfileName(userId: string | undefined, hint?: string | undefined): string | undefined {
+  const [name, setName] = useState<string | undefined>(hint);
+  useEffect(() => {
+    if (hint) {
+      setName(hint);
+      return;
+    }
+    if (!userId) return;
+    let alive = true;
+    void loadProfile(userId)
+      .then((profile) => {
+        if (alive && profile.name) setName(profile.name);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [userId, hint]);
+  return name;
+}

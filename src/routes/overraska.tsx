@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { RefreshCw, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/hander/AppShell";
@@ -12,6 +12,7 @@ import {
   type EventItem,
   type Place,
 } from "@/lib/hander-data";
+import { useGoCreate } from "@/lib/auth-guard";
 import { useHander } from "@/lib/hander-store";
 import { cn } from "@/lib/utils";
 
@@ -129,7 +130,7 @@ const chip = (active: boolean) =>
 
 function SurprisePage() {
   const store = useHander();
-  const navigate = useNavigate();
+  const { go: goCreate } = useGoCreate();
 
   const [people, setPeople] = useState(4);
   const [duration, setDuration] = useState<DurationId>("2-4");
@@ -212,7 +213,8 @@ function SurprisePage() {
   const pick = suggestions.length > 0 ? suggestions[seed % suggestions.length] : undefined;
 
   const makePlan = () => {
-    void navigate({ to: "/skapa" });
+    // UI-guard: utan konto går försöket till inloggningen i stället.
+    goCreate();
   };
 
   return (

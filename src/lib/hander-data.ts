@@ -119,6 +119,12 @@ export type EventItem = {
   /** Extern källa, exempelvis Visit Stockholms arrangörslänk. */
   sourceUrl?: string | undefined;
   organizerId: string;
+  /**
+   * Arrangörens visningsnamn från det inloggade kontot som skapade eventet.
+   * Visas som "inbjudare"/arrangör – fylls alltid i vid skapande så att
+   * ingen inbjudan någonsin visar "Okänd" för en riktig användare.
+   */
+  organizerName?: string | undefined;
   interested: string[]; // user ids
   visibility: Visibility;
   status: EventStatus;
@@ -130,7 +136,9 @@ export type EventItem = {
   lng?: number | undefined;
   distance: number; // km
   inviteCode?: string | undefined;
-  invites?: { userId: string; status: InviteStatus }[] | undefined;
+  invites?:
+    | { userId: string; status: InviteStatus; name?: string | undefined }[]
+    | undefined;
 };
 
 export type Place = {
@@ -196,8 +204,19 @@ const UNKNOWN_USER: User = {
 };
 
 /** Slå upp användare; okända id:n (t.ex. riktiga konton) får en neutral fallback. */
-export const userById = (id: string): User =>
-  USERS.find((u) => u.id === id) ?? (id ? { ...UNKNOWN_USER, id } : UNKNOWN_USER);
+export const userById = (id: string, displayName?: string): User => {
+  if (!id || id === ME) {
+    return { ...UNKNOWN_USER, id: ME, name: displayName ?? "Okänd användare" };
+  }
+  const match = USERS.find((u) => u.id === id);
+  if (match) return match;
+  return {
+    ...UNKNOWN_USER,
+    id,
+    name: displayName ?? UNKNOWN_USER.name,
+    avatar: displayName ? "🧑" : UNKNOWN_USER.avatar,
+  };
+};
 export const ME = "me";
 /** Ingen följs från start. */
 export const INITIAL_FOLLOWING: string[] = [];

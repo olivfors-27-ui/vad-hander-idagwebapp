@@ -85,7 +85,7 @@ function UserPage() {
               <Stat label="Följare" value={user.followers} />
             </div>
             <p className="mt-3 text-[11px] text-muted-foreground">
-              Verifierad arrangör – kan skapa publika och privata event samt promota event.
+              Arrangörsprofil – event och statistik som visas här är offentligt tillgängliga.
             </p>
           </div>
         )}

@@ -1,6 +1,7 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Plus, Users } from "lucide-react";
 import { AppShell } from "@/components/hander/AppShell";
+import { useGoCreate, useIsLoggedIn } from "@/lib/auth-guard";
 import { ME, USERS } from "@/lib/hander-data";
 import { planImage, type Plan } from "@/lib/hander-plans";
 import { useHander } from "@/lib/hander-store";
@@ -78,7 +79,9 @@ function Section({ title, plans }: { title: string; plans: Plan[] }) {
 
 function PlansPage() {
   const store = useHander();
-  const navigate = useNavigate();
+  // UI-guard: skapa-event-länkarna kräver inloggning.
+  const loggedIn = useIsLoggedIn();
+  const { go: goCreate } = useGoCreate();
 
   const active = store.plans.filter((p) => !isDone(p));
   const past = store.plans.filter(isDone);
@@ -88,7 +91,8 @@ function PlansPage() {
   const invited = active.filter((p) => !isMine(p) && !hasMyReply(p));
 
   const create = () => {
-    void navigate({ to: "/skapa" });
+    // UI-guard: utloggade skickas till inloggningen.
+    goCreate();
   };
 
   return (
@@ -134,11 +138,13 @@ function PlansPage() {
           </>
         )}
 
-        <div className="pt-1 text-center">
-          <Link to="/skapa" className="inline-flex min-h-11 items-center text-xs font-semibold text-muted-foreground underline">
-            Skapa ett event i stället
-          </Link>
-        </div>
+        {loggedIn && (
+          <div className="pt-1 text-center">
+            <Link to="/skapa" className="inline-flex min-h-11 items-center text-xs font-semibold text-muted-foreground underline">
+              Skapa ett event i stället
+            </Link>
+          </div>
+        )}
       </div>
     </AppShell>
   );

@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { Bookmark, Heart, Lock, MapPin, Share2, Sparkles, User as UserIcon, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { SyntheticEvent } from "react";
@@ -10,6 +10,7 @@ import {
   type EventItem,
   type User,
 } from "@/lib/hander-data";
+import { useGoCreate } from "@/lib/auth-guard";
 import { formatDay, isHappeningNow, useHander } from "@/lib/hander-store";
 import { cn } from "@/lib/utils";
 
@@ -185,7 +186,8 @@ export function EventCover({
 export function EventCard({ event, compact }: { event: EventItem; compact?: boolean }) {
   const { saved, interested, toggleSaved, toggleInterested, interestedCount, followingInterested, track } =
     useHander();
-  const navigate = useNavigate();
+  // UI-guard: "Planera med kompisar" kräver inloggning.
+  const { go: goCreate } = useGoCreate();
   const [shareOpen, setShareOpen] = useState(false);
   const isSaved = saved.includes(event.id);
   const isInterested = interested.includes(event.id);
@@ -298,7 +300,7 @@ export function EventCard({ event, compact }: { event: EventItem; compact?: bool
             type="button"
             onClick={() => {
               track(event.id, "plans");
-              void navigate({ to: "/skapa" });
+              goCreate();
             }}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-3 py-2 text-xs font-bold text-accent-foreground"
           >

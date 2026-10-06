@@ -5,6 +5,7 @@ import { AppShell } from "@/components/hander/AppShell";
 import { EventCover, priceLabel, SponsoredBadge } from "@/components/hander/EventBits";
 import { CATEGORY_GRADIENT, ME, USERS, categoryById, type EventItem } from "@/lib/hander-data";
 import type { Plan } from "@/lib/hander-plans";
+import { useIsLoggedIn } from "@/lib/auth-guard";
 import { formatDay, hasEnded, useHander } from "@/lib/hander-store";
 
 export const Route = createFileRoute("/")({
@@ -197,7 +198,7 @@ const isDone = (p: Plan) => Boolean(p.decidedOptionId || p.decidedSlotId);
 const isMine = (p: Plan) =>
   p.createdBy === ME || p.createdBy.trim().toLowerCase() === MY_NAME.toLowerCase();
 
-function PlanInviteRow({ plan, event }: { plan: Plan; event?: EventItem }) {
+function PlanInviteRow({ plan, event }: { plan: Plan; event?: EventItem | undefined }) {
   const slot = plan.slots[0];
   const title = event?.name ?? plan.title;
   const date = event ? `${formatDay(event.date)} · ${event.start}–${event.end}` : slot?.label;
@@ -269,6 +270,8 @@ function OrganizedRow({ event }: { event: EventItem }) {
 
 function Home() {
   const { publicEvents, events, plans } = useHander();
+  // UI-guard: skapa-event-länkarna visas bara för inloggade.
+  const loggedIn = useIsLoggedIn();
 
   const popular = useMemo(
     () =>
@@ -321,7 +324,7 @@ function Home() {
           <div className="space-y-2 px-4">
             {organized.length > 0 ? (
               organized.map((e) => <OrganizedRow key={e.id} event={e} />)
-            ) : (
+            ) : loggedIn ? (
               <Link
                 to="/skapa"
                 className="block rounded-2xl border border-dashed border-border p-4 text-center"
@@ -331,7 +334,7 @@ function Home() {
                   Skapa ditt första event med +-knappen →
                 </p>
               </Link>
-            )}
+            ) : null}
           </div>
         </section>
 
@@ -353,7 +356,7 @@ function Home() {
                   event={p.eventId ? events.find((e) => e.id === p.eventId) : undefined}
                 />
               ))
-            ) : (
+            ) : loggedIn ? (
               <Link
                 to="/skapa"
                 className="block rounded-2xl border border-dashed border-border p-4 text-center"
@@ -363,7 +366,7 @@ function Home() {
                   Skapa en plan och bjud in kompisgänget →
                 </p>
               </Link>
-            )}
+            ) : null}
           </div>
         </section>
       </div>

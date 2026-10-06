@@ -14,6 +14,7 @@ import {
 } from "@/lib/hander-data";
 import { useHander } from "@/lib/hander-store";
 import { appUrl } from "@/lib/app-url";
+import { useRequireAccount } from "@/lib/auth-guard";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/skapa")({
@@ -47,6 +48,9 @@ const DIVIDER_COLORS = {
 
 function CreatePage() {
   const { addEvent, me } = useHander();
+  // Skapa event kräver inloggat konto: omdirigerar till /loggain?redirect=…
+  // om ingen session finns (datalagret avvisar dessutom skrivningar).
+  const { loggedIn, checked } = useRequireAccount();
   const [visibility, setVisibility] = useState<"public" | "private">("private");
   const [name, setName] = useState("");
   const [category, setCategory] = useState<CategoryId>("fest");
@@ -75,13 +79,13 @@ function CreatePage() {
     }
     const item: EventItem = {
       id: `new-${Date.now()}`,
-      name: name.trim() || (visibility === "private" ? "Privat event" : name.trim()),
+      name: name.trim(),
       category,
       date,
       start,
       end,
-      place: place.trim() || (visibility === "private" ? "Plats ej angiven" : place.trim()),
-      address: location?.short ?? (place.trim() || (visibility === "private" ? "Plats ej angiven" : place.trim())),
+      place: place.trim(),
+      address: location?.short ?? place.trim(),
       price: Number(price) || 0,
       description: description.trim(),
       image: image ?? undefined,
@@ -96,7 +100,11 @@ function CreatePage() {
       inviteCode: visibility === "private" ? code() : undefined,
       invites: visibility === "private" ? [] : undefined,
     };
-    addEvent(item);
+    if (!addEvent(item)) {
+      // Datalagret avvisar skapande utan session – gäller även om UI:t kringgås.
+      toast.error("Du måste vara inloggad för att skapa ett event.");
+      return;
+    }
     setCreated(item);
     toast.success(
       visibility === "public"
@@ -104,6 +112,16 @@ function CreatePage() {
         : "Privat event skapat – dela länken!",
     );
   };
+
+  if (!checked || !loggedIn) {
+    return (
+      <AppShell title="Skapa event">
+        <p className="p-8 text-center text-sm text-muted-foreground">
+          {!checked ? "Kollar inloggning…" : "Logga in för att skapa ett event."}
+        </p>
+      </AppShell>
+    );
+  }
 
   if (created) {
     const link = appUrl(`/join/${created.inviteCode ?? ""}`);
@@ -132,8 +150,7 @@ function CreatePage() {
                 Eventet har skickats för granskning.
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Publika event måste godkännas av Händer innan de syns på kartan. Det tar oftast
-                under en timme.
+                Publika event granskas innan de kan synas på kartan. Granskningstiden varierar.
               </p>
               <span className="mt-3 inline-block rounded-full bg-warning px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-warning-foreground">
                 Under granskning
@@ -429,8 +446,8 @@ function CreatePage() {
 
         <button
           type="submit"
-          className="hander-cta-button flex w-full items-center justify-center gap-2 rounded-2xl bg-[#E45048] px-4 py-4 text-sm font-bold text-[#FFFDF9] transition-transform active:translate-y-[2px]"
-        >
+          disabled={!loggedIn}
+          className="hander-cta-button flex w-full items-center justify-center gap-2 rounded-2xl bg-[#E45048] px-4 py-4 text-sm font-bold text-[#FFFDF9] transition-transform active:translate-y-[2px] disabled:opacity-50 disabled:pointer-events-none">
           <Check className="h-4 w-4" />
           {visibility === "public" ? "Skicka för granskning" : "Skapa privat event"}
         </button>
