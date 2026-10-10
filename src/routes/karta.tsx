@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Bookmark, CalendarHeart, List, MapIcon, MapPin, Share2, SlidersHorizontal, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/hander/AppShell";
@@ -40,6 +40,7 @@ export const Route = createFileRoute("/karta")({
 
 function MapPage() {
   const store = useHander();
+  const navigate = useNavigate();
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [view, setView] = useState<"karta" | "lista">("karta");
@@ -100,9 +101,8 @@ function MapPage() {
               searchable
               showPlaces
               selectedId={selected?.id ?? selectedPlace?.id ?? null}
-              onSelectEvent={(e) => {
-                setSelectedPlace(null);
-                setSelected(e);
+              onSelectEvent={(event) => {
+                void navigate({ to: "/event/$id", params: { id: event.id } });
               }}
               onSelectPlace={(p) => {
                 setSelected(null);
@@ -130,9 +130,6 @@ function MapPage() {
             )}
           </div>
 
-          {selected && (
-            <EventSheet event={selected} onClose={() => setSelected(null)} />
-          )}
           {selectedPlace && (
             <PlaceSheet place={selectedPlace} onClose={() => setSelectedPlace(null)} />
           )}

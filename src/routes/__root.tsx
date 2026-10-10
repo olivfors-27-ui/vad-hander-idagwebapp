@@ -10,6 +10,9 @@ import {
 import { type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import leafletCss from "leaflet/dist/leaflet.css?url";
+import clusterCss from "leaflet.markercluster/dist/MarkerCluster.css?url";
+import clusterDefaultCss from "leaflet.markercluster/dist/MarkerCluster.Default.css?url";
 import { HanderProvider } from "@/lib/hander-store";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -85,6 +88,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "stylesheet", href: leafletCss },
+      { rel: "stylesheet", href: clusterCss },
+      { rel: "stylesheet", href: clusterDefaultCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
