@@ -13,14 +13,14 @@ const TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const eventPin = (color: string, live: boolean, selected: boolean) =>
   divIcon({
     className: "hander-leaflet-pin",
-    html: `<span class="hander-pin-dot${selected ? " is-selected" : ""}" style="--pin-color:${color}">${live ? '<i aria-hidden="true"></i>' : ""}</span>`,
+    html: `<span class="hander-pin-dot${selected ? " is-selected" : ""}" style="position:relative;display:grid;width:34px;height:34px;place-items:center;border:3px solid #fff;border-radius:50% 50% 50% 4px;background:${color};box-shadow:0 2px 8px #17202a88;transform:rotate(-45deg);${selected ? "outline:3px solid #394fc4;outline-offset:2px;" : ""}"><span aria-hidden="true" style="width:9px;height:9px;border-radius:50%;background:#fff"></span>${live ? '<i aria-hidden="true" style="position:absolute;top:-4px;right:-4px;width:11px;height:11px;border:2px solid #fff;border-radius:50%;background:#22c55e"></i>' : ""}</span>`,
     iconSize: [34, 42],
     iconAnchor: [17, 40],
   });
 const placePin = (color: string) =>
   divIcon({
     className: "hander-leaflet-place",
-    html: `<span class="hander-place-dot" style="--pin-color:${color}"></span>`,
+    html: `<span class="hander-place-dot" style="display:block;width:25px;height:25px;border:3px solid #fff;border-radius:50%;background:${color};box-shadow:0 2px 7px #17202a88"></span>`,
     iconSize: [30, 30],
     iconAnchor: [15, 15],
   });
@@ -28,7 +28,7 @@ const clusterIcon = (cluster: { getChildCount: () => number }) => {
   const count = cluster.getChildCount();
   const size = count > 99 ? 48 : 42;
   return divIcon({
-    html: `<span class="hander-cluster-label">${count}</span>`,
+    html: `<span class="hander-cluster-label" style="display:grid;width:100%;height:100%;place-items:center;border:3px solid #fff;border-radius:50%;background:#394fc4;color:#fff;font-size:13px;font-weight:800;box-shadow:0 2px 8px #17202a88">${count}</span>`,
     className: "hander-leaflet-cluster",
     iconSize: point(size, size),
   });
