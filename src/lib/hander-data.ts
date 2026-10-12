@@ -136,9 +136,7 @@ export type EventItem = {
   lng?: number | undefined;
   distance: number; // km
   inviteCode?: string | undefined;
-  invites?:
-    | { userId: string; status: InviteStatus; name?: string | undefined }[]
-    | undefined;
+  invites?: { userId: string; status: InviteStatus; name?: string | undefined }[] | undefined;
 };
 
 export type Place = {
@@ -241,9 +239,6 @@ export const hasGeo = (item: { lat?: number | undefined; lng?: number | undefine
 export const geoOf = (item: { lat?: number | undefined; lng?: number | undefined }) =>
   hasGeo(item) ? { lat: item.lat as number, lng: item.lng as number } : null;
 
-
-
-
 export type Notification = {
   id: string;
   kind: "nearby" | "follow" | "reminder" | "social" | "plan" | "system";
@@ -268,16 +263,16 @@ export const FEED: FeedItem[] = [];
 
 /** Solid färg per kategori – används bl.a. för kartpins. */
 export const CATEGORY_COLOR: Record<CategoryId, string> = {
-  musik: "#E45048",
-  fest: "#E57657",
-  student: "#E7A057",
-  sport: "#627BD8",
-  mat: "#EAB24F",
-  kultur: "#465BC4",
-  shopping: "#627BD8",
-  plugg: "#465BC4",
-  utomhus: "#627BD8",
-  ovrigt: "#E57657",
+  musik: "#D4A017", // guld
+  fest: "#E66A9B", // rosa
+  student: "#3157C8", // blå
+  sport: "#E4473D", // röd
+  mat: "#278A52", // grön
+  kultur: "#7938B8", // lila
+  shopping: "#737780", // grå
+  plugg: "#E87524", // orange
+  utomhus: "#62BDEB", // ljusblå
+  ovrigt: "#242424", // svart
 };
 
 /** Färgtema per kategori för omslagsbilder. */
@@ -330,7 +325,7 @@ export function baseStats(e: EventItem): EventStats {
   const views = 60 + (h % 540) + interest * 18;
   return {
     views,
-    clicks: Math.round(views * (0.2 + ((h % 17) / 100))),
+    clicks: Math.round(views * (0.2 + (h % 17) / 100)),
     saves: Math.round(views * 0.06) + (h % 7),
     interested: interest,
     shares: Math.round(views * 0.03) + (h % 4),

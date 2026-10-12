@@ -1,18 +1,10 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import {
-  Bell,
-  Bookmark,
-  CalendarPlus,
-  Home,
-  Map,
-  Plus,
-  Search,
-  User,
-  Users,
-} from "lucide-react";
-import { type ReactNode } from "react";
+import { Bell, Bookmark, CalendarPlus, Home, Map, Plus, Search, User, Users } from "lucide-react";
+import { type ReactNode, useLayoutEffect, useRef } from "react";
 import { useHander } from "@/lib/hander-store";
 import { cn } from "@/lib/utils";
+
+let savedMapScrollTop = 0;
 
 const NAV_LEFT = [
   { to: "/", label: "Hem", icon: Home },
@@ -24,13 +16,7 @@ const NAV_RIGHT = [
   { to: "/sparat", label: "Sparat", icon: Bookmark },
 ] as const;
 
-export function TopBar({
-  title,
-  subtitle,
-}: {
-  title: string;
-  subtitle?: string | undefined;
-}) {
+export function TopBar({ title, subtitle }: { title: string; subtitle?: string | undefined }) {
   const { unreadNotifications } = useHander();
   return (
     <header className="shrink-0 sticky top-0 z-30 hander-topbar">
@@ -45,17 +31,13 @@ export function TopBar({
         <div className="min-w-0 flex-1">
           <h1 className="truncate font-display text-[19px] font-bold leading-tight">{title}</h1>
           <p
-            className={cn(
-              "truncate text-xs text-muted-foreground",
-              !subtitle && "invisible",
-            )}
+            className={cn("truncate text-xs text-muted-foreground", !subtitle && "invisible")}
             aria-hidden={!subtitle}
           >
             {subtitle ?? "\u00A0"}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-
           <Link
             to="/sok"
             aria-label="Sök"
@@ -117,11 +99,15 @@ function NavItem({
 
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
 
   return (
     <>
-      <nav className="hander-bottom-nav absolute inset-x-0 bottom-0 z-40 pb-[env(safe-area-inset-bottom)]" aria-label="Huvudnavigation">
+      <nav
+        className="hander-bottom-nav absolute inset-x-0 bottom-0 z-40 pb-[env(safe-area-inset-bottom)]"
+        aria-label="Huvudnavigation"
+      >
         <ul className="flex items-center justify-around px-4 py-3">
           {NAV_LEFT.map(({ to, label, icon }) => (
             <NavItem key={to} to={to} label={label} icon={icon} active={isActive(to)} />
@@ -158,10 +144,6 @@ export function AppShell({
   return (
     <div className="relative mx-auto flex h-screen min-h-0 w-full max-w-md flex-col bg-background hander-phone">
       <div className="hander-notch" aria-hidden />
-      <div className="hander-statusbar" aria-hidden>
-        <span>9:41</span>
-        <span className="hander-status-icons">▮▮▮　◔　▰</span>
-      </div>
       {!bare && title ? (
         <>
           <TopBar title={title} subtitle={subtitle} />
@@ -169,7 +151,22 @@ export function AppShell({
           <div className="hander-lines h-[4px] shrink-0" aria-hidden />
         </>
       ) : null}
-      <main className="relative z-10 flex-1 pb-[102px]">{children}</main>
+      <main
+        ref={(node) => {
+          if (!node) return;
+          if (title === "Karta") {
+            node.scrollTop = savedMapScrollTop;
+            node.onscroll = () => {
+              savedMapScrollTop = node.scrollTop;
+            };
+          } else {
+            node.scrollTop = 0;
+          }
+        }}
+        className="relative z-10 flex-1 pb-[102px]"
+      >
+        {children}
+      </main>
       <BottomNav />
     </div>
   );

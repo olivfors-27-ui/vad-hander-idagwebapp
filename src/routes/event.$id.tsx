@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useParams, useRouter } from "@tanstack/react-router";
-import { ArrowLeft, Bookmark, Heart, MapPin, Share2, Ticket, Users } from "lucide-react";
+import { X, Bookmark, Heart, MapPin, Share2, Ticket, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { AppShell } from "@/components/hander/AppShell";
@@ -79,11 +79,14 @@ function EventPage() {
         <EventCover event={event} className="h-56" big />
         <button
           type="button"
-          onClick={() => router.history.back()}
-          className="absolute left-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-background/90 shadow-[var(--shadow-card)]"
-          aria-label="Tillbaka"
+          onClick={() => {
+            if (router.history.canGoBack()) router.history.back();
+            else void router.navigate({ to: "/" });
+          }}
+          className="absolute left-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-background/90 shadow-[var(--shadow-card)]"
+          aria-label="Stäng event"
         >
-          <ArrowLeft className="h-5 w-5" />
+          <X className="h-5 w-5" />
         </button>
         {event.promoted && (
           <SponsoredBadge tone="onMedia" className="absolute right-4 top-4 max-w-[45%]" />
