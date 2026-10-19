@@ -29,15 +29,20 @@ export const Route = createFileRoute("/skapa")({
   component: CreatePage,
 });
 
-const code = () =>
-  Array.from({ length: 6 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 32)]).join("");
+const code = () => crypto.randomUUID().replaceAll("-", "");
 
 const field =
   "w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
 
 /** Liten divider i palettfärg, mellan sektionerna på formuläret. */
 function PaletteDivider({ color }: { color: string }) {
-  return <div aria-hidden className="h-[3px] w-full rounded-full" style={{ backgroundColor: color, opacity: 0.55 }} />;
+  return (
+    <div
+      aria-hidden
+      className="h-[3px] w-full rounded-full"
+      style={{ backgroundColor: color, opacity: 0.55 }}
+    />
+  );
 }
 const DIVIDER_COLORS = {
   coral: "#E57657",
@@ -47,7 +52,8 @@ const DIVIDER_COLORS = {
 } as const;
 
 function CreatePage() {
-  const { addEvent, me } = useHander();
+  const useHanderStore = useHander();
+  const { me } = useHanderStore;
   // Skapa event kräver inloggat konto: omdirigerar till /loggain?redirect=…
   // om ingen session finns (datalagret avvisar dessutom skrivningar).
   const { loggedIn, checked } = useRequireAccount();
@@ -65,7 +71,7 @@ function CreatePage() {
   const [image, setImage] = useState<string | null>(null);
   const [created, setCreated] = useState<EventItem | null>(null);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     // Namn och plats krävs endast för publika event; privata får standardvärden.
     if (visibility === "public" && (!name.trim() || !place.trim())) {
@@ -100,12 +106,27 @@ function CreatePage() {
       inviteCode: visibility === "private" ? code() : undefined,
       invites: visibility === "private" ? [] : undefined,
     };
-    if (!addEvent(item)) {
-      // Datalagret avvisar skapande utan session – gäller även om UI:t kringgås.
-      toast.error("Du måste vara inloggad för att skapa ett event.");
-      return;
+    if (visibility === "private") {
+      try {
+        const createdEvent = await useHanderStore.addPrivateEvent(
+          item,
+          me,
+          useHanderStore.account?.name ?? "Arrangör",
+        );
+        setCreated(createdEvent);
+      } catch (error) {
+        console.error("Could not create shareable private event", error);
+        toast.error("Eventet kunde inte sparas. Kontrollera anslutningen och försök igen.");
+        return;
+      }
+    } else {
+      if (!useHanderStore.addEvent(item)) {
+        // Datalagret avvisar skapande utan session – gäller även om UI:t kringgås.
+        toast.error("Du måste vara inloggad för att skapa ett event.");
+        return;
+      }
+      setCreated(item);
     }
-    setCreated(item);
     toast.success(
       visibility === "public"
         ? "Eventet har skickats för granskning."
@@ -215,15 +236,31 @@ function CreatePage() {
         <div className="grid grid-cols-2 gap-2">
           {(
             [
-              { id: "private", label: "Privat", icon: Lock, sub: "Endast inbjudna", accent: "#E45048", soft: "#FBD9D6" },
-              { id: "public", label: "Publikt", icon: Globe, sub: "Alla kan upptäcka", accent: "#465BC4", soft: "#DDE3F8" },
+              {
+                id: "private",
+                label: "Privat",
+                icon: Lock,
+                sub: "Endast inbjudna",
+                accent: "#E45048",
+                soft: "#FBD9D6",
+              },
+              {
+                id: "public",
+                label: "Publikt",
+                icon: Globe,
+                sub: "Alla kan upptäcka",
+                accent: "#465BC4",
+                soft: "#DDE3F8",
+              },
             ] as const
           ).map((o) => (
             <button
               key={o.id}
               type="button"
               onClick={() => setVisibility(o.id)}
-              style={visibility === o.id ? { borderColor: o.accent, backgroundColor: o.soft } : undefined}
+              style={
+                visibility === o.id ? { borderColor: o.accent, backgroundColor: o.soft } : undefined
+              }
               className={cn(
                 "visibility-card rounded-2xl border-[3px] p-3 text-left transition-colors",
                 visibility === o.id ? "" : `visibility-card--${o.id} border-border bg-card`,
@@ -285,19 +322,34 @@ function CreatePage() {
             <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
               Datum
             </span>
-            <input type="date" className={field} value={date} onChange={(e) => setDate(e.target.value)} />
+            <input
+              type="date"
+              className={field}
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
           </label>
           <label className="col-span-1 space-y-1.5">
             <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
               Start
             </span>
-            <input type="time" className={field} value={start} onChange={(e) => setStart(e.target.value)} />
+            <input
+              type="time"
+              className={field}
+              value={start}
+              onChange={(e) => setStart(e.target.value)}
+            />
           </label>
           <label className="col-span-1 space-y-1.5">
             <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
               Slut
             </span>
-            <input type="time" className={field} value={end} onChange={(e) => setEnd(e.target.value)} />
+            <input
+              type="time"
+              className={field}
+              value={end}
+              onChange={(e) => setEnd(e.target.value)}
+            />
           </label>
           <label className="col-span-1 space-y-1.5">
             <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
@@ -447,7 +499,8 @@ function CreatePage() {
         <button
           type="submit"
           disabled={!loggedIn}
-          className="hander-cta-button flex w-full items-center justify-center gap-2 rounded-2xl bg-[#E45048] px-4 py-4 text-sm font-bold text-[#FFFDF9] transition-transform active:translate-y-[2px] disabled:opacity-50 disabled:pointer-events-none">
+          className="hander-cta-button flex w-full items-center justify-center gap-2 rounded-2xl bg-[#E45048] px-4 py-4 text-sm font-bold text-[#FFFDF9] transition-transform active:translate-y-[2px] disabled:opacity-50 disabled:pointer-events-none"
+        >
           <Check className="h-4 w-4" />
           {visibility === "public" ? "Skicka för granskning" : "Skapa privat event"}
         </button>

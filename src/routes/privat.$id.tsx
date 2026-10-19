@@ -1,12 +1,11 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { Copy, Lock, UserMinus, UserPlus } from "lucide-react";
+import { Copy, Lock } from "lucide-react";
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/hander/AppShell";
 import { Avatar, EventCover } from "@/components/hander/EventBits";
-import { InviteReply } from "@/components/hander/InviteReply";
-import { userById, type InviteStatus, type User } from "@/lib/hander-data";
+import { userById, type InviteStatus } from "@/lib/hander-data";
 import { formatDay, useHander } from "@/lib/hander-store";
 import { appUrl } from "@/lib/app-url";
 
@@ -14,7 +13,10 @@ export const Route = createFileRoute("/privat/$id")({
   head: () => ({
     meta: [
       { title: "Privat event – Händer" },
-      { name: "description", content: "Hantera gästlista och inbjudningslänk för ditt privata event." },
+      {
+        name: "description",
+        content: "Hantera gästlista och inbjudningslänk för ditt privata event.",
+      },
       { property: "og:title", content: "Privat event – Händer" },
       { property: "og:description", content: "Bjud in vänner med en länk." },
     ],
@@ -32,8 +34,14 @@ const GROUPS: { id: InviteStatus; label: string }[] = [
 function PrivateEventPage() {
   const { id } = useParams({ from: "/privat/$id" });
   const store = useHander();
-  const [adding, setAdding] = useState(false);
   const event = store.events.find((e) => e.id === id);
+
+  useEffect(() => {
+    if (!event?.inviteCode) return;
+    void store.loadPrivateEventInvites(event.inviteCode).catch((error) => {
+      console.error("Could not refresh private event replies", error);
+    });
+  }, [event?.inviteCode, store.loadPrivateEventInvites]);
 
   if (!event) {
     return (
@@ -46,7 +54,15 @@ function PrivateEventPage() {
   const invites = event.invites ?? [];
   const link = appUrl(`/join/${event.inviteCode}`);
   const isHost = event.organizerId === store.me;
-  const notInvited: User[] = []; // Vänner-brist: inga demoanvändare att bjuda in
+  if (!isHost) {
+    return (
+      <AppShell title="Privat event">
+        <p className="p-8 text-center text-sm text-muted-foreground">
+          Endast arrangören kan visa gästlistan.
+        </p>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell title={event.name} subtitle="Privat event – syns inte på kartan">
@@ -95,10 +111,7 @@ function PrivateEventPage() {
 
         <div className="grid grid-cols-4 gap-2 text-center">
           {GROUPS.map((g) => (
-            <div
-              key={g.id}
-              className="rounded-xl border border-border bg-card p-2"
-            >
+            <div key={g.id} className="rounded-xl border border-border bg-card p-2">
               <p className="font-display text-lg font-bold text-[#E45048]">
                 {invites.filter((i) => i.status === g.id).length}
               </p>
@@ -117,8 +130,6 @@ function PrivateEventPage() {
                   {g.label} ({list.length})
                 </p>
                 {list.map((i) => {
-                  // Namnet gästen svarade med sparas på inbjudan – använd det
-                  // istället för att falla tillbaka på "Okänd användare".
                   const u = userById(i.userId, i.name);
                   return (
                     <div
@@ -132,19 +143,6 @@ function PrivateEventPage() {
                           <p className="truncate text-xs text-muted-foreground">{u.username}</p>
                         )}
                       </div>
-                      {isHost && (
-                        <button
-                          type="button"
-                          aria-label={`Ta bort ${u.name}`}
-                          onClick={() => {
-                            store.removeInvite(event.id, i.userId);
-                            toast(`${u.name} togs bort`);
-                          }}
-                          className="rounded-xl bg-[#F7E5D5] p-2 text-[#E45048]"
-                        >
-                          <UserMinus className="h-4 w-4" />
-                        </button>
-                      )}
                     </div>
                   );
                 })}
@@ -157,56 +155,6 @@ function PrivateEventPage() {
             </p>
           )}
         </div>
-
-        {isHost && (
-          <div>
-            <button
-              type="button"
-              onClick={() => setAdding((s) => !s)}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#E45048] px-4 py-3 text-sm font-bold text-[#FFFDF9] shadow-[0_3px_0_rgba(112,28,23,.25)] active:translate-y-[2px]"
-            >
-              <UserPlus className="h-4 w-4" /> Bjud in vänner från appen
-            </button>
-            {adding && (
-              <div className="mt-2 space-y-2">
-                {notInvited.map((u) => (
-                  <div key={u.id} className="flex items-center gap-3 rounded-2xl border border-border p-3">
-                    <Avatar user={u} size={32} />
-                    <p className="flex-1 truncate text-sm">{u.name}</p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        store.setInviteStatus(event.id, u.id, "invited");
-                        toast.success(`${u.name} inbjuden`);
-                      }}
-                      className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold text-primary-foreground"
-                    >
-                      Bjud in
-                    </button>
-                  </div>
-                ))}
-                {notInvited.length === 0 && (
-                  <p className="text-sm text-muted-foreground">Alla demoanvändare är redan inbjudna.</p>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {!isHost && (
-          <InviteReply
-            loggedIn={Boolean(store.account)}
-            accountName={store.account?.name}
-            answered={invites.find((i) => i.userId === store.me)?.status}
-            savedName={invites.find((i) => i.userId === store.me)?.name}
-            onReply={(s, name) => {
-              store.setInviteStatus(event.id, store.me, s, name);
-              toast.success(
-                s === "accepted" ? "Du kommer!" : s === "maybe" ? "Svarat kanske" : "Du tackade nej",
-              );
-            }}
-          />
-        )}
       </div>
     </AppShell>
   );

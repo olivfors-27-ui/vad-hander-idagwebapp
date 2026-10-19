@@ -29,6 +29,12 @@ import { uid, type Plan, type PlanReply } from "./hander-plans";
 import { fetchEventsWithCache } from "./visitstockholm";
 import { watchAccount, type Account } from "./auth";
 import {
+  fetchPrivateEventInvite,
+  fetchPrivateEventInvites,
+  savePrivateEventInvite,
+  submitPrivateEventInviteReply,
+} from "./private-event-invites";
+import {
   fetchPlans,
   insertPlan,
   patchPlan,
@@ -88,15 +94,16 @@ function useStoreValue() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {        const parsed = JSON.parse(raw) as Persisted;
-          setState((s) => {
-            const storedEvents = Array.isArray(parsed.events) ? parsed.events : [];
-            const storedPlans = Array.isArray(parsed.plans) ? parsed.plans : [];
-            // Ingen demodata slås på igen – gamla demo-id:n ignoreras.
-            const cleanEvents = storedEvents.filter((e) => !e.id.startsWith("demo"));
-            const cleanPlans = storedPlans.filter((p) => !p.id.startsWith("demo"));
-            return { ...s, ...parsed, events: cleanEvents, plans: cleanPlans };
-          });
+      if (raw) {
+        const parsed = JSON.parse(raw) as Persisted;
+        setState((s) => {
+          const storedEvents = Array.isArray(parsed.events) ? parsed.events : [];
+          const storedPlans = Array.isArray(parsed.plans) ? parsed.plans : [];
+          // Ingen demodata slås på igen – gamla demo-id:n ignoreras.
+          const cleanEvents = storedEvents.filter((e) => !e.id.startsWith("demo"));
+          const cleanPlans = storedPlans.filter((p) => !p.id.startsWith("demo"));
+          return { ...s, ...parsed, events: cleanEvents, plans: cleanPlans };
+        });
       }
     } catch {
       /* ignorera */
@@ -147,7 +154,6 @@ function useStoreValue() {
       void refreshPlans();
     });
   }, [refreshPlans]);
-
 
   // Inloggning: håll reda på kontot och använd dess id som "me"-identitet.
   // Utan konto (eller utan Supabase-konfig) faller allt tillbaka på demo-identiteten.
@@ -231,6 +237,84 @@ function useStoreValue() {
     setState((s) => ({ ...s, events: [e, ...s.events] }));
   }, []);
 
+  const loadPrivateEventInvite = useCallback(async (code: string, responseToken: string | null) => {
+    const result = await fetchPrivateEventInvite(code, responseToken);
+    if (!result) return null;
+    const event = { ...result.event, invites: result.ownReply ? [result.ownReply] : [] };
+    setState((s) => {
+      const existing = s.events.find((stored) => stored.id === event.id);
+      const loaded =
+        existing && !result.ownReply ? { ...event, invites: existing.invites ?? [] } : event;
+      return {
+        ...s,
+        events: existing
+          ? s.events.map((stored) => (stored.id === event.id ? loaded : stored))
+          : [loaded, ...s.events],
+      };
+    });
+    return event;
+  }, []);
+
+  const loadPrivateEventInvites = useCallback(async (code: string) => {
+    const invites = await fetchPrivateEventInvites(code);
+    setState((s) => ({
+      ...s,
+      events: s.events.map((event) =>
+        event.inviteCode?.toUpperCase() === code.toUpperCase() ? { ...event, invites } : event,
+      ),
+    }));
+    return invites;
+  }, []);
+
+  const addPrivateEvent = useCallback(
+    async (event: EventItem, organizerId: string, organizerName: string) => {
+      const created = { ...event, organizerId, organizerName };
+      await savePrivateEventInvite(created, organizerId);
+      setState((s) => ({ ...s, events: [created, ...s.events] }));
+      return created;
+    },
+    [],
+  );
+
+  const replyToPrivateEvent = useCallback(
+    async (
+      eventId: string,
+      code: string,
+      responseToken: string | null,
+      guestName: string,
+      status: Exclude<InviteStatus, "invited">,
+    ) => {
+      const result = await submitPrivateEventInviteReply(code, responseToken, guestName, status);
+      const updatedReply = result.reply;
+      if (result.responseToken) {
+        try {
+          localStorage.setItem(
+            `hander-invite-response-${code.toUpperCase()}`,
+            result.responseToken,
+          );
+        } catch {
+          // The server response remains saved; only cross-reload convenience is unavailable.
+        }
+      }
+      if (eventId) {
+        setState((s) => ({
+          ...s,
+          events: s.events.map((event) => {
+            if (event.id !== eventId) return event;
+            const existing = event.invites ?? [];
+            const updated = existing.filter((old) => old.userId !== updatedReply.userId);
+            return {
+              ...event,
+              invites: existing.length > 1 ? updated.concat(updatedReply) : [updatedReply],
+            };
+          }),
+        }));
+      }
+      return updatedReply;
+    },
+    [],
+  );
+
   const updateEvent = useCallback((id: string, p: Partial<EventItem>) => {
     setState((s) => ({
       ...s,
@@ -254,14 +338,11 @@ function useStoreValue() {
           const exists = invites.some((i) => i.userId === userId);
           // Namnet gästen skrev vid svar sparas på inbjudan så att värdens
           // gästlista visar riktigt namn – bevaras om ett nytt svar saknar namn.
-          const name =
-            guestName?.trim() || invites.find((i) => i.userId === userId)?.name;
+          const name = guestName?.trim() || invites.find((i) => i.userId === userId)?.name;
           return {
             ...e,
             invites: exists
-              ? invites.map((i) =>
-                  i.userId === userId ? { ...i, status, name } : i,
-                )
+              ? invites.map((i) => (i.userId === userId ? { ...i, status, name } : i))
               : [...invites, { userId, status, name }],
           };
         }),
@@ -274,7 +355,9 @@ function useStoreValue() {
     setState((s) => ({
       ...s,
       events: s.events.map((e) =>
-        e.id === eventId ? { ...e, invites: (e.invites ?? []).filter((i) => i.userId !== userId) } : e,
+        e.id === eventId
+          ? { ...e, invites: (e.invites ?? []).filter((i) => i.userId !== userId) }
+          : e,
       ),
     }));
   }, []);
@@ -319,32 +402,32 @@ function useStoreValue() {
     void removePlan(id).catch(() => {});
   }, []);
 
-  const addReply = useCallback(
-    (planId: string, reply: Omit<PlanReply, "id" | "at">) => {
-      void upsertReply(planId, reply).catch(() => {});
-      setState((s) => ({
-        ...s,
-        plans: s.plans.map((pl) =>
-          pl.id === planId
-            ? {
-                ...pl,
-                replies: [
-                  ...pl.replies.filter(
-                    (r) => r.name.trim().toLowerCase() !== reply.name.trim().toLowerCase(),
-                  ),
-                  { ...reply, id: uid("rep"), at: new Date().toISOString() },
-                ],
-              }
-            : pl,
-        ),
-      }));
-    },
-    [],
-  );
+  const addReply = useCallback((planId: string, reply: Omit<PlanReply, "id" | "at">) => {
+    void upsertReply(planId, reply).catch(() => {});
+    setState((s) => ({
+      ...s,
+      plans: s.plans.map((pl) =>
+        pl.id === planId
+          ? {
+              ...pl,
+              replies: [
+                ...pl.replies.filter(
+                  (r) => r.name.trim().toLowerCase() !== reply.name.trim().toLowerCase(),
+                ),
+                { ...reply, id: uid("rep"), at: new Date().toISOString() },
+              ],
+            }
+          : pl,
+      ),
+    }));
+  }, []);
 
   const addPlaceSuggestion = useCallback(
     (p: Place) =>
-      setState((s) => ({ ...s, placeSuggestions: [{ ...p, status: "pending" }, ...s.placeSuggestions] })),
+      setState((s) => ({
+        ...s,
+        placeSuggestions: [{ ...p, status: "pending" }, ...s.placeSuggestions],
+      })),
     [],
   );
 
@@ -436,7 +519,8 @@ function useStoreValue() {
     const dynamic: Notification[] = [];
 
     for (const plan of state.plans) {
-      const mine = plan.createdBy === me || plan.createdBy === ME || plan.createdBy.toLowerCase() === "du";
+      const mine =
+        plan.createdBy === me || plan.createdBy === ME || plan.createdBy.toLowerCase() === "du";
       if (mine && plan.replies.length > 0) {
         const last = plan.replies[plan.replies.length - 1];
         dynamic.push({
@@ -472,9 +556,10 @@ function useStoreValue() {
   }, [state.plans, state.events, state.saved]);
 
   const unreadNotifications = notifications.filter(
-    (n) => !state.readNotifications.includes(n.id) && (n.kind === "system" || state.notifSettings[n.kind]),
+    (n) =>
+      !state.readNotifications.includes(n.id) &&
+      (n.kind === "system" || state.notifSettings[n.kind]),
   ).length;
-
 
   return {
     ...state,
@@ -507,6 +592,10 @@ function useStoreValue() {
       });
       return true;
     },
+    loadPrivateEventInvite,
+    loadPrivateEventInvites,
+    addPrivateEvent,
+    replyToPrivateEvent,
     updateEvent,
     setStatus,
     setInviteStatus,
@@ -548,7 +637,10 @@ export type VisibilityFilter = "alla" | "public" | "private";
 export type TimeFilter = "alla" | "morgon" | "eftermiddag" | "kvall" | "sent";
 export type SortMode = "relevans" | "avstand" | "tid" | "popularitet";
 
-export const TIME_RANGES: Record<Exclude<TimeFilter, "alla">, { label: string; from: number; to: number }> = {
+export const TIME_RANGES: Record<
+  Exclude<TimeFilter, "alla">,
+  { label: string; from: number; to: number }
+> = {
   morgon: { label: "Morgon (06–12)", from: 6 * 60, to: 12 * 60 },
   eftermiddag: { label: "Eftermiddag (12–17)", from: 12 * 60, to: 17 * 60 },
   kvall: { label: "Kväll (17–23)", from: 17 * 60, to: 23 * 60 },
@@ -643,8 +735,7 @@ export function sortEvents(events: EventItem[], mode: SortMode = "relevans") {
   const arr = [...events];
   if (mode === "avstand") return arr.sort((a, b) => a.distance - b.distance);
   if (mode === "popularitet") return arr.sort((a, b) => b.interested.length - a.interested.length);
-  if (mode === "tid")
-    return arr.sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
+  if (mode === "tid") return arr.sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
   return arr.sort((a, b) => {
     if (!!b.promoted !== !!a.promoted) return b.promoted ? 1 : -1;
     const t = (a.date + a.start).localeCompare(b.date + b.start);
@@ -658,7 +749,10 @@ export function formatDay(date: string) {
   const d = new Date(date + "T12:00:00");
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  if (date === `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, "0")}-${String(tomorrow.getDate()).padStart(2, "0")}`)
+  if (
+    date ===
+    `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, "0")}-${String(tomorrow.getDate()).padStart(2, "0")}`
+  )
     return "Imorgon";
   return d.toLocaleDateString("sv-SE", { weekday: "short", day: "numeric", month: "short" });
 }

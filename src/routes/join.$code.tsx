@@ -1,11 +1,12 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Lock, MapPin, Users } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/hander/AppShell";
 import { Avatar, EventCover } from "@/components/hander/EventBits";
 import { InviteReply } from "@/components/hander/InviteReply";
 import { useProfileName } from "@/lib/auth";
-import { ME, userById, type User } from "@/lib/hander-data";
+import { ME, userById, type EventItem, type User } from "@/lib/hander-data";
 import { formatDay, useHander } from "@/lib/hander-store";
 
 export const Route = createFileRoute("/join/$code")({
@@ -23,7 +24,35 @@ export const Route = createFileRoute("/join/$code")({
 function JoinPage() {
   const { code } = useParams({ from: "/join/$code" });
   const store = useHander();
-  const event = store.events.find((e) => e.inviteCode?.toUpperCase() === code.toUpperCase());
+  const [loadedEvent, setLoadedEvent] = useState<EventItem | null>(null);
+  const localEvent = store.events.find((e) => e.inviteCode?.toUpperCase() === code.toUpperCase());
+  const event = (localEvent?.visibility === "private" ? localEvent : loadedEvent) ?? undefined;
+  const hostedEvent = event?.organizerId === store.me;
+  const [inviteLoaded, setInviteLoaded] = useState(false);
+  const [replying, setReplying] = useState(false);
+  const displayInvite = hostedEvent
+    ? undefined
+    : (event?.invites?.find((invite) => invite.userId === store.account?.id) ??
+      (store.account ? undefined : inviteLoaded ? loadedEvent?.invites?.[0] : undefined));
+  const responseToken = getGuestResponseToken(code);
+  const guestKey = responseToken;
+
+  useEffect(() => {
+    let active = true;
+    setInviteLoaded(false);
+    void store
+      .loadPrivateEventInvite(code, responseToken)
+      .then((loaded) => {
+        if (active && loaded) setLoadedEvent(loaded);
+      })
+      .catch((error) => console.error("Could not load private event invite", error))
+      .finally(() => {
+        if (active) setInviteLoaded(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [code, responseToken, store.loadPrivateEventInvite]);
 
   // Inbjudarens namn: sparad på eventet (organizerName) – annars hämtas
   // profilen via RLS-publicerad profiles-tabell. Hook anropas före tidig
@@ -35,7 +64,9 @@ function JoinPage() {
     return (
       <AppShell title="Inbjudan">
         <div className="p-8 text-center">
-          <p className="text-sm text-muted-foreground">Inbjudningslänken är ogiltig eller utgången.</p>
+          <p className="text-sm text-muted-foreground">
+            {inviteLoaded ? "Inbjudningslänken är ogiltig eller utgången." : "Hämtar inbjudan…"}
+          </p>
           <Link to="/" className="mt-4 inline-block text-sm font-bold text-primary">
             Till Upptäck
           </Link>
@@ -47,19 +78,12 @@ function JoinPage() {
   // Aldrig "Okänd" för en riktig användare: organizerName → profiluppslag →
   // inloggat eget konto. "me"/legacy utan namn får en neutral etikett.
   const hostName =
-    event.organizerName ??
-    profileName ??
-    (isSelf ? store.account?.name ?? "Du" : undefined);
+    event.organizerName ?? profileName ?? (isSelf ? (store.account?.name ?? "Du") : undefined);
   const host: User = userById(event.organizerId, hostName);
   const hostLabel = hostName ?? (isSelf ? "Du" : "Arrangör");
 
   const invites = event.invites ?? [];
-  const myInvite = invites.find((i) => i.userId === store.me);
-  const myStatus = myInvite?.status;
-  const going = invites.filter((i) => i.status === "accepted");
-  const goingNames = going
-    .map((g) => g.name?.trim().split(" ")[0])
-    .filter((n): n is string => Boolean(n));
+  const myStatus = displayInvite?.status;
 
   return (
     <AppShell title="Du är inbjuden">
@@ -87,31 +111,42 @@ function JoinPage() {
           <Avatar user={host} size={40} />
           <div>
             <p className="text-sm font-bold text-[#2A2421]">{hostLabel}</p>
-            <p className="text-xs text-muted-foreground">{isSelf ? "Du bjöd in dig" : "bjöd in dig"}</p>
+            <p className="text-xs text-muted-foreground">
+              {isSelf ? "Du bjöd in dig" : "bjöd in dig"}
+            </p>
           </div>
         </div>
 
-        {goingNames.length > 0 && (
-          <p className="text-sm text-muted-foreground">
-            {goingNames.join(", ")} kommer redan.
-          </p>
+        {!hostedEvent && (
+          <InviteReply
+            disabled={replying}
+            loggedIn={Boolean(store.account)}
+            accountName={store.account?.name}
+            answered={myStatus}
+            savedName={displayInvite?.name}
+            onReply={(s, name) => {
+              setReplying(true);
+              void store
+                .replyToPrivateEvent(event.id, code, guestKey, name, s)
+                .then(() => {
+                  toast.success(
+                    s === "accepted"
+                      ? "Du kommer!"
+                      : s === "maybe"
+                        ? "Svarat kanske"
+                        : "Du tackade nej",
+                  );
+                })
+                .catch((error) => {
+                  console.error("Could not save invite reply", error);
+                  toast.error("Svaret kunde inte sparas. Försök igen.");
+                })
+                .finally(() => setReplying(false));
+            }}
+          />
         )}
 
-        <InviteReply
-          loggedIn={Boolean(store.account)}
-          accountName={store.account?.name}
-          answered={myStatus}
-          savedName={myInvite?.name}
-          onReply={(s, name) => {
-            const ok = s;
-            store.setInviteStatus(event.id, store.me, ok, name);
-            toast.success(
-              ok === "accepted" ? "Du kommer!" : ok === "maybe" ? "Svarat kanske" : "Du tackade nej",
-            );
-          }}
-        />
-
-        {!store.account && (
+        {!store.account && !hostedEvent && (
           <p className="text-center text-xs text-muted-foreground">
             Har du ett konto?{" "}
             <Link
@@ -125,14 +160,25 @@ function JoinPage() {
           </p>
         )}
 
-        <Link
-          to="/privat/$id"
-          params={{ id: event.id }}
-          className="flex items-center justify-center gap-2 rounded-2xl bg-[#E57657] px-4 py-3.5 text-center text-sm font-bold text-[#FFFDF9] shadow-[0_3px_0_rgba(112,28,23,.25)] active:translate-y-[2px]"
-        >
-          <Users className="h-4 w-4" /> Se gästlistan
-        </Link>
+        {hostedEvent && (
+          <Link
+            to="/privat/$id"
+            params={{ id: event.id }}
+            className="flex items-center justify-center gap-2 rounded-2xl bg-[#E57657] px-4 py-3.5 text-center text-sm font-bold text-[#FFFDF9] shadow-[0_3px_0_rgba(112,28,23,.25)] active:translate-y-[2px]"
+          >
+            <Users className="h-4 w-4" /> Se gästlistan
+          </Link>
+        )}
       </div>
     </AppShell>
   );
+}
+
+function getGuestResponseToken(code: string): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(`hander-invite-response-${code.toUpperCase()}`);
+  } catch {
+    return null;
+  }
 }

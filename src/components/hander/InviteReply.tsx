@@ -25,6 +25,7 @@ export function InviteReply({
   accountName,
   answered,
   savedName,
+  disabled = false,
   onReply,
 }: {
   loggedIn: boolean;
@@ -33,7 +34,8 @@ export function InviteReply({
   answered?: InviteStatus | undefined;
   /** Namnet gästen skrev när hen svarade – förifylls i fältet. */
   savedName?: string | undefined;
-  onReply: (status: InviteStatus, name: string) => void;
+  disabled?: boolean | undefined;
+  onReply: (status: Exclude<InviteStatus, "invited">, name: string) => void;
 }) {
   const [name, setName] = useState(savedName ?? "");
   const [showError, setShowError] = useState(false);
@@ -49,7 +51,7 @@ export function InviteReply({
       return;
     }
     setShowError(false);
-    onReply(s, effectiveName);
+    onReply(s as Exclude<InviteStatus, "invited">, effectiveName);
   };
 
   return (
@@ -103,6 +105,7 @@ export function InviteReply({
           <button
             key={s}
             type="button"
+            disabled={disabled}
             onClick={() => submit(s)}
             aria-pressed={answered === s}
             className={cn(
@@ -113,7 +116,7 @@ export function InviteReply({
             )}
             style={
               answered === s
-                ? { backgroundColor: tone, "--tw-shadow-color": shadow } as React.CSSProperties
+                ? ({ backgroundColor: tone, "--tw-shadow-color": shadow } as React.CSSProperties)
                 : { backgroundColor: soft, color: tone }
             }
           >
@@ -126,7 +129,13 @@ export function InviteReply({
       {answered && (
         <p className="mt-2 text-sm font-semibold text-[#2A2421]">
           Du har svarat “
-          {answered === "accepted" ? "Kommer" : answered === "maybe" ? "Kanske" : answered === "declined" ? "Kan inte" : "Inbjuden"}
+          {answered === "accepted"
+            ? "Kommer"
+            : answered === "maybe"
+              ? "Kanske"
+              : answered === "declined"
+                ? "Kan inte"
+                : "Inbjuden"}
           ”.
         </p>
       )}
