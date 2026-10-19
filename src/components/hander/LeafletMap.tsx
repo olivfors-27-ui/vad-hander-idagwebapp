@@ -1,5 +1,5 @@
 import L, { divIcon, point, type LatLngExpression } from "leaflet";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { createPortal } from "react-dom";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { CATEGORY_COLOR, PLACE_TYPES, geoOf, type EventItem, type Place } from "@/lib/hander-data";
 import { isHappeningNow } from "@/lib/hander-store";
+import { DEFAULT_MAP_VIEW, readMapView, saveMapView } from "@/lib/map-view";
 import { cn } from "@/lib/utils";
 import type { GeoPoint } from "./MapCanvas";
 
@@ -163,17 +164,92 @@ function MapControls({ center }: { center: GeoPoint }) {
 function InvalidateMapSize() {
   const map = useMap();
   useEffect(() => {
-    const frame = requestAnimationFrame(() => map.invalidateSize({ pan: false }));
-    return () => cancelAnimationFrame(frame);
+    // invalidateSize() behåller kartans geografiska centrum (pan: true) även när
+    // ytan ändrar storlek. Leaflets inbyggda resize-hantering använder pan: false
+    // och flyttar då centrum med halva storleksskillnaden – det var det som gjorde
+    // att en återställd vy drev några pixlar. Därför är trackResize avstängt på
+    // MapContainer och vi följer ytans storlek med en ResizeObserver i stället.
+    const resize = () => map.invalidateSize();
+    const frame = requestAnimationFrame(resize);
+    const observer =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => resize());
+    observer?.observe(map.getContainer());
+    window.addEventListener("resize", resize);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer?.disconnect();
+      window.removeEventListener("resize", resize);
+    };
   }, [map]);
   return null;
 }
 
-function SearchBox() {
+/** Låter föräldern få tag i kartinstansen utan att själv ligga i kartans kontext. */
+function MapBridge({ onReady }: { onReady: (map: L.Map) => void }) {
   const map = useMap();
-  const [query, setQuery] = useSearchState();
+  useEffect(() => {
+    onReady(map);
+  }, [map, onReady]);
+  return null;
+}
+
+/** Sparar vyn när användaren panorerar/zoomar så att den kan återställas vid återkomst. */
+function MapViewMemory() {
+  const map = useMap();
+  useEffect(() => {
+    const saved = readMapView();
+    // Vi sparar bara när ANVÄNDAREN flyttat kartan. Att spara vid mount skulle
+    // läsa av getCenter() medan kartytan fortfarande kan ändra storlek, vilket
+    // gjorde att vyn drev några pixlar för varje gång man gick in och ut ur ett event.
+    let userDriven = false;
+    let applying = false;
+
+    const markUser = () => {
+      if (!applying) userDriven = true;
+    };
+    const persist = () => {
+      if (!userDriven) return;
+      userDriven = false;
+      const c = map.getCenter();
+      saveMapView({ lat: c.lat, lng: c.lng, zoom: map.getZoom() });
+    };
+
+    const frame = requestAnimationFrame(() => {
+      if (saved) {
+        applying = true;
+        map.setView([saved.lat, saved.lng], saved.zoom, { animate: false });
+        applying = false;
+      }
+      // Lyssna först efter att MapContainers egen startvy satts – annars skulle
+      // den räknas som en användarändring och sparas av misstag.
+      map.on("dragstart", markUser);
+      map.on("zoomstart", markUser);
+      map.on("moveend", persist);
+      map.on("zoomend", persist);
+    });
+
+    return () => {
+      cancelAnimationFrame(frame);
+      map.off("dragstart", markUser);
+      map.off("zoomstart", markUser);
+      map.off("moveend", persist);
+      map.off("zoomend", persist);
+    };
+  }, [map]);
+  return null;
+}
+
+/**
+ * Platssökning ovanpå kartan. Renderas som syskon till kartcontainern (inte i
+ * Leaflets hörncontainer, som är 0×0 och därför klämde ihop sökfältet) och har
+ * därför alltid full bredd. Bara EN sökikon: den vänstra ikonen ÄR knappen som
+ * startar sökningen – tidigare fanns både en dekorativ ikon och en separat
+ * submit-knapp med samma ikon, vilket gav två förstoringsglas.
+ */
+function MapSearch({ map, top }: { map: L.Map; top: number }) {
+  const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
-  const searchRoot = map.getContainer().querySelector<HTMLElement>(".leaflet-top.leaflet-left");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const search = async () => {
     const term = query.trim();
@@ -214,48 +290,59 @@ function SearchBox() {
     }
   };
 
-  return searchRoot
-    ? createPortal(
-        <form
-          className="leaflet-search"
-          role="search"
-          onSubmit={(event) => {
+  return (
+    <form
+      className="leaflet-search"
+      role="search"
+      style={{ top }}
+      onSubmit={(event) => {
+        event.preventDefault();
+        void search();
+      }}
+    >
+      <button
+        type="submit"
+        aria-label="Sök"
+        // Ikonen är alltid klickbar: med för kort sökord flyttas fokus till
+        // fältet i stället för att knappen ser inaktiv ut.
+        onClick={(event) => {
+          if (query.trim().length < 2) {
             event.preventDefault();
-            void search();
-          }}
-        >
-          {searching ? (
-            <span
-              className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-primary border-r-transparent"
-              aria-hidden="true"
-            />
-          ) : (
-            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-          )}
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Sök adress eller plats"
-            aria-label="Sök adress eller plats"
-            autoComplete="off"
+            inputRef.current?.focus();
+          }
+        }}
+        className="leaflet-search-icon"
+      >
+        {searching ? (
+          <span
+            className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-primary border-r-transparent"
+            aria-hidden="true"
           />
-          {query && (
-            <button type="button" aria-label="Rensa sökning" onClick={() => setQuery("")}>
-              <X className="h-4 w-4" />
-            </button>
-          )}
-          <button type="submit" aria-label="Sök" disabled={searching || query.trim().length < 2}>
-            <Search className="h-4 w-4" />
-          </button>
-        </form>,
-        searchRoot,
-      )
-    : null;
-}
-
-function useSearchState(): [string, (value: string) => void] {
-  const [query, setQuery] = useState("");
-  return [query, setQuery];
+        ) : (
+          <Search className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
+        )}
+      </button>
+      <input
+        ref={inputRef}
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Sök adress eller plats"
+        aria-label="Sök adress eller plats"
+        autoComplete="off"
+        enterKeyHint="search"
+      />
+      {query && (
+        <button
+          type="button"
+          aria-label="Rensa sökning"
+          className="leaflet-search-icon"
+          onClick={() => setQuery("")}
+        >
+          <X className="h-4 w-4" />
+        </button>
+      )}
+    </form>
+  );
 }
 
 export function LeafletMap({
@@ -268,6 +355,8 @@ export function LeafletMap({
   zoomable,
   searchable,
   initialZoom,
+  searchTop,
+  bottomInset,
   className,
 }: {
   events: EventItem[];
@@ -279,12 +368,22 @@ export function LeafletMap({
   zoomable: boolean;
   searchable: boolean;
   initialZoom: number;
+  /** Avstånd från kartans överkant till sökfältet – håller undan för filterraden. */
+  searchTop: number;
+  /** Extra utrymme nedtill (t.ex. bakom en flytande tabbar) för kontroller/credits. */
+  bottomInset: number;
   className?: string;
 }) {
-  const defaultCenter = { lat: 59.3293, lng: 18.0686 };
+  const [map, setMap] = useState<L.Map | null>(null);
+  // LeafletMap laddas bara på klienten (dynamisk import i MapCanvas), så vyn kan
+  // läsas direkt i första rendern och kartan startar på rätt plats utan att hoppa.
+  const savedView = useMemo(() => readMapView(), []);
   const firstEventGeo = events.length === 1 ? geoOf(events[0]!) : null;
-  const centerPoint = firstEventGeo ?? defaultCenter;
-  const center: LatLngExpression = [centerPoint.lat, centerPoint.lng];
+  const fallbackCenter = firstEventGeo ?? DEFAULT_MAP_VIEW;
+  const view = savedView
+    ? savedView
+    : { lat: fallbackCenter.lat, lng: fallbackCenter.lng, zoom: initialZoom };
+  const center: LatLngExpression = [view.lat, view.lng];
   const placeItems = showPlaces
     ? places.flatMap((place) => {
         const geo = geoOf(place);
@@ -294,10 +393,13 @@ export function LeafletMap({
     : [];
 
   return (
-    <div className={cn("relative h-full w-full", className)}>
+    <div
+      className={cn("relative h-full w-full", className)}
+      style={{ "--map-controls-bottom": `${28 + bottomInset}px` } as React.CSSProperties}
+    >
       <MapContainer
         center={center}
-        zoom={initialZoom}
+        zoom={view.zoom}
         minZoom={10}
         maxZoom={19}
         scrollWheelZoom={zoomable}
@@ -305,6 +407,7 @@ export function LeafletMap({
         doubleClickZoom={zoomable}
         touchZoom={zoomable}
         zoomControl={false}
+        trackResize={false}
         style={{ height: "100%", width: "100%" }}
         className="h-full w-full"
         preferCanvas
@@ -325,11 +428,16 @@ export function LeafletMap({
             eventHandlers={{ click: () => onSelectPlace?.(place) }}
           />
         ))}
-        <MapControls center={defaultCenter} />
+        <MapControls center={DEFAULT_MAP_VIEW} />
         <InvalidateMapSize />
-        {searchable && <SearchBox />}
+        <MapViewMemory />
+        <MapBridge onReady={setMap} />
       </MapContainer>
-      <span className="pointer-events-none absolute bottom-1 right-1 z-[500] rounded bg-white/90 px-1.5 py-0.5 text-[10px] text-slate-700">
+      {searchable && map && <MapSearch map={map} top={searchTop} />}
+      <span
+        className="pointer-events-none absolute right-1 z-[500] rounded bg-white/90 px-1.5 py-0.5 text-[10px] text-slate-700"
+        style={{ bottom: 4 + bottomInset }}
+      >
         © OpenStreetMap contributors
       </span>
     </div>

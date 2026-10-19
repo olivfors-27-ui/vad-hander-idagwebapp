@@ -14,6 +14,10 @@ type LeafletMapProps = {
   zoomable?: boolean;
   searchable?: boolean;
   initialZoom?: number;
+  /** Avstånd från kartans överkant till sökfältet (filterraden ligger ovanpå). */
+  searchTop?: number;
+  /** Extra utrymme nedtill för kontroller och credits. */
+  bottomInset?: number;
   className?: string;
 };
 
@@ -37,6 +41,8 @@ export function MapCanvas(props: LeafletMapProps) {
       zoomable={props.zoomable ?? false}
       searchable={props.searchable ?? false}
       initialZoom={props.initialZoom ?? 13}
+      searchTop={props.searchTop ?? 12}
+      bottomInset={props.bottomInset ?? 0}
     />
   ) : (
     <div

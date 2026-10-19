@@ -1,10 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Bookmark, CalendarHeart, List, MapIcon, MapPin, Share2, SlidersHorizontal, X } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { Bookmark, CalendarHeart, List, MapPin, Share2, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/hander/AppShell";
 import { AvatarStack, CategoryChip, EventRow, priceLabel } from "@/components/hander/EventBits";
 import { FilterButton, FilterSheet, QuickFilters, SortBar } from "@/components/hander/FilterSheet";
-import { MapCanvas, MapLegend } from "@/components/hander/MapCanvas";
+import { MapCanvas } from "@/components/hander/MapCanvas";
 import { ShareSheet } from "@/components/hander/ShareSheet";
 import {
   CATEGORY_GRADIENT,
@@ -47,12 +47,28 @@ function MapPage() {
   const [sort, setSort] = useState<SortMode>("relevans");
   const [selected, setSelected] = useState<EventItem | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const [overlayHeight, setOverlayHeight] = useState(112);
 
   const all = useMemo(
     () => [...store.publicEvents, ...store.myPrivateEvents],
     [store.publicEvents, store.myPrivateEvents],
   );
   const events = useMemo(() => sortEvents(filterEvents(all, filters), sort), [all, filters, sort]);
+
+  // Filteroverlayn ligger ovanpå kartan. Vi mäter dess höjd så att sökfältet i
+  // kartan läggs precis under filtren i stället för att hamna bakom dem.
+  useEffect(() => {
+    if (view !== "karta") return;
+    const node = overlayRef.current;
+    if (!node) return;
+    const measure = () => setOverlayHeight(Math.ceil(node.getBoundingClientRect().height));
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [view]);
 
   return (
     <AppShell
@@ -63,37 +79,54 @@ function MapPage() {
           : `${events.length} event nära dig`
       }
     >
-      <div className="map-page-toolbar space-y-3 px-4 py-3">
-        {/* Rubrik vänsterställd, i samma stil som hem-sektionerna: prick + squiggle under. */}
-        <div className="map-discover-heading">
-          <h2 className="map-discover-title font-display text-xl font-bold text-foreground">Upptäck</h2>
+      {/* Verktygsraden hör bara till listvyn – i kartvyn ligger filtren som overlay
+          ovanpå kartan i stället och tar ingen plats i layouten. */}
+      {view === "lista" && (
+        <div className="map-page-toolbar space-y-3 px-4 py-3">
+          {/* Rubrik vänsterställd, i samma stil som hem-sektionerna: prick + squiggle under. */}
+          <div className="map-discover-heading">
+            <h2 className="map-discover-title font-display text-xl font-bold text-foreground">
+              Upptäck
+            </h2>
+          </div>
+          {/* Toggle + filter hålls på samma rad med tydlig luft mellan knapparna. */}
+          <div className="map-controls flex items-center gap-3">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={false}
+              aria-label="Visa karta"
+              onClick={() => setView("karta")}
+              className="map-view-toggle-pill flex h-11 w-[156px] shrink-0 items-center justify-between rounded-full pl-2 pr-1.5"
+            >
+              <span className="flex items-center justify-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-bold uppercase text-[#E45048]">
+                <List className="h-4 w-4 shrink-0" />
+                <span className="w-[42px] text-left">lista</span>
+              </span>
+              <span
+                className="map-toggle-track relative flex h-7 w-11 shrink-0 items-center justify-start rounded-full px-1"
+                aria-hidden
+              >
+                <span
+                  className="map-toggle-knob h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.25)] transition-transform duration-200"
+                  style={{ transform: "translateX(16px)" }}
+                />
+              </span>
+            </button>
+            <FilterButton filters={filters} onOpen={() => setSheetOpen(true)} />
+          </div>
+          <QuickFilters filters={filters} setFilters={setFilters} />
         </div>
-        {/* Toggle + filter hålls på samma rad med tydlig luft mellan knapparna. */}
-        <div className="map-controls flex items-center gap-3">
-          <button
-            type="button"
-            role="switch"
-            aria-checked={view === "karta"}
-            aria-label={view === "karta" ? "Visa lista" : "Visa karta"}
-            onClick={() => setView(view === "karta" ? "lista" : "karta")}
-            className="map-view-toggle-pill flex h-11 w-[156px] shrink-0 items-center justify-between rounded-full pl-2 pr-1.5"
-          >
-            <span className="flex items-center justify-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-bold uppercase text-[#E45048]">
-              {view === "karta" ? <MapIcon className="h-4 w-4 shrink-0" /> : <List className="h-4 w-4 shrink-0" />}
-              <span className="w-[42px] text-left">{view}</span>
-            </span>
-            <span className="map-toggle-track relative flex h-7 w-11 shrink-0 items-center justify-start rounded-full px-1" aria-hidden>
-              <span className="map-toggle-knob h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.25)] transition-transform duration-200" style={{ transform: view === "karta" ? "translateX(0)" : "translateX(16px)" }} />
-            </span>
-          </button>
-          <FilterButton filters={filters} onOpen={() => setSheetOpen(true)} />
-        </div>
-        <QuickFilters filters={filters} setFilters={setFilters} />
-      </div>
+      )}
 
       {view === "karta" ? (
-        <div className="px-4">
-          <div className="map-shell map-shell--accent relative h-[clamp(360px,52svh,520px)] min-h-0 overflow-hidden rounded-[22px] border shadow-[var(--shadow-float)]">
+        /* Helskärm: kartan täcker hela fliken (även bakom den flytande tabbaren)
+           och filtren ligger som ett overlay högst upp i stället för att ta plats. */
+        /* z-0 gör kartan till en egen stacking context: alla Leaflet-lager (panes
+           och kontroller har z-index 400–700) stannar då under appens egna ytor,
+           så att t.ex. filterbladet hamnar ovanpå kartan i stället för bakom. */
+        <div className="absolute inset-0 z-0 overflow-hidden bg-[#e8eee5]">
+          <div className="absolute inset-0">
             <MapCanvas
               events={events}
               places={store.places}
@@ -101,6 +134,8 @@ function MapPage() {
               searchable
               showPlaces
               selectedId={selected?.id ?? selectedPlace?.id ?? null}
+              searchTop={overlayHeight + 8}
+              bottomInset={96}
               onSelectEvent={(event) => {
                 void navigate({ to: "/event/$id", params: { id: event.id } });
               }}
@@ -109,25 +144,39 @@ function MapPage() {
                 setSelectedPlace(p);
               }}
             />
-
           </div>
-          <div className="map-info-card map-info-card--blue mt-3 space-y-2 rounded-2xl border px-3.5 py-3 shadow-[var(--shadow-card)]">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold">{events.length} träffar på kartan</p>
-                <p className="text-[10px] text-muted-foreground">Tryck på en pin för att se detaljer</p>
+
+          {/* Filteroverlay. pointer-events-none på ramen så att kartan går att
+              panorera i glappet mellan ytorna; själva korten fångar egna klick. */}
+          <div
+            ref={overlayRef}
+            className="pointer-events-none absolute inset-x-0 top-0 z-[600] flex flex-col gap-2 px-3 pb-2"
+            style={{ paddingTop: "max(10px, env(safe-area-inset-top))" }}
+          >
+            <div className="pointer-events-auto space-y-2 rounded-3xl border border-white/70 bg-white/80 p-2 shadow-[0_12px_30px_-18px_rgba(23,32,42,0.55)] backdrop-blur-xl">
+              <div className="flex items-center gap-2">
+                <FilterButton filters={filters} onOpen={() => setSheetOpen(true)} />
+                <button
+                  type="button"
+                  onClick={() => setView("lista")}
+                  aria-label="Visa lista"
+                  className="ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-card/90 text-foreground shadow-sm transition-colors hover:bg-secondary"
+                >
+                  <List className="h-4 w-4" />
+                </button>
               </div>
-              <SlidersHorizontal className="h-4 w-4 text-primary" aria-hidden />
+              <QuickFilters filters={filters} setFilters={setFilters} />
             </div>
-            <MapLegend />
-            <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
-              Eventdata från Visit Stockholm och Visit Sweden · publika källor
-            </p>
-            {store.apiError && (
-              <p className="mt-1 text-[10px] text-muted-foreground">
-                {store.apiError} Egna event visas fortfarande.
-              </p>
-            )}
+          </div>
+
+          {/* Liten kreditrad ovanför tabbaren – ersätter det gamla infokortet. */}
+          <div
+            className="pointer-events-none absolute inset-x-0 z-[550] flex px-3"
+            style={{ bottom: "calc(92px + env(safe-area-inset-bottom))" }}
+          >
+            <span className="rounded-full bg-white/85 px-2.5 py-1 text-[10px] font-semibold text-foreground/60 shadow-sm backdrop-blur">
+              {events.length} träffar · Eventdata från Visit Stockholm
+            </span>
           </div>
 
           {selectedPlace && (
@@ -205,7 +254,7 @@ function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () =
     <>
       <div
         className={cn(
-          "sheet-backdrop fixed inset-0 z-[55]",
+          "sheet-backdrop fixed inset-0 z-[700]",
           !expanded && "pointer-events-none bg-transparent",
         )}
         onClick={onClose}
@@ -215,7 +264,7 @@ function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () =
         role="dialog"
         aria-modal="true"
         className={cn(
-          "sheet-panel fixed inset-x-0 bottom-0 z-[60] mx-auto w-full max-w-md overflow-y-auto overscroll-contain pb-[calc(env(safe-area-inset-bottom)+16px)]",
+          "sheet-panel fixed inset-x-0 bottom-0 z-[710] mx-auto w-full max-w-md overflow-y-auto overscroll-contain pb-[calc(env(safe-area-inset-bottom)+16px)]",
           expanded ? "max-h-[82vh]" : "max-h-[44vh]",
           dragging ? "transition-none" : "transition-[max-height] duration-200",
         )}

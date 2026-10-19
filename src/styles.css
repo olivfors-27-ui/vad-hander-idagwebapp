@@ -213,7 +213,7 @@
 .leaflet-controls {
   position: absolute;
   right: 12px;
-  bottom: 28px;
+  bottom: var(--map-controls-bottom, 28px);
   z-index: 500;
   display: flex;
   flex-direction: column;
@@ -267,6 +267,24 @@
   border: 0;
   background: transparent;
   color: #766a63;
+}
+/* Den enda sökikonen i fältet: knappen som startar sökningen. */
+.leaflet-search-icon {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  margin: 0 -4px 0 -6px;
+  border-radius: 50%;
+}
+.leaflet-search-icon:hover {
+  background: #f2f3f5;
+}
+.leaflet-search-icon:disabled {
+  cursor: default;
+  opacity: 0.62;
+}
+.leaflet-search-icon:disabled:hover {
+  background: transparent;
 }
 
 @layer base {
