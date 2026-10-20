@@ -16,12 +16,13 @@ import {
   Volleyball,
   Trees,
   Sparkles,
-  Locate,
+  Crosshair,
+  RotateCcw,
   Search,
   X,
 } from "lucide-react";
 import { CATEGORY_COLOR, PLACE_TYPES, geoOf, type EventItem, type Place } from "@/lib/hander-data";
-import { isHappeningNow } from "@/lib/hander-store";
+import { isHappeningNow, useHander } from "@/lib/hander-store";
 import { DEFAULT_MAP_VIEW, readMapView, saveMapView } from "@/lib/map-view";
 import { cn } from "@/lib/utils";
 import type { GeoPoint } from "./MapCanvas";
@@ -128,6 +129,20 @@ function MapControls({ center }: { center: GeoPoint }) {
   const map = useMap();
   const container = map.getContainer();
   const controlRoot = container.querySelector<HTMLElement>(".leaflet-control-container");
+  // Samma position som avstånden räknas från. Knappen frågar bara om
+  // tillåtelse när användaren själv trycker – aldrig vid sidladdning.
+  const { userLocation, locationStatus, askForLocation } = useHander();
+  const locating = locationStatus === "asking";
+
+  const goToUser = async () => {
+    const target = userLocation ?? (await askForLocation());
+    if (!target) {
+      toast.error("Kunde inte hämta din position. Avstånden räknas från Stockholm.");
+      return;
+    }
+    map.flyTo([target.lat, target.lng], Math.max(map.getZoom(), 15), { duration: 0.6 });
+  };
+
   return controlRoot
     ? createPortal(
         <div className="leaflet-controls">
@@ -149,11 +164,23 @@ function MapControls({ center }: { center: GeoPoint }) {
           </button>
           <button
             type="button"
+            aria-label="Visa min position"
+            title="Visa min position"
+            aria-busy={locating}
+            disabled={locating || locationStatus === "unsupported"}
+            onClick={() => void goToUser()}
+            className="leaflet-control-button disabled:opacity-50"
+          >
+            <Crosshair className={cn("h-4 w-4", locating && "animate-spin")} />
+          </button>
+          <button
+            type="button"
             aria-label="Återställ kartan"
+            title="Återställ kartan"
             onClick={() => map.setView([center.lat, center.lng], 13)}
             className="leaflet-control-button"
           >
-            <Locate className="h-4 w-4" />
+            <RotateCcw className="h-4 w-4" />
           </button>
         </div>,
         controlRoot,
