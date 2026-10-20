@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { createPortal } from "react-dom";
 import { renderToStaticMarkup } from "react-dom/server";
-import { MapContainer, Marker, TileLayer, useMap } from "react-leaflet";
+import { CircleMarker, MapContainer, Marker, TileLayer, useMap } from "react-leaflet";
 import "leaflet.markercluster";
 import {
   BookOpen,
@@ -402,6 +402,8 @@ export function LeafletMap({
   className?: string;
 }) {
   const [map, setMap] = useState<L.Map | null>(null);
+  // Samma position som avstånden räknas från – visas som en punkt när den finns.
+  const { userLocation } = useHander();
   // LeafletMap laddas bara på klienten (dynamisk import i MapCanvas), så vyn kan
   // läsas direkt i första rendern och kartan startar på rätt plats utan att hoppa.
   const savedView = useMemo(() => readMapView(), []);
@@ -455,6 +457,35 @@ export function LeafletMap({
             eventHandlers={{ click: () => onSelectPlace?.(place) }}
           />
         ))}
+        {userLocation && (
+          <>
+            {/* Mjuk halo runt punkten så den syns även över täta kluster. */}
+            <CircleMarker
+              center={[userLocation.lat, userLocation.lng]}
+              radius={22}
+              interactive={false}
+              pathOptions={{
+                color: "#2F7DFA",
+                weight: 1,
+                opacity: 0.3,
+                fillColor: "#2F7DFA",
+                fillOpacity: 0.12,
+              }}
+            />
+            <CircleMarker
+              center={[userLocation.lat, userLocation.lng]}
+              radius={7}
+              interactive={false}
+              pathOptions={{
+                color: "#FFFFFF",
+                weight: 3,
+                opacity: 1,
+                fillColor: "#2F7DFA",
+                fillOpacity: 1,
+              }}
+            />
+          </>
+        )}
         <MapControls center={DEFAULT_MAP_VIEW} />
         <InvalidateMapSize />
         <MapViewMemory />

@@ -1,12 +1,14 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Lock, MapPin, Users } from "lucide-react";
+import { Lock, MapPin, Sparkles, Users } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/hander/AppShell";
 import { Avatar, EventCover } from "@/components/hander/EventBits";
 import { InviteReply } from "@/components/hander/InviteReply";
 import { useProfileName } from "@/lib/auth";
+import { MAX_EVENT_GUESTS, limitMessage } from "@/lib/event-admin";
 import { ME, userById, type EventItem, type User } from "@/lib/hander-data";
+import type { GuestRow } from "@/lib/private-event-invites";
 import { formatDay, useHander } from "@/lib/hander-store";
 
 export const Route = createFileRoute("/join/$code")({
@@ -31,6 +33,10 @@ function JoinPage() {
   const [inviteLoaded, setInviteLoaded] = useState(false);
   const [loadError, setLoadError] = useState<"invalid" | "unavailable" | null>(null);
   const [replying, setReplying] = useState(false);
+  // Alla som är med ser varandras namn och intressen. Databasen avgör vem som
+  // får läsa listan – anropet nekas tyst för den som inte svarat än.
+  const [guests, setGuests] = useState<GuestRow[]>([]);
+  const loadPrivateEventGuests = store.loadPrivateEventGuests;
   // Inloggade matchas på sitt konto, utloggade på det enda svar som finns i
   // den här webbläsaren (sparat via response-token). Svaret uppdateras direkt
   // i storen efter att gästen tryckt Ja/Nej/Kanske.
@@ -65,6 +71,22 @@ function JoinPage() {
       active = false;
     };
   }, [code, responseToken, loadPrivateEventInvite]);
+
+  useEffect(() => {
+    let active = true;
+    const token = getGuestResponseToken(code);
+    void loadPrivateEventGuests(code, token)
+      .then((list) => {
+        if (active) setGuests(list);
+      })
+      .catch(() => {
+        // Inte medlem än (eller utloggad utan svar) – listan är då stängd.
+        if (active) setGuests([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [code, loadPrivateEventGuests, store.me, store.account?.id]);
 
   // Inbjudarens namn: sparad på eventet (organizerName) – annars hämtas
   // profilen via RLS-publicerad profiles-tabell. Hook anropas före tidig
@@ -109,8 +131,24 @@ function JoinPage() {
   const host: User = userById(event.organizerId, hostName);
   const hostLabel = hostName ?? (isSelf ? "Du" : "Arrangör");
 
-  const invites = event.invites ?? [];
   const myStatus = displayInvite?.status;
+  const participantCount = Math.max(event.guestCount ?? 0, guests.length);
+  const full = participantCount >= MAX_EVENT_GUESTS;
+
+  /** Hämtar inbjudan + gästlistan igen efter ett svar. */
+  const refreshInvite = async () => {
+    const token = getGuestResponseToken(code);
+    try {
+      await store.loadPrivateEventInvite(code, token);
+    } catch (error) {
+      console.error("Could not refresh invite", error);
+    }
+    try {
+      setGuests(await loadPrivateEventGuests(code, token));
+    } catch {
+      setGuests([]);
+    }
+  };
 
   return (
     <AppShell title="Du är inbjuden">
@@ -151,11 +189,13 @@ function JoinPage() {
             accountName={store.account?.name}
             answered={myStatus}
             savedName={displayInvite?.name}
-            onReply={(s, name) => {
+            savedInterests={displayInvite?.interests}
+            full={full}
+            onReply={(s, name, interests) => {
               setReplying(true);
               void store
-                .replyToPrivateEvent(event.id, code, guestKey, name, s)
-                .then(() => {
+                .replyToPrivateEvent(event.id, code, guestKey, name, interests, s)
+                .then(async () => {
                   toast.success(
                     s === "accepted"
                       ? "Du kommer!"
@@ -163,14 +203,62 @@ function JoinPage() {
                         ? "Svarat kanske"
                         : "Du tackade nej",
                   );
+                  await refreshInvite();
                 })
                 .catch((error) => {
                   console.error("Could not save invite reply", error);
-                  toast.error("Svaret kunde inte sparas. Försök igen.");
+                  toast.error(limitMessage(error) ?? "Svaret kunde inte sparas. Försök igen.");
                 })
                 .finally(() => setReplying(false));
             }}
           />
+        )}
+
+        {event.visibility === "private" && guests.length > 0 && (
+          <section className="space-y-2 rounded-2xl border border-border bg-card p-4">
+            <p className="flex items-center gap-2 text-sm font-bold text-[#2A2421]">
+              <Users className="h-4 w-4 text-[#E45048]" /> Vilka är med ({participantCount} av{" "}
+              {MAX_EVENT_GUESTS})
+            </p>
+            <div className="space-y-2">
+              {guests.map((guest) => (
+                <div key={guest.userId} className="rounded-xl bg-secondary/50 p-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base" aria-hidden>
+                      🧑
+                    </span>
+                    <p className="min-w-0 flex-1 truncate text-sm font-semibold text-[#2A2421]">
+                      {guest.name ?? "Gäst"}
+                      {guest.isMe ? " (du)" : ""}
+                    </p>
+                    <span
+                      className="shrink-0 text-[11px] font-bold"
+                      style={{ color: guest.status === "accepted" ? "#3E9B5F" : "#D9A13B" }}
+                    >
+                      {guest.status === "accepted" ? "Kommer" : "Kanske"}
+                    </span>
+                  </div>
+                  {guest.interests && guest.interests.length > 0 && (
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {guest.interests.map((tag) => (
+                        <span
+                          key={tag}
+                          className="flex items-center gap-1 rounded-full bg-[#F7E5D5] px-2 py-0.5 text-[10px] font-bold text-[#8A4A1F]"
+                        >
+                          <Sparkles className="h-2.5 w-2.5" aria-hidden /> {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            {full && (
+              <p className="text-xs font-bold text-[#B03A36]">
+                Eventet är fullt – max {MAX_EVENT_GUESTS} deltagare.
+              </p>
+            )}
+          </section>
         )}
 
         {!store.account && !hostedEvent && (

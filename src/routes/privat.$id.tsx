@@ -1,10 +1,11 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { Copy, Lock } from "lucide-react";
+import { Copy, Lock, Sparkles } from "lucide-react";
 
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/hander/AppShell";
 import { Avatar, EventCover } from "@/components/hander/EventBits";
+import { MAX_EVENT_GUESTS } from "@/lib/event-admin";
 import { userById, type InviteStatus } from "@/lib/hander-data";
 import { formatDay, useHander } from "@/lib/hander-store";
 import { appUrl } from "@/lib/app-url";
@@ -118,6 +119,11 @@ function PrivateEventPage() {
           </div>
         </div>
 
+        <p className="text-xs font-bold text-muted-foreground">
+          {invites.filter((i) => i.status === "accepted" || i.status === "maybe").length} av{" "}
+          {MAX_EVENT_GUESTS} platser bokade
+        </p>
+
         <div className="grid grid-cols-4 gap-2 text-center">
           {GROUPS.map((g) => (
             <div key={g.id} className="rounded-xl border border-border bg-card p-2">
@@ -150,6 +156,18 @@ function PrivateEventPage() {
                         <p className="truncate text-sm font-semibold">{i.name ?? u.name}</p>
                         {u.username !== "@okand" && (
                           <p className="truncate text-xs text-muted-foreground">{u.username}</p>
+                        )}
+                        {i.interests && i.interests.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1.5">
+                            {i.interests.map((tag) => (
+                              <span
+                                key={tag}
+                                className="flex items-center gap-1 rounded-full bg-[#F7E5D5] px-2 py-0.5 text-[10px] font-bold text-[#8A4A1F]"
+                              >
+                                <Sparkles className="h-2.5 w-2.5" aria-hidden /> {tag}
+                              </span>
+                            ))}
+                          </div>
                         )}
                       </div>
                     </div>

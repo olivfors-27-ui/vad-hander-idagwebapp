@@ -201,6 +201,25 @@ export function useAccount(): Account | null {
   return account;
 }
 
+/** Profil för ett konto (namn, användarnamn, emoji) – null medan den hämtas. */
+export function useProfile(userId: string | undefined): ProfileFields | null {
+  const [profile, setProfile] = useState<ProfileFields | null>(null);
+  useEffect(() => {
+    setProfile(null);
+    if (!userId || !/^[0-9a-f-]{36}$/i.test(userId)) return;
+    let alive = true;
+    void loadProfile(userId)
+      .then((loaded) => {
+        if (alive && (loaded.name || loaded.username)) setProfile(loaded);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [userId]);
+  return profile;
+}
+
 /**
  * Hämta visningsnamnet för ett användar-id via profil-tabellen (läsbar publikt
  * enligt RLS-politiken "Profiles are public"). Används för att säkerställa att

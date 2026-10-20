@@ -269,14 +269,23 @@ export type Database = {
         Args: { p_code: string };
         Returns: Json;
       };
+      list_private_event_guests: {
+        Args: { p_code: string; p_response_token?: string | null };
+        Returns: Json;
+      };
       reply_to_private_event_invite: {
         Args: {
           p_code: string;
           p_response_token: string | null;
           p_guest_name: string;
           p_status: string;
+          p_interests?: string[];
         };
         Returns: Json;
+      };
+      delete_event: {
+        Args: { p_event_id: string };
+        Returns: boolean;
       };
     };
     Enums: {

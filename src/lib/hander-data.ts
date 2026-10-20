@@ -139,7 +139,17 @@ export type EventItem = {
   lng?: number | undefined;
   distance: number; // km
   inviteCode?: string | undefined;
-  invites?: { userId: string; status: InviteStatus; name?: string | undefined }[] | undefined;
+  invites?:
+    | {
+        userId: string;
+        status: InviteStatus;
+        name?: string | undefined;
+        /** Vad gästen angav för intressen – syns för alla som är med. */
+        interests?: string[] | undefined;
+      }[]
+    | undefined;
+  /** Antal deltagare (kommer + kanske) på ett privat event. */
+  guestCount?: number | undefined;
 };
 
 export type Place = {

@@ -296,7 +296,12 @@ function GuestsTab({
   invites,
 }: {
   eventId: string;
-  invites: { userId: string; status: InviteStatus }[];
+  invites: {
+    userId: string;
+    status: InviteStatus;
+    name?: string | undefined;
+    interests?: string[] | undefined;
+  }[];
 }) {
   const store = useHander();
   const event = store.events.find((e) => e.id === eventId);
@@ -350,13 +355,29 @@ function GuestsTab({
               {g.label} ({list.length})
             </p>
             {list.map((i) => {
-              const u = userById(i.userId);
+              // Namnet sparas på svaret tillsammans med kontot – använd det i
+              // stället för att slå upp en okänd uuid (som blev "Okänd användare").
+              const u = userById(i.userId, i.name);
               return (
                 <div key={i.userId} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3">
                   <Avatar user={u} size={36} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold">{u.name}</p>
-                    <p className="truncate text-xs text-muted-foreground">{u.username}</p>
+                    <p className="truncate text-sm font-semibold">{i.name ?? u.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {i.status === "accepted" ? "Kommer" : i.status === "maybe" ? "Kanske" : i.status === "declined" ? "Kan inte" : "Inbjuden"}
+                    </p>
+                    {i.interests && i.interests.length > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-1.5">
+                        {i.interests.map((tag) => (
+                          <span
+                            key={tag}
+                            className="flex items-center gap-1 rounded-full bg-[#F7E5D5] px-2 py-0.5 text-[10px] font-bold text-[#8A4A1F]"
+                          >
+                            <Sparkles className="h-2.5 w-2.5" aria-hidden /> {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <button
                     type="button"

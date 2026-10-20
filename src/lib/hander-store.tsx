@@ -32,11 +32,13 @@ import { useUserLocation } from "./user-location";
 import { fetchEventsWithCache } from "./visitstockholm";
 import { watchAccount, type Account } from "./auth";
 import {
+  fetchPrivateEventGuests,
   fetchPrivateEventInvite,
   fetchPrivateEventInvites,
   savePrivateEventInvite,
   submitPrivateEventInviteReply,
 } from "./private-event-invites";
+import { deleteEvent as deleteEventRequest } from "./event-admin";
 import {
   createPublicEvent,
   fetchPublicEvents,
@@ -320,7 +322,11 @@ function useStoreValue() {
   const loadPrivateEventInvite = useCallback(async (code: string, responseToken: string | null) => {
     const result = await fetchPrivateEventInvite(code, responseToken);
     if (!result) return null;
-    const event = { ...result.event, invites: result.ownReply ? [result.ownReply] : [] };
+    const event = {
+      ...result.event,
+      guestCount: result.guestCount ?? result.event.guestCount,
+      invites: result.ownReply ? [result.ownReply] : [],
+    };
     setState((s) => {
       const existing = s.events.find((stored) => stored.id === event.id);
       const loaded =
@@ -340,11 +346,25 @@ function useStoreValue() {
     setState((s) => ({
       ...s,
       events: s.events.map((event) =>
-        event.inviteCode?.toUpperCase() === code.toUpperCase() ? { ...event, invites } : event,
+        event.inviteCode?.toUpperCase() === code.toUpperCase()
+          ? {
+              ...event,
+              guestCount: invites.filter((i) => i.status === "accepted" || i.status === "maybe")
+                .length,
+              invites,
+            }
+          : event,
       ),
     }));
     return invites;
   }, []);
+
+  /** Gästlistan (namn, status, intressen) som alla som är med i eventet ser. */
+  const loadPrivateEventGuests = useCallback(
+    async (code: string, responseToken: string | null) =>
+      fetchPrivateEventGuests(code, responseToken),
+    [],
+  );
 
   const addPrivateEvent = useCallback(
     async (event: EventItem, organizerId: string, organizerName: string) => {
@@ -362,9 +382,16 @@ function useStoreValue() {
       code: string,
       responseToken: string | null,
       guestName: string,
+      interests: string[],
       status: Exclude<InviteStatus, "invited">,
     ) => {
-      const result = await submitPrivateEventInviteReply(code, responseToken, guestName, status);
+      const result = await submitPrivateEventInviteReply(
+        code,
+        responseToken,
+        guestName,
+        interests,
+        status,
+      );
       const updatedReply = result.reply;
       if (result.responseToken) {
         try {
@@ -394,6 +421,18 @@ function useStoreValue() {
     },
     [],
   );
+
+  /** Raderar eventet i databasen (bara skaparen) och rensar lokal state. */
+  const deleteEvent = useCallback(async (id: string) => {
+    await deleteEventRequest(id);
+    setState((s) => ({
+      ...s,
+      events: s.events.filter((event) => event.id !== id),
+      saved: s.saved.filter((savedId) => savedId !== id),
+      interested: s.interested.filter((interestedId) => interestedId !== id),
+    }));
+    setCloudEvents((prev) => prev.filter((event) => event.id !== id));
+  }, []);
 
   const updateEvent = useCallback((id: string, p: Partial<EventItem>) => {
     setState((s) => ({
@@ -771,6 +810,10 @@ function useStoreValue() {
     loadPrivateEventInvites,
     addPrivateEvent,
     replyToPrivateEvent,
+    loadPrivateEventGuests,
+    deleteEvent,
+    /** Antal event kontot har skapat (privata + publika) – max 5 tillåts. */
+    createdEventCount: myEvents.length,
     updateEvent,
     setStatus,
     setInviteStatus,

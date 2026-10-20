@@ -1,8 +1,20 @@
 import { createFileRoute, Link, useParams, useRouter } from "@tanstack/react-router";
-import { X, Bookmark, Heart, MapPin, Share2, Ticket, Users } from "lucide-react";
+import { X, Bookmark, Heart, MapPin, Share2, Ticket, Trash2, Users } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { AppShell } from "@/components/hander/AppShell";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { ShareSheet, absoluteUrl } from "@/components/hander/ShareSheet";
 import {
   Avatar,
@@ -14,6 +26,8 @@ import {
 } from "@/components/hander/EventBits";
 import { MapCanvas } from "@/components/hander/MapCanvas";
 import { useGoCreate } from "@/lib/auth-guard";
+import { useProfile } from "@/lib/auth";
+import { limitMessage } from "@/lib/event-admin";
 import { CATEGORY_GRADIENT, ME, userById } from "@/lib/hander-data";
 import { formatDay, useHander } from "@/lib/hander-store";
 import { cn } from "@/lib/utils";
@@ -37,8 +51,13 @@ function EventPage() {
   const { go: goCreate } = useGoCreate();
   const router = useRouter();
   const [shareOpen, setShareOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const event = store.events.find((e) => e.id === id);
   const track = store.track;
+  // Arrangörens riktiga profil. Eventet sparar organizerName, men äldre event
+  // och inbjudningar kan sakna det – då hämtas namnet från profiles (publikt
+  // läsbar enligt RLS) i stället för att falla tillbaka på "Okänd användare".
+  const organizerProfile = useProfile(event?.organizerId);
 
   useEffect(() => {
     if (event) track(event.id, "views");
@@ -59,6 +78,7 @@ function EventPage() {
     );
   }
 
+  const organizerName = event.organizerName?.trim() || organizerProfile?.name;
   const organizer =
     event.organizerId === "visit-stockholm"
       ? {
@@ -68,10 +88,33 @@ function EventPage() {
           bio: "Officiell eventdata från Visit Stockholm.",
           verified: true as const,
         }
-      : userById(event.organizerId);
+      : userById(event.organizerId, organizerName);
+  // Profilens användarnamn om det finns – annars blir länken "@okand" och leder
+  // till en tom profilsida. Då visas arrangören utan länk i stället.
+  const organizerUsername =
+    event.organizerId === "visit-stockholm"
+      ? "@visitstockholm"
+      : organizerProfile?.username
+        ? `@${organizerProfile.username}`
+        : null;
   const follows = store.followingInterested(event);
   const isInterested = store.interested.includes(event.id);
   const isSaved = store.saved.includes(event.id);
+  const isOwner = Boolean(store.account) && event.organizerId === store.me;
+
+  const removeEvent = async () => {
+    setDeleting(true);
+    try {
+      await store.deleteEvent(event.id);
+      toast.success("Eventet har tagits bort");
+      void router.navigate({ to: "/profil" });
+    } catch (error) {
+      console.error("Could not delete event", error);
+      toast.error(limitMessage(error) ?? "Eventet kunde inte tas bort. Försök igen.");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <AppShell title="Event" subtitle="Eventdetaljer">
@@ -176,22 +219,34 @@ function EventPage() {
 
 
 
-        <Link
-          to="/anvandare/$username"
-          params={{ username: organizer.username.replace("@", "") }}
-          className="flex items-center gap-3 rounded-2xl border border-border p-3"
-        >
-          <Avatar user={organizer} size={40} />
-          <div className="flex-1">
-            <p className="text-sm font-bold">
-              {organizer.name} {organizer.verified && "✔️"}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Arrangör · {organizer.followers} följare
-            </p>
+        {organizerUsername ? (
+          <Link
+            to="/anvandare/$username"
+            params={{ username: organizerUsername.replace("@", "") }}
+            className="flex items-center gap-3 rounded-2xl border border-border p-3"
+          >
+            <Avatar user={organizer} size={40} />
+            <div className="flex-1">
+              <p className="text-sm font-bold">
+                {organizer.name} {organizer.verified && "✔️"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Arrangör · {organizer.followers} följare
+              </p>
+            </div>
+            <span className="text-xs font-bold text-primary">Visa profil</span>
+          </Link>
+        ) : (
+          <div className="flex items-center gap-3 rounded-2xl border border-border p-3">
+            <Avatar user={organizer} size={40} />
+            <div className="flex-1">
+              <p className="text-sm font-bold">
+                {organizer.name} {organizer.verified && "✔️"}
+              </p>
+              <p className="text-xs text-muted-foreground">Arrangör</p>
+            </div>
           </div>
-          <span className="text-xs font-bold text-primary">Visa profil</span>
-        </Link>
+        )}
 
         {event.visibility === "public" && (
           <div className="space-y-2 rounded-2xl bg-accent/50 p-4">
@@ -230,6 +285,41 @@ function EventPage() {
           >
             Hantera gästlista & inbjudningslänk →
           </Link>
+        )}
+
+        {isOwner && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button
+                type="button"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-destructive/40 bg-card px-4 py-3 text-sm font-bold text-destructive"
+              >
+                <Trash2 className="h-4 w-4" /> Ta bort event
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Ta bort eventet?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  ”{event.name}” tas bort för alla. Deltagare, gästsvar och inbjudningar raderas
+                  också. Det går inte att ångra.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deleting}>Avbryt</AlertDialogCancel>
+                <AlertDialogAction
+                  disabled={deleting}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    void removeEvent();
+                  }}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {deleting ? "Tar bort…" : "Ta bort event"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         )}
       </div>
 

@@ -13,6 +13,7 @@ import {
   type EventItem,
 } from "@/lib/hander-data";
 import { useHander } from "@/lib/hander-store";
+import { MAX_EVENTS_PER_ACCOUNT, limitMessage } from "@/lib/event-admin";
 import { appUrl } from "@/lib/app-url";
 import { SPONSORSHIP, sponsorshipPriceLabel } from "@/lib/sponsorship";
 import { useRequireAccount } from "@/lib/auth-guard";
@@ -55,6 +56,10 @@ const DIVIDER_COLORS = {
 function CreatePage() {
   const useHanderStore = useHander();
   const { me } = useHanderStore;
+  // Antal event kontot redan skapat (privata + publika). Databasen har samma
+  // gräns – här bara så att användaren får veta det innan hen fyller i allt.
+  const createdEventCount = useHanderStore.createdEventCount;
+  const atEventLimit = createdEventCount >= MAX_EVENTS_PER_ACCOUNT;
   // Skapa event kräver inloggat konto: omdirigerar till /loggain?redirect=…
   // om ingen session finns (datalagret avvisar dessutom skrivningar).
   const { loggedIn, checked } = useRequireAccount();
@@ -73,6 +78,10 @@ function CreatePage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (atEventLimit) {
+      toast.error(`Du kan som mest skapa ${MAX_EVENTS_PER_ACCOUNT} event per konto.`);
+      return;
+    }
     // Namn och plats krävs endast för publika event; privata får standardvärden.
     if (visibility === "public" && (!name.trim() || !place.trim())) {
       toast.error("Fyll i eventnamn och plats.");
@@ -121,7 +130,10 @@ function CreatePage() {
         setCreated(createdEvent);
       } catch (error) {
         console.error("Could not create shareable private event", error);
-        toast.error("Eventet kunde inte sparas. Kontrollera anslutningen och försök igen.");
+        toast.error(
+          limitMessage(error) ??
+            "Eventet kunde inte sparas. Kontrollera anslutningen och försök igen.",
+        );
         return;
       }
     } else {
@@ -134,7 +146,10 @@ function CreatePage() {
         }
       } catch (error) {
         console.error("Could not create public event", error);
-        toast.error("Eventet kunde inte skickas in. Kontrollera anslutningen och försök igen.");
+        toast.error(
+          limitMessage(error) ??
+            "Eventet kunde inte skickas in. Kontrollera anslutningen och försök igen.",
+        );
         return;
       }
       setCreated(item);
@@ -489,9 +504,19 @@ function CreatePage() {
           </div>
         )}
 
+        {atEventLimit && (
+          <p
+            role="status"
+            className="rounded-2xl bg-[#FBECEB] px-4 py-3 text-xs font-bold text-[#B03A36]"
+          >
+            Du har redan {createdEventCount} av {MAX_EVENTS_PER_ACCOUNT} event. Radera ett event för
+            att kunna skapa ett nytt.
+          </p>
+        )}
+
         <button
           type="submit"
-          disabled={!loggedIn}
+          disabled={!loggedIn || atEventLimit}
           className="hander-cta-button flex w-full items-center justify-center gap-2 rounded-2xl bg-[#E45048] px-4 py-4 text-sm font-bold text-[#FFFDF9] transition-transform active:translate-y-[2px] disabled:opacity-50 disabled:pointer-events-none"
         >
           <Check className="h-4 w-4" />
