@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Clock, Lock, MapPin, Users } from "lucide-react";
-import { useMemo } from "react";
+import { ArrowRight, Clock, Lock, MapPin, Sparkles, Users } from "lucide-react";
+import { useMemo, useState } from "react";
 import { AppShell } from "@/components/hander/AppShell";
 import { EventCover, priceLabel, SponsoredBadge } from "@/components/hander/EventBits";
 import { CATEGORY_GRADIENT, ME, USERS, categoryById, type EventItem } from "@/lib/hander-data";
@@ -268,33 +268,83 @@ function OrganizedRow({ event }: { event: EventItem }) {
   );
 }
 
+type HomeTab = "upptack" | "sponsrat";
+
 function Home() {
-  const { publicEvents, events, plans } = useHander();
+  const { publicEvents, sponsoredEvents, events, plans, me } = useHander();
   // UI-guard: skapa-event-länkarna visas bara för inloggade.
   const loggedIn = useIsLoggedIn();
+  const [tab, setTab] = useState<HomeTab>("upptack");
 
   const popular = useMemo(
     () =>
       publicEvents
-        .filter((e) => !e.promoted && !hasEnded(e))
+        .filter((e) => !(e.sponsored || e.promoted) && !hasEnded(e))
         .sort((a, b) => b.interested.length - a.interested.length)
         .slice(0, 8),
     [publicEvents],
   );
   const sponsored = useMemo(
-    () => publicEvents.filter((e) => e.promoted && !hasEnded(e)).slice(0, 2),
-    [publicEvents],
+    () => sponsoredEvents.filter((e) => !hasEnded(e)),
+    [sponsoredEvents],
   );
   const activePlans = useMemo(() => plans.filter((p) => !isDone(p)).slice(0, 4), [plans]);
   const invitedCount = activePlans.filter((p) => !isMine(p)).length;
   const organized = useMemo(
-    () => events.filter((e) => e.organizerId === ME).slice(0, 4),
-    [events],
+    () => events.filter((e) => e.organizerId === me).slice(0, 4),
+    [events, me],
   );
 
   return (
     <AppShell title="Vad Händer Idag?" subtitle="Hitta skoj i Stockholm idag">
       <div className="relative space-y-7 pb-4 pt-5">
+        {/* Flikar: Upptäck (allt) och Sponsrat (betald placering). */}
+        <div className="mx-4 flex gap-1 rounded-full bg-[#F7E5D5] p-1">
+          {(
+            [
+              ["upptack", "Upptäck"],
+              ["sponsrat", `Sponsrat${sponsored.length ? ` · ${sponsored.length}` : ""}`],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTab(id)}
+              aria-pressed={tab === id}
+              className={`flex-1 rounded-full px-3 py-2 text-xs font-bold transition-colors ${
+                tab === id ? "bg-[#E45048] text-[#FFFDF9] shadow-[0_2px_0_rgba(112,28,23,.2)]" : "text-[#8C7A6B]"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {tab === "sponsrat" ? (
+          <section className="section-zone section-zone--pink relative space-y-3">
+            <SectionHead
+              title="Sponsrade events"
+              dot="var(--section-pink)"
+              tone="pink"
+              badge={sponsored.length ? `${sponsored.length}` : undefined}
+            />
+            <div className="space-y-3 px-4">
+              {sponsored.map((e) => (
+                <SponsoredCard key={e.id} event={e} />
+              ))}
+              {sponsored.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-border p-5 text-center">
+                  <Sparkles className="mx-auto h-5 w-5 text-[#627BD8]" />
+                  <p className="mt-1 text-sm font-bold">Inga sponsrade events ännu</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Sponsring blir möjlig först när ett event skapats och godkänts av en moderator.
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
+        ) : (
+          <>
         {/* Sektion 1 – Mest populära */}
         <section className="section-zone section-zone--red relative space-y-3">
           <SectionHead title="Mest populära nära dig" to="/sok" dot="var(--section-red)" tone="red" />
@@ -306,12 +356,12 @@ function Home() {
           </div>
         </section>
 
-        {/* Sektion 2 – Sponsrat */}
+        {/* Sektion 2 – Sponsrat (förhandsvisning) */}
         {sponsored.length > 0 && (
           <section className="section-zone section-zone--pink relative space-y-3">
             <SectionHead title="Sponsrade events" dot="var(--section-pink)" tone="pink" />
             <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-2">
-              {sponsored.map((e) => (
+              {sponsored.slice(0, 2).map((e) => (
                 <SponsoredCard key={e.id} event={e} />
               ))}
             </div>
@@ -369,8 +419,9 @@ function Home() {
             ) : null}
           </div>
         </section>
+          </>
+        )}
       </div>
-
     </AppShell>
   );
 }

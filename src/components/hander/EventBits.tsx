@@ -198,7 +198,7 @@ export function EventCard({ event, compact }: { event: EventItem; compact?: bool
     <article
       className={cn(
         "event-card-unified-border overflow-hidden rounded-2xl border bg-card shadow-[var(--shadow-card)]",
-        event.promoted ? "border-primary/50 bg-accent/40" : "border-border",
+        (event.sponsored || event.promoted) ? "border-primary/50 bg-accent/40" : "border-border",
         compact ? "w-56 shrink-0" : "w-full",
       )}
     >
@@ -212,7 +212,7 @@ export function EventCard({ event, compact }: { event: EventItem; compact?: bool
         <div className="relative">
           <EventCover event={event} className={compact ? "h-24" : "h-28"} />
           <div className="absolute left-2 top-2 flex max-w-[calc(100%-1rem)] flex-wrap gap-1">
-            {event.promoted && <SponsoredBadge tone="onMedia" />}
+            {(event.sponsored || event.promoted) && <SponsoredBadge tone="onMedia" />}
             {live && (
               <span className="rounded-full bg-success px-2 py-0.5 text-[10px] font-bold text-success-foreground">
                 PÅGÅR NU
@@ -338,7 +338,7 @@ export function EventRow({ event }: { event: EventItem }) {
       params={{ id: event.id }}
       className={cn(
         "event-row-unified-border flex items-center gap-3 rounded-2xl border bg-card p-3 shadow-[var(--shadow-card)] transition-colors hover:bg-secondary/60",
-        event.promoted ? "border-primary/40 bg-accent/25" : "border-border",
+        (event.sponsored || event.promoted) ? "border-primary/40 bg-accent/25" : "border-border",
       )}
     >
       <div className="w-12 shrink-0 text-center">
@@ -351,7 +351,7 @@ export function EventRow({ event }: { event: EventItem }) {
         <p className="truncate text-xs text-muted-foreground">
           {categoryById(event.category).emoji} {event.place} · {event.distance} km
         </p>
-        {event.promoted && <SponsoredBadge className="mt-1" />}
+        {(event.sponsored || event.promoted) && <SponsoredBadge className="mt-1" />}
         {follows.length > 0 && (
           <p className="text-[11px] font-semibold text-primary">
             {follows.length} du följer är intresserade

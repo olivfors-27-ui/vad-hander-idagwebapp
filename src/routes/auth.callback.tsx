@@ -33,7 +33,8 @@ function AuthCallback() {
         const { data } = await supabase.auth.getSession();
         if (data.session?.user && !cancelled) {
           toast.success("Mejlen bekräftad – du är inloggad!");
-          void navigate({ to: "/profil", replace: true });
+          // Tack-sidan bekräftar registreringen och länkar vidare in i appen.
+          void navigate({ to: "/valkommen", replace: true });
           return true;
         }
       } catch {

@@ -1,14 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { MapPin, Search, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/hander/AppShell";
-import { Avatar, EventRow } from "@/components/hander/EventBits";
+import { EventRow } from "@/components/hander/EventBits";
 import { FilterButton, FilterSheet, QuickFilters, SortBar } from "@/components/hander/FilterSheet";
 import {
   CATEGORIES,
   DISCOVERY_TYPES,
   PLACE_TYPES,
-  USERS,
   categoryById,
   type CategoryId,
   type Place,
@@ -21,6 +20,7 @@ import {
   type Filters,
   type SortMode,
 } from "@/lib/hander-store";
+import { searchProfiles, type Profile } from "@/lib/profiles";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/sok")({
@@ -44,7 +44,40 @@ function SearchPage() {
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [sort, setSort] = useState<SortMode>("relevans");
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [people, setPeople] = useState<Profile[]>([]);
+  const [peopleError, setPeopleError] = useState(false);
   const query = q.trim().toLowerCase();
+  const accountId = store.account?.id;
+
+  // Personen-sökning mot riktiga profiler (användarnamn/visningsnamn).
+  // Kräver inloggning: utloggade ska inte kunna lista konton, och kan ändå
+  // inte följa någon.
+  useEffect(() => {
+    const term = q.trim();
+    if (!accountId || term.length < 1) {
+      setPeople([]);
+      setPeopleError(false);
+      return;
+    }
+    let active = true;
+    const timer = setTimeout(() => {
+      void searchProfiles(term, accountId)
+        .then((found) => {
+          if (!active) return;
+          setPeople(found);
+          setPeopleError(false);
+        })
+        .catch(() => {
+          if (!active) return;
+          setPeople([]);
+          setPeopleError(true);
+        });
+    }, 250);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [q, accountId]);
 
   const allEvents = useMemo(
     () => [...store.publicEvents, ...store.myPrivateEvents],
@@ -76,9 +109,7 @@ function SearchPage() {
   const places = query
     ? store.places.filter((p) => !DISCOVERY_TYPES.includes(p.type) && matchPlace(p))
     : [];
-  const users = query
-    ? USERS.filter((u) => `${u.name} ${u.username} ${u.bio}`.toLowerCase().includes(query))
-    : [];
+  const users = query ? people : [];
   const cats = query
     ? CATEGORIES.filter((c) => c.label.toLowerCase().includes(query) || c.id.includes(query))
     : [];
@@ -112,6 +143,18 @@ function SearchPage() {
             </button>
           )}
         </div>
+
+        {!accountId && (
+          <p className="text-xs text-muted-foreground">
+            Logga in för att söka på personer och följa dem.
+          </p>
+        )}
+
+        {accountId && peopleError && (
+          <p className="text-xs text-muted-foreground">
+            Kunde inte söka personer just nu. Försök igen om en stund.
+          </p>
+        )}
 
         <div className="space-y-2">
           <div className="flex items-center gap-2">
@@ -179,20 +222,41 @@ function SearchPage() {
         {users.length > 0 && (
           <Group title="Personer">
             <div className="space-y-2">
-              {users.map((u) => (
-                <Link
-                  key={u.id}
-                  to="/anvandare/$username"
-                  params={{ username: u.username.replace("@", "") }}
-                  className="flex items-center gap-3 rounded-2xl border border-border p-3"
-                >
-                  <Avatar user={u} size={36} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold">{u.name}</p>
-                    <p className="truncate text-xs text-muted-foreground">{u.username}</p>
+              {users.map((u) => {
+                const following = store.following.includes(u.id);
+                return (
+                  <div
+                    key={u.id}
+                    className="flex items-center gap-3 rounded-2xl border border-border p-3"
+                  >
+                    <Link
+                      to="/anvandare/$username"
+                      params={{ username: u.username }}
+                      className="flex min-w-0 flex-1 items-center gap-3"
+                    >
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-lg">
+                        {u.avatarEmoji}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold">{u.name}</p>
+                        <p className="truncate text-xs text-muted-foreground">@{u.username}</p>
+                      </div>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => store.toggleFollow(u.id)}
+                      className={cn(
+                        "shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold",
+                        following
+                          ? "bg-secondary text-secondary-foreground"
+                          : "bg-primary text-primary-foreground",
+                      )}
+                    >
+                      {following ? "Följer" : "Följ"}
+                    </button>
                   </div>
-                </Link>
-              ))}
+                );
+              })}
             </div>
           </Group>
         )}

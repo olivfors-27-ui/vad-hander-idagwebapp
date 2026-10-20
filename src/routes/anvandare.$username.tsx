@@ -1,10 +1,11 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { BadgeCheck, BarChart3 } from "lucide-react";
-import { useState } from "react";
+import { BadgeCheck, BarChart3, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/hander/AppShell";
-import { Avatar, EventRow } from "@/components/hander/EventBits";
-import { USERS } from "@/lib/hander-data";
+import { EventRow } from "@/components/hander/EventBits";
+import { ME, type User } from "@/lib/hander-data";
 import { hasEnded, useHander } from "@/lib/hander-store";
+import { fetchFollowerIds, fetchFollowingIds, fetchProfileByUsername, type Profile } from "@/lib/profiles";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/anvandare/$username")({
@@ -19,23 +20,93 @@ export const Route = createFileRoute("/anvandare/$username")({
   component: UserPage,
 });
 
+const profileToUser = (profile: Profile, counts: { followers: number; following: number }): User => ({
+  id: profile.id,
+  name: profile.name,
+  username: `@${profile.username}`,
+  bio: "",
+  avatar: profile.avatarEmoji,
+  color: "#8C7A6B",
+  followers: counts.followers,
+  following: counts.following,
+  organizer: true,
+  verified: profile.isModerator,
+});
+
 function UserPage() {
   const { username } = useParams({ from: "/anvandare/$username" });
   const store = useHander();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [counts, setCounts] = useState({ followers: 0, following: 0 });
+  const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"kommande" | "sparade">("kommande");
-  const user = USERS.find((u) => u.username.replace("@", "") === username);
 
-  if (!user) {
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    void fetchProfileByUsername(username)
+      .then(async (found) => {
+        if (!active) return;
+        setProfile(found);
+        if (!found) return;
+        const [followers, following] = await Promise.all([
+          fetchFollowerIds(found.id).catch(() => []),
+          fetchFollowingIds(found.id).catch(() => []),
+        ]);
+        if (active) setCounts({ followers: followers.length, following: following.length });
+      })
+      .catch(() => {
+        if (active) setProfile(null);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [username]);
+
+  const user = useMemo(() => (profile ? profileToUser(profile, counts) : null), [profile, counts]);
+
+  if (loading) {
     return (
       <AppShell title="Profil">
-        <p className="p-8 text-center text-sm text-muted-foreground">Användaren hittades inte.</p>
+        <p className="flex items-center justify-center gap-2 p-8 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Hämtar profilen…
+        </p>
       </AppShell>
     );
   }
 
+  if (!user) {
+    return (
+      <AppShell title="Profil">
+        <div className="p-8 text-center">
+          <p className="text-sm text-muted-foreground">Användaren hittades inte.</p>
+          <Link to="/vanner" className="mt-3 inline-block text-sm font-bold text-primary">
+            Sök personer →
+          </Link>
+        </div>
+      </AppShell>
+    );
+  }
+
+  const isSelf = profile?.id === store.account?.id || profile?.id === ME;
   const isFollowing = store.following.includes(user.id);
+  const toggleFollow = () => {
+    const next = !isFollowing;
+    store.toggleFollow(user.id);
+    setCounts((current) => ({
+      ...current,
+      followers: Math.max(0, current.followers + (next ? 1 : -1)),
+    }));
+  };
   const created = store.events.filter(
-    (e) => e.organizerId === user.id && e.visibility === "public" && e.status === "approved" && !hasEnded(e),
+    (e) =>
+      e.organizerId === user.id &&
+      e.visibility === "public" &&
+      e.status === "approved" &&
+      !hasEnded(e),
   );
   const interestedIn = store.events.filter(
     (e) => e.interested.includes(user.id) && e.visibility === "public" && !hasEnded(e),
@@ -46,49 +117,50 @@ function UserPage() {
     <AppShell title={user.name}>
       <div className="space-y-5 p-4">
         <div className="flex items-center gap-4">
-          <Avatar user={user} size={64} />
+          <span className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-accent text-4xl">
+            {profile?.avatarEmoji || "🙂"}
+          </span>
           <div className="flex-1">
             <h2 className="flex items-center gap-1 font-display text-lg font-bold">
               {user.name}
-              {user.verified && <BadgeCheck className="h-4 w-4 text-primary" />}
+              {profile?.isModerator && <BadgeCheck className="h-4 w-4 text-primary" />}
             </h2>
-            <p className="text-xs text-muted-foreground">{user.username}</p>
+            <p className="text-xs text-muted-foreground">@{profile?.username}</p>
             <p className="mt-1 text-xs">
-              <span className="font-bold">{user.followers}</span> följare ·{" "}
-              <span className="font-bold">{user.following}</span> följer
+              <span className="font-bold">{counts.followers}</span> följare ·{" "}
+              <span className="font-bold">{counts.following}</span> följer
             </p>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">{user.bio}</p>
 
-        <button
-          type="button"
-          onClick={() => store.toggleFollow(user.id)}
-          className={cn(
-            "w-full rounded-2xl px-4 py-3 text-sm font-bold",
-            isFollowing
-              ? "bg-secondary text-secondary-foreground"
-              : "bg-primary text-primary-foreground shadow-[var(--shadow-pin)]",
-          )}
-        >
-          {isFollowing ? "Slutar följa" : "Följ"}
-        </button>
-
-        {user.organizer && (
-          <div className="rounded-2xl border border-border bg-secondary/50 p-4">
-            <p className="flex items-center gap-2 text-sm font-bold">
-              <BarChart3 className="h-4 w-4 text-primary" /> Arrangörsstatistik
-            </p>
-            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-              <Stat label="Event" value={created.length} />
-              <Stat label="Intresserade" value={totalInterested} />
-              <Stat label="Följare" value={user.followers} />
-            </div>
-            <p className="mt-3 text-[11px] text-muted-foreground">
-              Arrangörsprofil – event och statistik som visas här är offentligt tillgängliga.
-            </p>
-          </div>
+        {!isSelf && (
+          <button
+            type="button"
+            onClick={toggleFollow}
+            className={cn(
+              "w-full rounded-2xl px-4 py-3 text-sm font-bold",
+              isFollowing
+                ? "bg-secondary text-secondary-foreground"
+                : "bg-primary text-primary-foreground shadow-[var(--shadow-pin)]",
+            )}
+          >
+            {isFollowing ? "Slutar följa" : "Följ"}
+          </button>
         )}
+
+        <div className="rounded-2xl border border-border bg-secondary/50 p-4">
+          <p className="flex items-center gap-2 text-sm font-bold">
+            <BarChart3 className="h-4 w-4 text-primary" /> Arrangörsstatistik
+          </p>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+            <Stat label="Event" value={created.length} />
+            <Stat label="Intresserade" value={totalInterested} />
+            <Stat label="Följare" value={counts.followers} />
+          </div>
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            Arrangörsprofil – event och statistik som visas här är offentligt tillgängliga.
+          </p>
+        </div>
 
         <div className="flex gap-2">
           {(
@@ -104,8 +176,8 @@ function UserPage() {
               className={cn(
                 "flex-1 rounded-full px-3 py-2 text-[11px] font-bold uppercase",
                 tab === id
-                  ? "bg-[#2A2421] text-[#FFFDF9] shadow-[0_3px_0_rgba(42,36,33,.2)]"
-                  : "bg-[#2A2421] text-[#FFFDF9]",
+                  ? "bg-[#E57657] text-[#FFFDF9] shadow-[0_3px_0_rgba(112,28,23,.2)]"
+                  : "bg-[#F7E5D5] text-[#8C7A6B]",
               )}
             >
               {label}

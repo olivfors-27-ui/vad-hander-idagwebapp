@@ -1,10 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CalendarPlus, Search, UserCheck, UserPlus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { CalendarPlus, Loader2, Search, UserCheck, UserPlus } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/hander/AppShell";
 import { useIsLoggedIn } from "@/lib/auth-guard";
-import { ME, USERS, type User } from "@/lib/hander-data";
 import { useHander } from "@/lib/hander-store";
+import {
+  fetchFollowerIds,
+  fetchFollowingIds,
+  fetchProfilesByIds,
+  fetchRecentProfiles,
+  searchProfiles,
+  type Profile,
+} from "@/lib/profiles";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/vanner")({
@@ -14,34 +21,14 @@ export const Route = createFileRoute("/vanner")({
       {
         name: "description",
         content:
-          "Sök efter personer, följ vänner, se dina följare och bjud in gänget till en plan på Händer.",
+          "Sök upp personer via användarnamn, följ dem och bjud in gänget till ett event på Händer.",
       },
       { property: "og:title", content: "Vänner – Händer" },
-      {
-        property: "og:description",
-        content: "Hitta personer, följ dem och planera något tillsammans.",
-      },
+      { property: "og:description", content: "Hitta personer, följ dem och planera något tillsammans." },
     ],
   }),
   component: FriendsPage,
 });
-
-/** Mockade följare: personer som följer dig i demon. */
-const FOLLOWER_IDS = ["u2", "u4", "u6", "u7", "u8"];
-
-/** Exempelbilder istället för emoji, samma stil som eventkorten på hem. */
-const USER_COVERS: Record<string, string> = {
-  u1: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
-  u2: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80",
-  u3: "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=200&q=80",
-  u4: "https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?auto=format&fit=crop&w=200&q=80",
-  u5: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=200&q=80",
-  u6: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=200&q=80",
-  u7: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=200&q=80",
-  u8: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=200&q=80",
-};
-
-const userCover = (id: string) => USER_COVERS[id] ?? USER_COVERS["u1"];
 
 /** Ljus palettvariant + mörk textton, samma familj som sektionsfärgerna. */
 const TONE_SOFT = {
@@ -50,14 +37,17 @@ const TONE_SOFT = {
   blue: "bg-[#DDE3F8] text-[#3B4CAD]",
 } as const;
 
-function UserRow({
-  user,
+const AVATAR_TONES = ["bg-[#FBD9D6]", "bg-[#DDE3F8]", "bg-[#F7E5D5]", "bg-[#EAF6EE]"] as const;
+const avatarTone = (id: string) => AVATAR_TONES[id.charCodeAt(0) % AVATAR_TONES.length]!;
+
+function ProfileRow({
+  person,
   isFollowing,
   onToggle,
   hint,
   tone = "pink",
 }: {
-  user: User;
+  person: Profile;
   isFollowing: boolean;
   onToggle: () => void;
   hint?: string;
@@ -78,29 +68,31 @@ function UserRow({
     >
       <Link
         to="/anvandare/$username"
-        params={{ username: user.username.replace("@", "") }}
+        params={{ username: person.username }}
         className="shrink-0"
-        aria-label={`Öppna ${user.name}s profil`}
+        aria-label={`Öppna ${person.name}s profil`}
       >
-        <img
-          src={userCover(user.id)}
-          alt=""
-          loading="lazy"
-          style={{ backgroundColor: user.color }}
-          className="h-12 w-12 rounded-xl object-cover"
-        />
+        <span
+          className={cn(
+            "flex h-12 w-12 items-center justify-center rounded-xl text-2xl",
+            avatarTone(person.id),
+          )}
+          aria-hidden
+        >
+          {person.avatarEmoji}
+        </span>
       </Link>
       <Link
         to="/anvandare/$username"
-        params={{ username: user.username.replace("@", "") }}
+        params={{ username: person.username }}
         className="min-w-0 flex-1"
       >
         <p className="truncate text-sm font-bold text-foreground">
-          {user.name}
-          {user.verified && <span className="ml-1 text-[#465BC4]">✔</span>}
+          {person.name}
+          {person.isModerator && <span className="ml-1 text-[#465BC4]">✔</span>}
         </p>
         <p className="truncate text-xs text-muted-foreground">
-          {hint ?? `${user.username} · ${user.followers} följare`}
+          {hint ?? `@${person.username}`}
         </p>
       </Link>
       <button
@@ -135,38 +127,120 @@ const TABS: { id: Tab; label: string }[] = [
 
 function FriendsPage() {
   const store = useHander();
-  // UI-guard: skapa-event-knappen visas bara för inloggade.
   const loggedIn = useIsLoggedIn();
+  const account = store.account;
   const [q, setQ] = useState("");
   const [tab, setTab] = useState<Tab>("foljer");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [results, setResults] = useState<Profile[]>([]);
+  const [suggestions, setSuggestions] = useState<Profile[]>([]);
+  const [followingProfiles, setFollowingProfiles] = useState<Profile[]>([]);
+  const [followerProfiles, setFollowerProfiles] = useState<Profile[]>([]);
 
-  const others = useMemo(() => USERS.filter((u) => u.id !== ME), []);
-  const query = q.trim().toLowerCase();
+  const query = q.trim();
 
-  const following = others.filter((u) => store.following.includes(u.id));
-  const followers = others.filter((u) => FOLLOWER_IDS.includes(u.id));
-  const suggestions = others
-    .filter((u) => !store.following.includes(u.id))
-    .sort((a, b) => b.followers - a.followers);
+  // Alla riktiga konton att föreslå – inga demoanvändare.
+  useEffect(() => {
+    if (!account) {
+      setSuggestions([]);
+      return;
+    }
+    let active = true;
+    void fetchRecentProfiles(account.id)
+      .then((people) => {
+        if (active) setSuggestions(people);
+      })
+      .catch(() => {
+        if (active) setSuggestions([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [account]);
 
-  const base = tab === "foljer" ? following : tab === "foljare" ? followers : suggestions;
-  const list = query
-    ? others.filter(
-        (u) => u.name.toLowerCase().includes(query) || u.username.toLowerCase().includes(query),
-      )
-    : base;
+  // Följer/följare hämtas från follows-tabellen via profil-id.
+  useEffect(() => {
+    if (!account) {
+      setFollowingProfiles([]);
+      setFollowerProfiles([]);
+      return;
+    }
+    let active = true;
+    void Promise.all([fetchFollowingIds(account.id), fetchFollowerIds(account.id)])
+      .then(async ([followingIds, followerIds]) => {
+        const [following, followers] = await Promise.all([
+          fetchProfilesByIds(followingIds),
+          fetchProfilesByIds(followerIds),
+        ]);
+        if (!active) return;
+        setFollowingProfiles(following);
+        setFollowerProfiles(followers);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [account]);
+
+  // Sökning mot profiler (användarnamn eller visningsnamn), med kort fördröjning.
+  useEffect(() => {
+    if (query.length < 1) {
+      setResults([]);
+      setError(null);
+      return;
+    }
+    let active = true;
+    setLoading(true);
+    const timer = setTimeout(() => {
+      void searchProfiles(query, account?.id)
+        .then((people) => {
+          if (!active) return;
+          setResults(people);
+          setError(null);
+        })
+        .catch(() => {
+          if (active) setError("Sökningen misslyckades. Försök igen om en stund.");
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+    }, 250);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [query, account?.id]);
+
+  const followingIds = useMemo(
+    () => new Set([...followingProfiles.map((p) => p.id), ...store.following]),
+    [followingProfiles, store.following],
+  );
+
+  /** Följ/avfölj och uppdatera listan direkt så att Följer-fliken stämmer. */
+  const togglePerson = (person: Profile) => {
+    const wasFollowing = followingIds.has(person.id);
+    store.toggleFollow(person.id);
+    setFollowingProfiles((prev) =>
+      wasFollowing ? prev.filter((p) => p.id !== person.id) : [...prev, person],
+    );
+  };
+
+  const base =
+    tab === "foljer" ? followingProfiles : tab === "foljare" ? followerProfiles : suggestions;
+  const list = query ? results : base;
 
   const empty =
     tab === "foljer"
-      ? "Du följer ingen än – kolla in fliken Hitta."
+      ? "Du följer ingen än – sök på ett användarnamn under Hitta."
       : tab === "foljare"
         ? "Ingen följer dig än."
-        : "Du följer redan alla i demon.";
+        : "Inga andra konton hittades ännu.";
 
   return (
     <AppShell
       title="Vänner"
-      subtitle={`${following.length} du följer · ${followers.length} följare`}
+      subtitle={`${followingProfiles.length} du följer · ${followerProfiles.length} följare`}
     >
       <div className="relative space-y-6 pb-4 pt-5">
         <section className="section-zone section-zone--red relative space-y-4 pb-4">
@@ -177,19 +251,44 @@ function FriendsPage() {
             </h2>
           </div>
 
-          <div className="px-4">
-            <label className="relative block">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#E45048]" />
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Sök efter personer"
-                className="w-full rounded-2xl border-2 border-[#E45048] bg-white py-3 pl-10 pr-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-[#E45048]/25"
-              />
-            </label>
-          </div>
+          {account ? (
+            <div className="px-4">
+              <label className="relative block">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#E45048]" />
+                <input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Sök användarnamn eller namn"
+                  autoComplete="off"
+                  className="w-full rounded-2xl border-2 border-[#E45048] bg-white py-3 pl-10 pr-10 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-[#E45048]/25"
+                />
+                {loading && (
+                  <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#E45048]" />
+                )}
+              </label>
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
+                Sök på @användarnamn eller visningsnamn. Mejladresser visas aldrig.
+              </p>
+            </div>
+          ) : (
+            <div className="px-4">
+              <div className="rounded-2xl border border-dashed border-border p-4 text-center">
+                <p className="text-sm font-bold">Logga in för att hitta vänner</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Alla konton är egna användare – inga demoprofiler.
+                </p>
+                <Link
+                  to="/loggain"
+                  search={{ redirect: "/vanner" }}
+                  className="mt-3 inline-flex rounded-xl bg-[#E45048] px-4 py-2.5 text-xs font-bold text-white"
+                >
+                  Logga in
+                </Link>
+              </div>
+            </div>
+          )}
 
-          {!query && (
+          {!query && account && (
             <div className="flex gap-2 px-4">
               {TABS.map((t) => (
                 <button
@@ -210,34 +309,41 @@ function FriendsPage() {
           )}
         </section>
 
-        <section className="section-zone section-zone--orange relative space-y-3 pb-3">
-          <div className="flex items-center justify-between px-4">
-            <h2 className="section-pill section-pill--pink relative inline-flex items-center gap-2 px-3.5 py-2 text-sm font-bold">
-              <span className="h-2 w-2 shrink-0 rounded-full bg-[#E57657]" />
-              <span>{query ? `Sökresultat (${list.length})` : TABS.find((t) => t.id === tab)?.label}</span>
-            </h2>
-          </div>
+        {account && (
+          <section className="section-zone section-zone--orange relative space-y-3 pb-3">
+            <div className="flex items-center justify-between px-4">
+              <h2 className="section-pill section-pill--pink relative inline-flex items-center gap-2 px-3.5 py-2 text-sm font-bold">
+                <span className="h-2 w-2 shrink-0 rounded-full bg-[#E57657]" />
+                <span>
+                  {query ? `Sökresultat (${list.length})` : TABS.find((t) => t.id === tab)?.label}
+                </span>
+              </h2>
+            </div>
 
-          <div className="space-y-2 px-4">
-          {list.map((u) => (
-            <UserRow
-              key={u.id}
-              user={u}
-              isFollowing={store.following.includes(u.id)}
-              onToggle={() => store.toggleFollow(u.id)}
-              tone={tab === "foljer" ? "pink" : tab === "foljare" ? "blue" : "red"}
-              {...(tab === "foljare" && !query && !store.following.includes(u.id)
-                ? { hint: `${u.username} · följer dig` }
-                : {})}
-            />
-          ))}
-          {list.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              {query ? `Ingen matchar "${q}".` : empty}
-            </p>
-          )}
-          </div>
-        </section>
+            <div className="space-y-2 px-4">
+              {error && (
+                <p className="rounded-xl bg-destructive/10 px-3 py-2 text-xs font-bold text-destructive">
+                  {error}
+                </p>
+              )}
+              {list.map((person) => (
+                <ProfileRow
+                  key={person.id}
+                  person={person}
+                  isFollowing={followingIds.has(person.id)}
+                  onToggle={() => togglePerson(person)}
+                  tone={tab === "foljer" ? "pink" : tab === "foljare" ? "blue" : "red"}
+                  {...(tab === "foljare" && !query ? { hint: `@${person.username} · följer dig` } : {})}
+                />
+              ))}
+              {!loading && list.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {query ? `Ingen matchar "${q.trim()}".` : empty}
+                </p>
+              )}
+            </div>
+          </section>
+        )}
 
         <div className="space-y-2 px-4">
           {loggedIn && (

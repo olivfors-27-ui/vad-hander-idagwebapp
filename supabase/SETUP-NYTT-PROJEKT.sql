@@ -1,7 +1,9 @@
 -- ═══════════════════════════════════════════════════════════════════
--- HÄNDER – komplett uppsättning för ett NYTT Supabase-projekt
--- Klistra in HELA filen i SQL Editor och kör en gång. Klart.
--- (Innehåller både plans/plan_replies och kontosystemet/profiler.)
+-- HÄNDER – ÄLDRE engångsfil (plans + enkel profil, ingen moderering).
+-- Använd i stället migrationerna i supabase/migrations/ i filnamnsordning:
+-- de är idempotenta och innehåller även användarnamn, följningar,
+-- granskning av publika event, inbjudningslänkar och sponsring.
+-- Filen finns kvar för att kunna återskapa plans-delen i ett tomt projekt.
 -- ═══════════════════════════════════════════════════════════════════
 
 -- ── 1. Delade planer ────────────────────────────────────────────────

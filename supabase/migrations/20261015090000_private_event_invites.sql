@@ -33,52 +33,12 @@ create policy "Organizers manage their private events"
   with check (auth.uid() = organizer_id);
 
 -- Replace the old public RPC, which exposed every guest response by invite code.
+-- Den äldre publika varianten (utan token) tas bort. Den slutgiltiga
+-- definitionen av get_private_event_invite finns i
+-- 20261019090000_profiles_moderation_sponsorship.sql, som också fyller på
+-- inbjudarens namn från profilen när payloaden saknar organizerName.
 drop function if exists public.get_private_event_invite(text);
 drop function if exists public.get_private_event_invite(text, text);
-create or replace function public.get_private_event_invite(p_code text, p_response_token text)
-returns jsonb
-language plpgsql
-stable
-security definer
-set search_path = public
-as $$
-declare
-  pe public.private_events%rowtype;
-  own_reply jsonb;
-begin
-  select * into pe from public.private_events
-  where upper(invite_code) = upper(trim(p_code));
-  if not found then return null; end if;
-
-  if auth.uid() is not null then
-    select jsonb_build_object('userId', r.guest_key, 'name', r.guest_name, 'status', r.status)
-      into own_reply from public.private_event_replies r
-      where r.event_id = pe.id and r.guest_key = auth.uid()::text;
-  elsif p_response_token is not null
-        and length(p_response_token) = 64 and p_response_token ~ '^[0-9a-f]{64}$' then
-    select jsonb_build_object('userId', r.guest_key, 'name', r.guest_name, 'status', r.status)
-      into own_reply from public.private_event_replies r
-      where r.event_id = pe.id
-        and r.response_token_hash = digest(p_response_token, 'sha256');
-  end if;
-
-  return jsonb_build_object(
-    'event', jsonb_build_object(
-      'id', pe.payload->'id', 'name', pe.payload->'name',
-      'category', pe.payload->'category', 'date', pe.payload->'date',
-      'start', pe.payload->'start', 'end', pe.payload->'end',
-      'place', pe.payload->'place', 'address', pe.payload->'address',
-      'description', pe.payload->'description', 'image', pe.payload->'image',
-      'organizerId', pe.organizer_id, 'organizerName', pe.payload->'organizerName',
-      'visibility', 'private', 'status', 'approved', 'interested', '[]'::jsonb,
-      'distance', 0, 'inviteCode', pe.invite_code, 'invites', '[]'::jsonb
-    ),
-    'ownReply', own_reply
-  );
-end;
-$$;
-revoke all on function public.get_private_event_invite(text, text) from public;
-grant execute on function public.get_private_event_invite(text, text) to anon, authenticated;
 
 create or replace function public.list_private_event_invites(p_code text)
 returns jsonb

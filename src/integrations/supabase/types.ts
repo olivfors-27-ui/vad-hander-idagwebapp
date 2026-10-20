@@ -103,26 +103,89 @@ export type Database = {
           },
         ];
       };
+      follows: {
+        Row: {
+          created_at: string;
+          followed_id: string;
+          follower_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          followed_id: string;
+          follower_id: string;
+        };
+        Update: {
+          created_at?: string;
+          followed_id?: string;
+          follower_id?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           avatar_emoji: string;
           created_at: string;
           id: string;
+          is_moderator: boolean;
           name: string;
           updated_at: string;
+          username: string;
         };
         Insert: {
           avatar_emoji?: string;
           created_at?: string;
           id: string;
+          is_moderator?: boolean;
           name?: string;
           updated_at?: string;
+          username?: string;
         };
         Update: {
           avatar_emoji?: string;
           created_at?: string;
           id?: string;
+          is_moderator?: boolean;
           name?: string;
+          updated_at?: string;
+          username?: string;
+        };
+        Relationships: [];
+      };
+      public_events: {
+        Row: {
+          created_at: string;
+          id: string;
+          organizer_id: string;
+          organizer_name: string;
+          payload: Json;
+          rejection_reason: string | null;
+          sponsor_status: string;
+          sponsored_at: string | null;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id: string;
+          organizer_id: string;
+          organizer_name?: string;
+          payload: Json;
+          rejection_reason?: string | null;
+          sponsor_status?: string;
+          sponsored_at?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          organizer_id?: string;
+          organizer_name?: string;
+          payload?: Json;
+          rejection_reason?: string | null;
+          sponsor_status?: string;
+          sponsored_at?: string | null;
+          status?: string;
           updated_at?: string;
         };
         Relationships: [];
@@ -186,6 +249,18 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      is_moderator: {
+        Args: { p_user: string | null };
+        Returns: boolean;
+      };
+      moderate_public_event: {
+        Args: { p_event_id: string; p_status: string; p_reason?: string | null };
+        Returns: Json;
+      };
+      sponsor_public_event: {
+        Args: { p_event_id: string };
+        Returns: Json;
+      };
       get_private_event_invite: {
         Args: { p_code: string; p_response_token: string | null };
         Returns: Json;

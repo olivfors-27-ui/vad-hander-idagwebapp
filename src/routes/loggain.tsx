@@ -1,11 +1,24 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { Loader2, LogIn, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/hander/AppShell";
-import { isAuthConfigured, signIn, signOut, signUp, useAccount } from "@/lib/auth";
+import {
+  currentSession,
+  isAuthConfigured,
+  signIn,
+  signOut,
+  signUp,
+  useAccount,
+} from "@/lib/auth";
 
 export const Route = createFileRoute("/loggain")({
+  // Skyddade sidor skickar med ?redirect=/skapa så att inloggningen fortsätter
+  // där användaren var på väg.
+  validateSearch: (search: Record<string, unknown>): { redirect?: string } => {
+    const redirect = typeof search["redirect"] === "string" ? search["redirect"] : undefined;
+    return redirect ? { redirect } : {};
+  },
   head: () => ({
     meta: [
       { title: "Logga in – Händer" },
@@ -18,12 +31,14 @@ export const Route = createFileRoute("/loggain")({
 type Mode = "login" | "register";
 
 function LoginPage() {
-  const navigate = useNavigate();
+  const router = useRouter();
+  const { redirect } = Route.useSearch();
   const account = useAccount();
   const configured = isAuthConfigured();
 
   const [mode, setMode] = useState<Mode>("login");
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -40,18 +55,41 @@ function LoginPage() {
       setError("Lösenordet måste vara minst 6 tecken.");
       return;
     }
+    const cleanUsername = username.trim().toLowerCase().replace(/^@/, "");
+    if (mode === "register" && !/^[a-z0-9_]{3,20}$/.test(cleanUsername)) {
+      setError("Användarnamnet måste vara 3–20 tecken: a–z, 0–9 eller _.");
+      return;
+    }
+    if (mode === "register" && !name.trim()) {
+      setError("Fyll i ditt visningsnamn.");
+      return;
+    }
     setBusy(true);
-    const result = mode === "login" ? await signIn(email.trim(), password) : await signUp(name.trim(), email.trim(), password);
+    const result =
+      mode === "login"
+        ? await signIn(email.trim(), password)
+        : await signUp(name.trim(), cleanUsername, email.trim(), password);
     setBusy(false);
     if (!result.ok) {
       setError(result.error);
       return;
     }
     if (mode === "register") {
+      // Om e-postbekräftelse är avstängt i Supabase loggas kontot in direkt.
+      const session = await currentSession();
+      if (session) {
+        toast.success("Konto skapat – välkommen!");
+        router.history.push("/valkommen");
+        return;
+      }
       toast.success("Konto skapat! Kolla din inkorg och bekräfta mejlen, sen kan du logga in.");
     } else {
       toast.success("Inloggad – kul att se dig!");
-      void navigate({ to: "/profil" });
+      const safeRedirect =
+        redirect && redirect.startsWith("/") && !redirect.startsWith("//") && redirect !== "/loggain"
+          ? redirect
+          : "/profil";
+      router.history.push(safeRedirect);
     }
   };
 
@@ -69,7 +107,7 @@ function LoginPage() {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => void navigate({ to: "/profil" })}
+                onClick={() => router.history.push("/profil")}
                 className="flex-1 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-[var(--shadow-pin)]"
               >
                 Till profilen
@@ -124,6 +162,28 @@ function LoginPage() {
                     autoComplete="nickname"
                     className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
                   />
+                </label>
+              )}
+              {mode === "register" && (
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-bold">Användarnamn</span>
+                  <div className="flex items-center rounded-2xl border border-border bg-background px-4 focus-within:border-primary">
+                    <span className="text-sm text-muted-foreground">@</span>
+                    <input
+                      type="text"
+                      value={username}
+                      onChange={(e) =>
+                        setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))
+                      }
+                      placeholder="dittnamn"
+                      autoComplete="username"
+                      maxLength={20}
+                      className="w-full bg-transparent py-3 pl-1 text-sm outline-none"
+                    />
+                  </div>
+                  <span className="mt-1 block text-[11px] text-muted-foreground">
+                    Vänner hittar dig genom att söka på användarnamnet.
+                  </span>
                 </label>
               )}
               <label className="block">

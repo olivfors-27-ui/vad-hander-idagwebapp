@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { BarChart3, Check, Copy, Eye, Pencil, Users, X } from "lucide-react";
+import { BarChart3, Check, Copy, Eye, Pencil, Sparkles, Users, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/hander/AppShell";
@@ -10,12 +10,14 @@ import {
   STAT_LABELS,
   userById,
   type CategoryId,
+  type EventItem,
   type InviteStatus,
   type User,
 } from "@/lib/hander-data";
 import { useProfileName } from "@/lib/auth";
 import { formatDay, useHander } from "@/lib/hander-store";
 import { appUrl } from "@/lib/app-url";
+import { SPONSORSHIP, sponsorshipPriceLabel } from "@/lib/sponsorship";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/event/$id/hantera")({
@@ -152,6 +154,8 @@ function ManageEventPage() {
               </div>
             </div>
 
+            {event.visibility === "public" && <SponsorshipCard event={event} />}
+
             <Link
               to="/event/$id"
               params={{ id: event.id }}
@@ -175,7 +179,7 @@ function EditTab({ eventId }: { eventId: string }) {
 }
 
 function EditForm({ eventId }: { eventId: string }) {
-  const { updateEvent } = useHander();
+  const { updateEvent, updatePublicEvent } = useHander();
   const store = useHander();
   const event = store.events.find((e) => e.id === eventId);
   const [name, setName] = useState(event?.name ?? "");
@@ -194,7 +198,7 @@ function EditForm({ eventId }: { eventId: string }) {
       toast.error("Eventnamn och plats behövs.");
       return;
     }
-    updateEvent(eventId, {
+    const patch: Partial<EventItem> = {
       name: name.trim(),
       category,
       date,
@@ -204,7 +208,14 @@ function EditForm({ eventId }: { eventId: string }) {
       price: Number(price) || 0,
       description: description.trim(),
       ...(event.visibility === "public" ? { status: "pending" as const } : {}),
-    });
+    };
+    if (event.visibility === "public") {
+      void updatePublicEvent(eventId, patch).catch(() =>
+        toast.error("Ändringen kunde inte sparas. Försök igen."),
+      );
+    } else {
+      updateEvent(eventId, patch);
+    }
     toast.success(
       event.visibility === "public" ? "Ändringen skickades för granskning." : "Eventet uppdaterat.",
     );
@@ -388,6 +399,97 @@ function GuestsTab({
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Sponsring: pris och betalningsinstruktion visas innan användaren bekräftar.
+ * Sponsring är bara möjlig för godkända event – backend kontrollerar samma sak
+ * i RPC:n sponsor_public_event.
+ */
+function SponsorshipCard({ event }: { event: EventItem }) {
+  const store = useHander();
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const approved = event.status === "approved";
+  const sponsored = Boolean(event.sponsored || event.promoted);
+
+  if (sponsored) {
+    return (
+      <div className="rounded-2xl border border-[#465BC4]/40 bg-[#DDE3F8] p-4 text-[#3B4CAD]">
+        <p className="flex items-center gap-2 text-sm font-bold">
+          <Sparkles className="h-4 w-4" /> Sponsrat event
+        </p>
+        <p className="mt-1 text-xs leading-relaxed">
+          Eventet visas i fliken Sponsrat på startsidan och är märkt som sponsrat i listor och på
+          kartan.
+        </p>
+      </div>
+    );
+  }
+
+  const confirm = async () => {
+    setBusy(true);
+    try {
+      await store.sponsorEvent(event.id);
+      setConfirming(false);
+      toast.success("Sponsring aktiverad – eventet syns nu i Sponsrat");
+    } catch (error) {
+      console.error("Could not sponsor event", error);
+      toast.error("Sponsringen kunde inte aktiveras. Försök igen.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2 rounded-2xl border border-border bg-card p-4">
+      <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Sponsring</p>
+      <p className="text-sm font-bold text-[#2A2421]">
+        Sponsrad placering – {sponsorshipPriceLabel()}
+      </p>
+      <button
+        type="button"
+        disabled={!approved || busy}
+        onClick={() => setConfirming(true)}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#465BC4] px-4 py-3 text-sm font-bold text-[#FFFDF9] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <Sparkles className="h-4 w-4" />
+        {approved ? `Sponsra för ${sponsorshipPriceLabel()}` : "Sponsring är låst"}
+      </button>
+      <p className="text-[11px] leading-relaxed text-muted-foreground">
+        {SPONSORSHIP.availabilityNote}
+      </p>
+
+      {confirming && (
+        <div className="space-y-2 rounded-xl bg-[#DDE3F8] p-3 text-xs text-[#3B4CAD]">
+          <p className="font-bold">
+            Betala {sponsorshipPriceLabel()} via Swish till {SPONSORSHIP.paymentNumber}
+          </p>
+          <p className="leading-relaxed">
+            Ange eventets namn som meddelande. När betalningen är gjord trycker du på knappen nedan
+            så markeras eventet som sponsrat.
+          </p>
+          <div className="flex gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              className="flex-1 rounded-xl bg-white px-3 py-2 text-xs font-bold text-[#3B4CAD]"
+            >
+              Avbryt
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void confirm()}
+              className="flex-[2] rounded-xl bg-[#465BC4] px-3 py-2 text-xs font-bold text-white disabled:opacity-60"
+            >
+              {busy ? "Aktiverar…" : "Jag har betalat – aktivera"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

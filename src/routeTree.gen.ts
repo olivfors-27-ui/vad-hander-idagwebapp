@@ -24,6 +24,7 @@ import { Route as SkapaRouteImport } from './routes/skapa'
 import { Route as SkapaPlanRouteImport } from './routes/skapa-plan'
 import { Route as SokRouteImport } from './routes/sok'
 import { Route as SparatRouteImport } from './routes/sparat'
+import { Route as ValkommenRouteImport } from './routes/valkommen'
 import { Route as VannerRouteImport } from './routes/vanner'
 import { Route as AnvandareUsernameRouteImport } from './routes/anvandare.$username'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
@@ -109,6 +110,11 @@ const SparatRoute = SparatRouteImport.update({
   path: '/sparat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ValkommenRoute = ValkommenRouteImport.update({
+  id: '/valkommen',
+  path: '/valkommen',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VannerRoute = VannerRouteImport.update({
   id: '/vanner',
   path: '/vanner',
@@ -171,6 +177,7 @@ export interface FileRoutesByFullPath {
   '/skapa-plan': typeof SkapaPlanRoute
   '/sok': typeof SokRoute
   '/sparat': typeof SparatRoute
+  '/valkommen': typeof ValkommenRoute
   '/vanner': typeof VannerRoute
   '/anvandare/$username': typeof AnvandareUsernameRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -197,6 +204,7 @@ export interface FileRoutesByTo {
   '/skapa-plan': typeof SkapaPlanRoute
   '/sok': typeof SokRoute
   '/sparat': typeof SparatRoute
+  '/valkommen': typeof ValkommenRoute
   '/vanner': typeof VannerRoute
   '/anvandare/$username': typeof AnvandareUsernameRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -224,6 +232,7 @@ export interface FileRoutesById {
   '/skapa-plan': typeof SkapaPlanRoute
   '/sok': typeof SokRoute
   '/sparat': typeof SparatRoute
+  '/valkommen': typeof ValkommenRoute
   '/vanner': typeof VannerRoute
   '/anvandare/$username': typeof AnvandareUsernameRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -252,6 +261,7 @@ export interface FileRouteTypes {
     | '/skapa-plan'
     | '/sok'
     | '/sparat'
+    | '/valkommen'
     | '/vanner'
     | '/anvandare/$username'
     | '/auth/callback'
@@ -278,6 +288,7 @@ export interface FileRouteTypes {
     | '/skapa-plan'
     | '/sok'
     | '/sparat'
+    | '/valkommen'
     | '/vanner'
     | '/anvandare/$username'
     | '/auth/callback'
@@ -304,6 +315,7 @@ export interface FileRouteTypes {
     | '/skapa-plan'
     | '/sok'
     | '/sparat'
+    | '/valkommen'
     | '/vanner'
     | '/anvandare/$username'
     | '/auth/callback'
@@ -331,6 +343,7 @@ export interface RootRouteChildren {
   SkapaPlanRoute: typeof SkapaPlanRoute
   SokRoute: typeof SokRoute
   SparatRoute: typeof SparatRoute
+  ValkommenRoute: typeof ValkommenRoute
   VannerRoute: typeof VannerRoute
   AnvandareUsernameRoute: typeof AnvandareUsernameRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
@@ -448,6 +461,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SparatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/valkommen': {
+      id: '/valkommen'
+      path: '/valkommen'
+      fullPath: '/valkommen'
+      preLoaderRoute: typeof ValkommenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/vanner': {
       id: '/vanner'
       path: '/vanner'
@@ -541,6 +561,7 @@ const rootRouteChildren: RootRouteChildren = {
   SkapaPlanRoute: SkapaPlanRoute,
   SokRoute: SokRoute,
   SparatRoute: SparatRoute,
+  ValkommenRoute: ValkommenRoute,
   VannerRoute: VannerRoute,
   AnvandareUsernameRoute: AnvandareUsernameRoute,
   AuthCallbackRoute: AuthCallbackRoute,

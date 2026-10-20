@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BarChart3, Bell, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/hander/AppShell";
 import { Avatar, EventRow } from "@/components/hander/EventBits";
-import { ME, USERS, userById } from "@/lib/hander-data";
+import { ME, userById, type User } from "@/lib/hander-data";
 import { hasEnded, useHander } from "@/lib/hander-store";
+import { fetchProfilesByIds, type Profile } from "@/lib/profiles";
 import { signOut } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,24 @@ function ProfilePage() {
   const store = useHander();
   const me = userById(ME);
   const [tab, setTab] = useState<"kommande" | "mina">("kommande");
+  const [followingPeople, setFollowingPeople] = useState<Profile[]>([]);
+
+  // Riktiga profiler för den man följer (inga demokonton).
+  useEffect(() => {
+    if (!store.account) {
+      setFollowingPeople([]);
+      return;
+    }
+    let active = true;
+    void fetchProfilesByIds(store.following)
+      .then((people) => {
+        if (active) setFollowingPeople(people);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [store.account, store.following]);
 
   // Kommande = event jag följer (intresserad av), Mina event = event jag organiserar.
   const meId = store.me;
@@ -32,8 +51,18 @@ function ProfilePage() {
   );
   // Inloggade ser sina riktiga event (organizerId = användar-id); fallback till
   // ME fångar demo-event skapade före kontosystemet.
-  const mine = store.events.filter((e) => e.organizerId === meId || e.organizerId === ME);
-  const followingUsers = USERS.filter((u) => store.following.includes(u.id));
+  const mine = store.myEvents.filter((e) => e.organizerId === meId || e.organizerId === ME);
+  const followingUsers: User[] = followingPeople.map((person) => ({
+    id: person.id,
+    name: person.name,
+    username: `@${person.username}`,
+    bio: "",
+    avatar: person.avatarEmoji,
+    color: "#8C7A6B",
+    followers: 0,
+    following: 0,
+    verified: person.isModerator,
+  }));
 
   return (
     <AppShell title="Profil" subtitle={`${store.following.length} du följer · ${me.followers} följare`}>
@@ -44,8 +73,17 @@ function ProfilePage() {
               {store.account.avatarEmoji}
             </div>
             <div className="flex-1">
-              <h2 className="font-display text-lg font-bold">{store.account.name}</h2>
-              <p className="text-xs text-muted-foreground">{store.account.email}</p>
+              <h2 className="flex items-center gap-1 font-display text-lg font-bold">
+                {store.account.name}
+                {store.account.isModerator && (
+                  <span className="rounded-full bg-[#DDE3F8] px-2 py-0.5 text-[10px] font-bold uppercase text-[#3B4CAD]">
+                    Moderator
+                  </span>
+                )}
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                @{store.account.username} · {store.account.email}
+              </p>
             </div>
             <button
               type="button"
@@ -98,6 +136,15 @@ function ProfilePage() {
           <BarChart3 className="h-4 w-4" /> Arrangörspanel – event & statistik
         </Link>
 
+        {store.isModerator && (
+          <Link
+            to="/admin"
+            className="flex items-center justify-center gap-2 rounded-2xl bg-[#DDE3F8] px-4 py-3 text-center text-sm font-bold text-[#3B4CAD]"
+          >
+            <Sparkles className="h-4 w-4" /> Moderering – granska väntande event
+          </Link>
+        )}
+
         <div className="flex rounded-full bg-[#F7E5D5] p-1">
           {(
             [
@@ -149,7 +196,7 @@ function ProfilePage() {
                     {e.status === "rejected" && (
                       <span className="text-destructive">Avvisad · {e.rejectionReason}</span>
                     )}
-                    {e.promoted && (
+                    {(e.sponsored || e.promoted) && (
                       <span className="ml-2 inline-flex items-center gap-1 text-muted-foreground">
                         <Sparkles className="h-3 w-3 text-primary" /> Sponsrat
                       </span>

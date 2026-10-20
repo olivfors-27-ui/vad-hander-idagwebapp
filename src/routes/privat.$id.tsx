@@ -35,13 +35,22 @@ function PrivateEventPage() {
   const { id } = useParams({ from: "/privat/$id" });
   const store = useHander();
   const event = store.events.find((e) => e.id === id);
+  const loadPrivateEventInvites = store.loadPrivateEventInvites;
 
   useEffect(() => {
     if (!event?.inviteCode) return;
-    void store.loadPrivateEventInvites(event.inviteCode).catch((error) => {
-      console.error("Could not refresh private event replies", error);
-    });
-  }, [event?.inviteCode, store.loadPrivateEventInvites]);
+    const code = event.inviteCode;
+    const refresh = () => {
+      void loadPrivateEventInvites(code).catch((error) => {
+        console.error("Could not refresh private event replies", error);
+      });
+    };
+    refresh();
+    // Gästerna svarar ofta medan värden har fliken öppen – hämta om listan
+    // när fliken får fokus igen så att nya svar syns utan omladdning.
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
+  }, [event?.inviteCode, loadPrivateEventInvites]);
 
   if (!event) {
     return (

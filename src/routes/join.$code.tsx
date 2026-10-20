@@ -29,30 +29,42 @@ function JoinPage() {
   const event = (localEvent?.visibility === "private" ? localEvent : loadedEvent) ?? undefined;
   const hostedEvent = event?.organizerId === store.me;
   const [inviteLoaded, setInviteLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<"invalid" | "unavailable" | null>(null);
   const [replying, setReplying] = useState(false);
+  // Inloggade matchas på sitt konto, utloggade på det enda svar som finns i
+  // den här webbläsaren (sparat via response-token). Svaret uppdateras direkt
+  // i storen efter att gästen tryckt Ja/Nej/Kanske.
   const displayInvite = hostedEvent
     ? undefined
-    : (event?.invites?.find((invite) => invite.userId === store.account?.id) ??
-      (store.account ? undefined : inviteLoaded ? loadedEvent?.invites?.[0] : undefined));
+    : store.account
+      ? event?.invites?.find((invite) => invite.userId === store.account?.id)
+      : event?.invites?.[0];
   const responseToken = getGuestResponseToken(code);
   const guestKey = responseToken;
+  const loadPrivateEventInvite = store.loadPrivateEventInvite;
 
   useEffect(() => {
     let active = true;
     setInviteLoaded(false);
-    void store
-      .loadPrivateEventInvite(code, responseToken)
+    setLoadError(null);
+    void loadPrivateEventInvite(code, responseToken)
       .then((loaded) => {
-        if (active && loaded) setLoadedEvent(loaded);
+        if (!active) return;
+        if (loaded) setLoadedEvent(loaded);
+        else setLoadError("invalid");
       })
-      .catch((error) => console.error("Could not load private event invite", error))
+      .catch((error) => {
+        // Nätverksfel/migration som saknas ska inte se ut som en utgången länk.
+        console.error("Could not load private event invite", error);
+        if (active) setLoadError("unavailable");
+      })
       .finally(() => {
         if (active) setInviteLoaded(true);
       });
     return () => {
       active = false;
     };
-  }, [code, responseToken, store.loadPrivateEventInvite]);
+  }, [code, responseToken, loadPrivateEventInvite]);
 
   // Inbjudarens namn: sparad på eventet (organizerName) – annars hämtas
   // profilen via RLS-publicerad profiles-tabell. Hook anropas före tidig
@@ -64,12 +76,25 @@ function JoinPage() {
     return (
       <AppShell title="Inbjudan">
         <div className="p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            {inviteLoaded ? "Inbjudningslänken är ogiltig eller utgången." : "Hämtar inbjudan…"}
-          </p>
-          <Link to="/" className="mt-4 inline-block text-sm font-bold text-primary">
-            Till Upptäck
-          </Link>
+          {!inviteLoaded ? (
+            <p className="text-sm text-muted-foreground">Hämtar inbjudan…</p>
+          ) : (
+            <>
+              <p className="text-sm font-bold text-[#2A2421]">
+                {loadError === "unavailable"
+                  ? "Inbjudan kunde inte hämtas just nu."
+                  : "Inbjudningslänken är ogiltig eller har gått ut."}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {loadError === "unavailable"
+                  ? "Kontrollera anslutningen och försök igen om en stund."
+                  : "Be den som bjöd in dig om en ny länk – varje inbjudan har en egen kod."}
+              </p>
+              <Link to="/" className="mt-4 inline-block text-sm font-bold text-primary">
+                Till Upptäck
+              </Link>
+            </>
+          )}
         </div>
       </AppShell>
     );
@@ -78,7 +103,9 @@ function JoinPage() {
   // Aldrig "Okänd" för en riktig användare: organizerName → profiluppslag →
   // inloggat eget konto. "me"/legacy utan namn får en neutral etikett.
   const hostName =
-    event.organizerName ?? profileName ?? (isSelf ? (store.account?.name ?? "Du") : undefined);
+    event.organizerName?.trim() ||
+    profileName ||
+    (isSelf ? (store.account?.name ?? "Du") : undefined);
   const host: User = userById(event.organizerId, hostName);
   const hostLabel = hostName ?? (isSelf ? "Du" : "Arrangör");
 

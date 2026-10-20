@@ -1,7 +1,9 @@
 -- Kontosystem: profiler kopplade till auth.users + plans ägda av inloggad användare.
 
 -- 1. Profil per konto (visningsnamn + emoji-avatar)
-create table public.profiles (
+--    Idempotent: filen ska kunna köras på ett projekt där plans redan finns
+--    (t.ex. efter SETUP-NYTT-PROJEKT.sql) utan att rulla tillbaka allt.
+create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   name text not null default '',
   avatar_emoji text not null default '🙂',
@@ -13,6 +15,10 @@ alter table public.profiles enable row level security;
 
 -- Alla kan läsa profiler (behövs för att visa namn på plans/svar),
 -- men varje användare får bara läsa/uppdatera sin egen profilrad.
+drop policy if exists "Profiles are public" on public.profiles;
+drop policy if exists "Users insert own profile" on public.profiles;
+drop policy if exists "Users update own profile" on public.profiles;
+
 create policy "Profiles are public" on public.profiles
   for select using (true);
 create policy "Users insert own profile" on public.profiles
@@ -38,6 +44,7 @@ begin
 end;
 $$;
 
+drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
@@ -48,6 +55,11 @@ create trigger on_auth_user_created
 drop policy if exists "Anyone can create plans" on public.plans;
 drop policy if exists "Anyone can update plans" on public.plans;
 drop policy if exists "Anyone can delete plans" on public.plans;
+
+drop policy if exists "Anyone can read plans" on public.plans;
+drop policy if exists "Logged in can create plans" on public.plans;
+drop policy if exists "Creator updates plan" on public.plans;
+drop policy if exists "Creator deletes plan" on public.plans;
 
 create policy "Anyone can read plans" on public.plans
   for select using (true);
@@ -62,9 +74,16 @@ create policy "Creator deletes plan" on public.plans
   using (auth.uid()::text = created_by);
 
 -- 4. Svar på plans: alla (även anon) kan svara på delade planer, men en
---    inloggad användare kan bara rediga egna svar.
+--    inloggad användare kan bara redigera egna svar.
+--    user_id måste finnas innan policyn nedan refererar till den (äldre
+--    plan_replies saknar kolumnen).
+alter table public.plan_replies add column if not exists user_id text;
+
 drop policy if exists "Anyone can update replies" on public.plan_replies;
 drop policy if exists "Anyone can delete replies" on public.plan_replies;
+
+drop policy if exists "Logged in updates own reply" on public.plan_replies;
+drop policy if exists "Logged in deletes own reply" on public.plan_replies;
 
 create policy "Logged in updates own reply" on public.plan_replies
   for update to authenticated
@@ -74,5 +93,5 @@ create policy "Logged in deletes own reply" on public.plan_replies
   for delete to authenticated
   using (auth.uid()::text = user_id);
 
--- 5. Kolumn som binder svar till kontot (nullable: anon-svar tillåts kvar)
-alter table public.plan_replies add column if not exists user_id text;
+-- 5. Kolumnen user_id binder svar till kontot (nullable: anon-svar tillåts kvar).
+--    Skapas i steg 4 ovan, före policyn som använder den.

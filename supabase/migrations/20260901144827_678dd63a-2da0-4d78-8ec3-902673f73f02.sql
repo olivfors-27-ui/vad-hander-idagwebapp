@@ -1,59 +1,82 @@
-CREATE TABLE public.plans (
-  id text PRIMARY KEY,
-  code text NOT NULL UNIQUE,
-  title text NOT NULL,
-  note text NOT NULL DEFAULT '',
-  created_by text NOT NULL DEFAULT '',
-  options jsonb NOT NULL DEFAULT '[]'::jsonb,
-  slots jsonb NOT NULL DEFAULT '[]'::jsonb,
+-- Delade planer. Idempotent: kan köras om på ett projekt där plans redan finns.
+create table if not exists public.plans (
+  id text primary key,
+  code text not null unique,
+  title text not null,
+  note text not null default '',
+  created_by text not null default '',
+  options jsonb not null default '[]'::jsonb,
+  slots jsonb not null default '[]'::jsonb,
   emoji text,
   gradient text,
   place text,
   event_id text,
   decided_option_id text,
   decided_slot_id text,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
-CREATE TABLE public.plan_replies (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  plan_id text NOT NULL REFERENCES public.plans(id) ON DELETE CASCADE,
-  name text NOT NULL,
-  option_ids jsonb NOT NULL DEFAULT '[]'::jsonb,
-  slot_ids jsonb NOT NULL DEFAULT '[]'::jsonb,
-  answers jsonb NOT NULL DEFAULT '{}'::jsonb,
-  comment text NOT NULL DEFAULT '',
-  created_at timestamptz NOT NULL DEFAULT now()
+create table if not exists public.plan_replies (
+  id uuid primary key default gen_random_uuid(),
+  plan_id text not null references public.plans(id) on delete cascade,
+  name text not null,
+  option_ids jsonb not null default '[]'::jsonb,
+  slot_ids jsonb not null default '[]'::jsonb,
+  answers jsonb not null default '{}'::jsonb,
+  comment text not null default '',
+  created_at timestamptz not null default now()
 );
 
-CREATE UNIQUE INDEX plan_replies_plan_name_idx ON public.plan_replies (plan_id, lower(btrim(name)));
-CREATE INDEX plan_replies_plan_idx ON public.plan_replies (plan_id);
+create unique index if not exists plan_replies_plan_name_idx
+  on public.plan_replies (plan_id, lower(btrim(name)));
+create index if not exists plan_replies_plan_idx on public.plan_replies (plan_id);
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.plans TO anon, authenticated;
-GRANT ALL ON public.plans TO service_role;
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.plan_replies TO anon, authenticated;
-GRANT ALL ON public.plan_replies TO service_role;
+grant select, insert, update, delete on public.plans to anon, authenticated;
+grant all on public.plans to service_role;
+grant select, insert, update, delete on public.plan_replies to anon, authenticated;
+grant all on public.plan_replies to service_role;
 
-ALTER TABLE public.plans ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.plan_replies ENABLE ROW LEVEL SECURITY;
+alter table public.plans enable row level security;
+alter table public.plan_replies enable row level security;
 
-CREATE POLICY "Anyone can read plans" ON public.plans FOR SELECT USING (true);
-CREATE POLICY "Anyone can create plans" ON public.plans FOR INSERT WITH CHECK (true);
-CREATE POLICY "Anyone can update plans" ON public.plans FOR UPDATE USING (true) WITH CHECK (true);
-CREATE POLICY "Anyone can delete plans" ON public.plans FOR DELETE USING (true);
+drop policy if exists "Anyone can read plans" on public.plans;
+drop policy if exists "Anyone can create plans" on public.plans;
+drop policy if exists "Anyone can update plans" on public.plans;
+drop policy if exists "Anyone can delete plans" on public.plans;
 
-CREATE POLICY "Anyone can read replies" ON public.plan_replies FOR SELECT USING (true);
-CREATE POLICY "Anyone can create replies" ON public.plan_replies FOR INSERT WITH CHECK (true);
-CREATE POLICY "Anyone can update replies" ON public.plan_replies FOR UPDATE USING (true) WITH CHECK (true);
-CREATE POLICY "Anyone can delete replies" ON public.plan_replies FOR DELETE USING (true);
+create policy "Anyone can read plans" on public.plans for select using (true);
+create policy "Anyone can create plans" on public.plans for insert with check (true);
+create policy "Anyone can update plans" on public.plans for update using (true) with check (true);
+create policy "Anyone can delete plans" on public.plans for delete using (true);
 
-CREATE OR REPLACE FUNCTION public.touch_updated_at() RETURNS trigger
-LANGUAGE plpgsql SET search_path = public AS $$
-BEGIN NEW.updated_at = now(); RETURN NEW; END; $$;
+drop policy if exists "Anyone can read replies" on public.plan_replies;
+drop policy if exists "Anyone can create replies" on public.plan_replies;
+drop policy if exists "Anyone can update replies" on public.plan_replies;
+drop policy if exists "Anyone can delete replies" on public.plan_replies;
 
-CREATE TRIGGER plans_touch_updated_at BEFORE UPDATE ON public.plans
-FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
+create policy "Anyone can read replies" on public.plan_replies for select using (true);
+create policy "Anyone can create replies" on public.plan_replies for insert with check (true);
+create policy "Anyone can update replies" on public.plan_replies for update using (true) with check (true);
+create policy "Anyone can delete replies" on public.plan_replies for delete using (true);
 
-ALTER PUBLICATION supabase_realtime ADD TABLE public.plans;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.plan_replies;
+create or replace function public.touch_updated_at() returns trigger
+language plpgsql set search_path = public as $$
+begin new.updated_at = now(); return new; end; $$;
+
+drop trigger if exists plans_touch_updated_at on public.plans;
+create trigger plans_touch_updated_at before update on public.plans
+for each row execute function public.touch_updated_at();
+
+-- Realtime är valfritt: lägg bara till tabellerna om de inte redan är med.
+do $$
+begin
+  alter publication supabase_realtime add table public.plans;
+exception when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter publication supabase_realtime add table public.plan_replies;
+exception when duplicate_object then null;
+end $$;

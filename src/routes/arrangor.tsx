@@ -18,6 +18,7 @@ import {
   type CategoryId,
   type EventItem,
   type StatKey,
+  type User,
 } from "@/lib/hander-data";
 import { useIsLoggedIn } from "@/lib/auth-guard";
 import { formatDay, hasEnded, useHander } from "@/lib/hander-store";
@@ -52,10 +53,22 @@ function OrganizerPage() {
   const store = useHander();
   // UI-guard: "Skapa nytt event" visas bara för inloggade.
   const loggedIn = useIsLoggedIn();
-  const me = userById(ME);
+  const me: User = store.account
+    ? {
+        id: store.account.id,
+        name: store.account.name,
+        username: `@${store.account.username || "du"}`,
+        bio: "",
+        avatar: store.account.avatarEmoji,
+        color: "#8C7A6B",
+        followers: 0,
+        following: store.following.length,
+        verified: store.account.isModerator,
+      }
+    : userById(ME);
   const [editing, setEditing] = useState<string | null>(null);
 
-  const mine = store.events.filter((e) => e.organizerId === ME);
+  const mine = store.myEvents;
   const upcoming = mine.filter((e) => !hasEnded(e));
   const totals = mine.reduce(
     (acc, e) => {
@@ -173,7 +186,7 @@ function OrganizerEventCard({ event, onEdit }: { event: EventItem; onEdit: () =>
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <CategoryChip category={event.category} />
             <span className="text-[11px] font-bold">{priceLabel(event.price, event.priceKnown)}</span>
-            {event.promoted && <SponsoredBadge />}
+            {(event.sponsored || event.promoted) && <SponsoredBadge />}
           </div>
         </div>
       </div>
@@ -211,7 +224,7 @@ function OrganizerEventCard({ event, onEdit }: { event: EventItem; onEdit: () =>
 }
 
 function EditCard({ event, onDone }: { event: EventItem; onDone: () => void }) {
-  const { updateEvent } = useHander();
+  const { updateEvent, updatePublicEvent } = useHander();
   const [name, setName] = useState(event.name);
   const [category, setCategory] = useState<CategoryId>(event.category);
   const [date, setDate] = useState(event.date);
@@ -220,14 +233,13 @@ function EditCard({ event, onDone }: { event: EventItem; onDone: () => void }) {
   const [place, setPlace] = useState(event.place);
   const [price, setPrice] = useState(String(event.price));
   const [description, setDescription] = useState(event.description);
-  const [promoted, setPromoted] = useState(Boolean(event.promoted));
 
   const save = () => {
     if (!name.trim() || !place.trim()) {
       toast.error("Eventnamn och plats behövs.");
       return;
     }
-    updateEvent(event.id, {
+    const patch: Partial<EventItem> = {
       name: name.trim(),
       category,
       date,
@@ -235,10 +247,15 @@ function EditCard({ event, onDone }: { event: EventItem; onDone: () => void }) {
       end,
       place: place.trim(),
       price: Number(price) || 0,
-      promoted: event.visibility === "public" ? promoted : false,
       description: description.trim(),
-      ...(event.visibility === "public" ? { status: "pending" as const } : {}),
-    });
+    };
+    if (event.visibility === "public") {
+      void updatePublicEvent(event.id, patch).catch(() =>
+        toast.error("Ändringen kunde inte sparas. Försök igen."),
+      );
+    } else {
+      updateEvent(event.id, patch);
+    }
     toast.success(
       event.visibility === "public"
         ? "Ändringen skickades för granskning."
@@ -284,38 +301,12 @@ function EditCard({ event, onDone }: { event: EventItem; onDone: () => void }) {
       />
       {event.visibility === "public" && (
         <>
-          <div className="rounded-xl border border-border p-3">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-              Placering
+          <div className="rounded-xl bg-[#DDE3F8] p-3 text-xs text-[#3B4CAD]">
+            <p className="font-bold">Sponsring</p>
+            <p className="mt-1 leading-relaxed">
+              Sponsring är möjligt först när eventet är skapat och godkänt av en moderator. Du
+              hittar sponsringsknappen under eventets hanteringssida.
             </p>
-            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => setPromoted(false)}
-                className={cn(
-                  "rounded-xl border p-2.5 text-left text-xs",
-                  !promoted ? "border-primary bg-accent/60" : "border-border",
-                )}
-              >
-                <p className="font-bold">GRATIS</p>
-                <p className="text-muted-foreground">Vanlig synlighet.</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPromoted(true)}
-                className={cn(
-                  "rounded-xl border p-2.5 text-left text-xs",
-                  promoted ? "border-primary bg-accent/60" : "border-border",
-                )}
-              >
-                <p className="flex flex-wrap items-center gap-1.5 font-bold">
-                  SPONSRAD {promoted && <SponsoredBadge />}
-                </p>
-                <p className="text-muted-foreground">
-                  Egen sektion, framlyft kort och topplacering.
-                </p>
-              </button>
-            </div>
           </div>
           <p className="text-[11px] text-muted-foreground">
             Ändringar i publika event skickas till granskning igen.

@@ -14,6 +14,7 @@ import {
 } from "@/lib/hander-data";
 import { useHander } from "@/lib/hander-store";
 import { appUrl } from "@/lib/app-url";
+import { SPONSORSHIP, sponsorshipPriceLabel } from "@/lib/sponsorship";
 import { useRequireAccount } from "@/lib/auth-guard";
 import { cn } from "@/lib/utils";
 
@@ -67,7 +68,6 @@ function CreatePage() {
   const [location, setLocation] = useState<GeoHit | null>(null);
   const [price, setPrice] = useState("0");
   const [description, setDescription] = useState("");
-  const [promoted, setPromoted] = useState(false);
   const [image, setImage] = useState<string | null>(null);
   const [created, setCreated] = useState<EventItem | null>(null);
 
@@ -84,7 +84,9 @@ function CreatePage() {
       return;
     }
     const item: EventItem = {
-      id: `new-${Date.now()}`,
+      // Unikt id (samma tokenformat som inbjudningskoderna) så att två event
+      // som skapas samtidigt aldrig krockar i databasen.
+      id: code(),
       name: name.trim(),
       category,
       date,
@@ -98,8 +100,11 @@ function CreatePage() {
       organizerId: me,
       interested: [],
       visibility,
+      // Publika event börjar alltid som pending – sponsring är först möjlig
+      // efter att en moderator godkänt eventet.
       status: visibility === "public" ? "pending" : "approved",
-      promoted: visibility === "public" ? promoted : false,
+      sponsored: false,
+      promoted: false,
       lat: location?.lat,
       lng: location?.lng,
       distance: location ? distanceFromHome(location) : 0,
@@ -120,9 +125,16 @@ function CreatePage() {
         return;
       }
     } else {
-      if (!useHanderStore.addEvent(item)) {
-        // Datalagret avvisar skapande utan session – gäller även om UI:t kringgås.
-        toast.error("Du måste vara inloggad för att skapa ett event.");
+      try {
+        const saved = await useHanderStore.addEvent(item);
+        if (!saved) {
+          // Datalagret avvisar skapande utan session – gäller även om UI:t kringgås.
+          toast.error("Du måste vara inloggad för att skapa ett event.");
+          return;
+        }
+      } catch (error) {
+        console.error("Could not create public event", error);
+        toast.error("Eventet kunde inte skickas in. Kontrollera anslutningen och försök igen.");
         return;
       }
       setCreated(item);
@@ -464,34 +476,15 @@ function CreatePage() {
             <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
               Synlighet
             </p>
-            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => setPromoted(false)}
-                className={cn(
-                  "rounded-xl border p-3 text-left text-xs transition-colors",
-                  !promoted ? "border-[#E45048] bg-[#FBD9D6]" : "border-border bg-card",
-                )}
-              >
-                <p className="font-bold">GRATIS</p>
-                <p className="text-muted-foreground">
-                  Vanlig synlighet på karta, i upptäckt och listor.
-                </p>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPromoted(true)}
-                className={cn(
-                  "rounded-xl border p-3 text-left text-xs transition-colors",
-                  promoted ? "border-[#465BC4] bg-[#DDE3F8]" : "border-border bg-card",
-                )}
-              >
-                <p className="font-bold">SPONSRAD</p>
-                <p className="text-muted-foreground">
-                  Egen sponsrad sektion, framlyft kort, markerad pin och topplacering. Märks alltid
-                  med ”Sponsrat”.
-                </p>
-              </button>
+            <p className="mt-2 text-xs text-foreground/80">
+              Eventet publiceras gratis på kartan och i flödet när en moderator har godkänt det.
+            </p>
+            <div className="mt-2 rounded-xl bg-[#DDE3F8] p-3 text-xs text-[#3B4CAD]">
+              <p className="font-bold">Sponsrad placering – {sponsorshipPriceLabel()}</p>
+              <p className="mt-1 leading-relaxed">
+                {SPONSORSHIP.availabilityNote} Betalning sker via Swish till{" "}
+                {SPONSORSHIP.paymentNumber}.
+              </p>
             </div>
           </div>
         )}

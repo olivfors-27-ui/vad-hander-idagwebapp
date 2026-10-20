@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { toast } from "sonner";
 import type { InviteStatus } from "@/lib/hander-data";
@@ -16,9 +16,9 @@ const OPTIONS = [
 /**
  * Svara på en inbjudan.
  *
- * Krav: ett namn måste finnas innan svaret sparas –
- * inloggade svarar med kontots visningsnamn (punkt 2),
- * utloggade måste skriva in ett namn i det obligatoriska fältet (punkt 1).
+ * Krav: ett namn måste alltid finnas innan svaret sparas. Inloggade får sitt
+ * visningsnamn förifyllt men kan ändra det; utloggade skriver in det själva.
+ * Fältet är obligatoriskt i båda fallen.
  */
 export function InviteReply({
   loggedIn,
@@ -37,11 +37,18 @@ export function InviteReply({
   disabled?: boolean | undefined;
   onReply: (status: Exclude<InviteStatus, "invited">, name: string) => void;
 }) {
-  const [name, setName] = useState(savedName ?? "");
+  const [name, setName] = useState(savedName ?? accountName ?? "");
   const [showError, setShowError] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const effectiveName = loggedIn ? (accountName ?? "").trim() : name.trim();
+  // Kontonamnet kan komma efter första rendern – fyll bara i om fältet är tomt.
+  useEffect(() => {
+    if (!savedName && accountName) {
+      setName((current) => (current.trim() ? current : accountName));
+    }
+  }, [accountName, savedName]);
+
+  const effectiveName = name.trim();
 
   const submit = (s: InviteStatus) => {
     if (!effectiveName) {
@@ -56,46 +63,45 @@ export function InviteReply({
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4">
-      {loggedIn ? (
-        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-          Svarar som <span className="normal-case text-foreground">{accountName || "du"}</span>
-        </p>
-      ) : (
-        <div className="space-y-1.5">
-          <label
-            htmlFor="invite-reply-name"
-            className="block text-xs font-bold uppercase tracking-wide text-muted-foreground"
+      <div className="space-y-1.5">
+        <label
+          htmlFor="invite-reply-name"
+          className="block text-xs font-bold uppercase tracking-wide text-muted-foreground"
+        >
+          Ditt namn (obligatoriskt)
+        </label>
+        <input
+          id="invite-reply-name"
+          ref={inputRef}
+          className={cn(field, showError && !name.trim() && "border-destructive")}
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            if (e.target.value.trim()) setShowError(false);
+          }}
+          placeholder="T.ex. Oliver"
+          autoComplete="name"
+          required
+          aria-required="true"
+          aria-invalid={showError && !name.trim() ? true : undefined}
+          aria-describedby={showError && !name.trim() ? "invite-reply-name-error" : undefined}
+          autoFocus={!loggedIn}
+        />
+        {loggedIn && (
+          <p className="text-[11px] text-muted-foreground">
+            Förifyllt från ditt konto – ändra om du vill presentera dig annorlunda.
+          </p>
+        )}
+        {showError && !name.trim() && (
+          <p
+            id="invite-reply-name-error"
+            role="alert"
+            className="text-xs font-semibold text-destructive"
           >
-            Ditt namn (obligatoriskt)
-          </label>
-          <input
-            id="invite-reply-name"
-            ref={inputRef}
-            className={cn(field, showError && !name.trim() && "border-destructive")}
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              if (e.target.value.trim()) setShowError(false);
-            }}
-            placeholder="T.ex. Oliver"
-            autoComplete="name"
-            required
-            aria-required="true"
-            aria-invalid={showError && !name.trim() ? true : undefined}
-            aria-describedby={showError && !name.trim() ? "invite-reply-name-error" : undefined}
-            autoFocus
-          />
-          {showError && !name.trim() && (
-            <p
-              id="invite-reply-name-error"
-              role="alert"
-              className="text-xs font-semibold text-destructive"
-            >
-              Skriv in ditt namn innan du svarar.
-            </p>
-          )}
-        </div>
-      )}
+            Skriv in ditt namn innan du svarar.
+          </p>
+        )}
+      </div>
 
       <p className="mt-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">
         Svara på inbjudningen

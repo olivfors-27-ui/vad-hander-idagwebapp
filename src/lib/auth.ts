@@ -6,12 +6,23 @@
 import { useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { appUrl } from "@/lib/app-url";
+import { ensureProfile } from "@/lib/profiles";
 
 export type Account = {
   id: string;
   email: string;
   name: string;
+  username: string;
   avatarEmoji: string;
+  isModerator: boolean;
+};
+
+type ProfileFields = {
+  name?: string;
+  username?: string;
+  avatarEmoji?: string;
+  isModerator?: boolean;
 };
 
 let configBroken = false;
@@ -25,26 +36,40 @@ try {
 /** true när Supabase-env saknas – UI:t visar då att konton är avstängda. */
 export const isAuthConfigured = () => !configBroken;
 
-const accountFrom = (user: User, profileName?: string, profileEmoji?: string): Account => {
-  const meta = (user.user_metadata ?? {}) as { name?: string; avatar_emoji?: string };
+const accountFrom = (user: User, profile?: ProfileFields): Account => {
+  const meta = (user.user_metadata ?? {}) as { name?: string; username?: string; avatar_emoji?: string };
+  const emailName = user.email?.split("@")[0];
   return {
     id: user.id,
     email: user.email ?? "",
-    name: profileName || meta.name || user.email?.split("@")[0] || "Användare",
-    avatarEmoji: profileEmoji || meta.avatar_emoji || "🙂",
+    name: profile?.name || meta.name || emailName || "Användare",
+    username: profile?.username || meta.username || emailName || "",
+    avatarEmoji: profile?.avatarEmoji || meta.avatar_emoji || "🙂",
+    isModerator: Boolean(profile?.isModerator),
   };
 };
 
-/** Laddar profilraden (namn + emoji) för en användare. */
-export async function loadProfile(userId: string): Promise<{ name?: string; avatarEmoji?: string }> {
+/** Laddar profilraden (namn, användarnamn, emoji och moderatorroll). */
+export async function loadProfile(userId: string): Promise<ProfileFields> {
   try {
     const { data } = await supabase
       .from("profiles")
-      .select("name, avatar_emoji")
+      .select("name, username, avatar_emoji, is_moderator")
       .eq("id", userId)
       .maybeSingle();
     if (!data) return {};
-    return { name: (data as { name: string }).name, avatarEmoji: (data as { avatar_emoji: string }).avatar_emoji };
+    const row = data as {
+      name: string;
+      username: string;
+      avatar_emoji: string;
+      is_moderator: boolean;
+    };
+    return {
+      name: row.name,
+      username: row.username,
+      avatarEmoji: row.avatar_emoji,
+      isModerator: Boolean(row.is_moderator),
+    };
   } catch {
     return {};
   }
@@ -63,9 +88,26 @@ export function watchAccount(onChange: (account: Account | null) => void): () =>
       onChange(null);
       return;
     }
-    const profile = await loadProfile(user.id);
+    let profile = await loadProfile(user.id);
+    // Säkerhetsnät: konton som skapades innan profil-triggern fanns får en
+    // publik profilrad här, så att de går att hitta och följa.
+    if (!profile.username) {
+      const created = await ensureProfile({
+        id: user.id,
+        name: profile.name ?? user.user_metadata?.["name"] ?? user.email?.split("@")[0] ?? "",
+        email: user.email ?? "",
+      }).catch(() => null);
+      if (created) {
+        profile = {
+          name: created.name,
+          username: created.username,
+          avatarEmoji: created.avatarEmoji,
+          isModerator: created.isModerator,
+        };
+      }
+    }
     if (!active) return;
-    onChange(accountFrom(user, profile.name, profile.avatarEmoji));
+    onChange(accountFrom(user, profile));
   };
 
   void supabase.auth
@@ -95,15 +137,24 @@ export async function currentSession(): Promise<Session | null> {
 
 export type AuthResult = { ok: true } | { ok: false; error: string };
 
-/** Registrera konto. `emailRedirectTo` styr vart mejllänken landar (/auth/callback). */
-export async function signUp(name: string, email: string, password: string): Promise<AuthResult> {
+/**
+ * Registrera konto. `emailRedirectTo` använder appens publika bas-URL
+ * (VITE_APP_URL) – aldrig localhost – och landar på /auth/callback som i sin
+ * tur visar tack-sidan.
+ */
+export async function signUp(
+  name: string,
+  username: string,
+  email: string,
+  password: string,
+): Promise<AuthResult> {
   try {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { name, avatar_emoji: "🙂" },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        data: { name, username, avatar_emoji: "🙂" },
+        emailRedirectTo: appUrl("/auth/callback"),
       },
     });
     if (error) return { ok: false, error: swedishAuthError(error.message) };

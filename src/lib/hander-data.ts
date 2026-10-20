@@ -129,6 +129,9 @@ export type EventItem = {
   visibility: Visibility;
   status: EventStatus;
   rejectionReason?: string | undefined;
+  /** Betald sponsringsplacering. Kräver godkänt event och sparas i databasen. */
+  sponsored?: boolean | undefined;
+  /** Äldre fält för sponsrad placering – speglas från `sponsored`. */
   promoted?: boolean | undefined;
   reported?: number | undefined;
   /** Geokodad position. Saknas den får eventet ingen nål på kartan. */

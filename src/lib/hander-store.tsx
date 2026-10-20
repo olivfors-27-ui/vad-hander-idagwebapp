@@ -35,6 +35,14 @@ import {
   submitPrivateEventInviteReply,
 } from "./private-event-invites";
 import {
+  createPublicEvent,
+  fetchPublicEvents,
+  moderatePublicEvent,
+  sponsorPublicEvent,
+  updatePublicEventContent,
+} from "./public-events";
+import { followProfile, fetchFollowingIds, unfollowProfile } from "./profiles";
+import {
   fetchPlans,
   insertPlan,
   patchPlan,
@@ -90,6 +98,9 @@ function useStoreValue() {
   const [apiEvents, setApiEvents] = useState<EventItem[]>([]);
   const [apiLoading, setApiLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
+  // Publika event skapade i appen – hämtas från Supabase. RLS ger godkända
+  // event till alla, egna till ägaren och allt till moderatorer.
+  const [cloudEvents, setCloudEvents] = useState<EventItem[]>([]);
 
   useEffect(() => {
     try {
@@ -171,6 +182,35 @@ function useStoreValue() {
   );
   const me = account?.id ?? ME;
 
+  const refreshCloudEvents = useCallback(async () => {
+    try {
+      setCloudEvents(await fetchPublicEvents());
+    } catch {
+      /* offline – behåll det vi redan har */
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshCloudEvents();
+  }, [refreshCloudEvents, account?.id]);
+
+  // Följningar bor i databasen så att de finns kvar mellan enheter. Lokala
+  // följningar behålls som fallback tills svaret kommit.
+  useEffect(() => {
+    if (!account) return;
+    let active = true;
+    void fetchFollowingIds(account.id)
+      .then((ids) => {
+        if (!active) return;
+        // Databasen är källan: gamla lokala demo-id:n ska inte ligga kvar.
+        setState((s) => ({ ...s, following: ids }));
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [account]);
+
   // Reparera äldre event: när vi vet vilket konto som är inloggat fylls
   // organizerName i på egna event som skapades innan namnet sparades –
   // då visas "inbjudare"/aldrig "Okänd" för skaparen på egen enhet.
@@ -222,20 +262,49 @@ function useStoreValue() {
     [],
   );
 
+  /** Följ/avfölj – sparas i Supabase för inloggade, annars bara lokalt. */
   const toggleFollow = useCallback(
-    (userId: string) =>
+    (userId: string) => {
+      if (account && userId === account.id) return;
+      const following = state.following.includes(userId);
       setState((s) => ({
         ...s,
-        following: s.following.includes(userId)
+        following: following
           ? s.following.filter((x) => x !== userId)
           : [...s.following, userId],
-      })),
-    [],
+      }));
+      if (!account) return;
+      const request = following
+        ? unfollowProfile(account.id, userId)
+        : followProfile(account.id, userId);
+      void request.catch(() => undefined);
+    },
+    [account, state.following],
   );
 
-  const addEvent = useCallback((e: EventItem) => {
-    setState((s) => ({ ...s, events: [e, ...s.events] }));
-  }, []);
+  /**
+   * Skapar ett event. Publika event skrivs till public_events och börjar alltid
+   * som `pending` – granskning sker i databasen, inte bara i UI:t.
+   */
+  const addEvent = useCallback(
+    async (e: EventItem): Promise<boolean> => {
+      if (!account) return false;
+      const organizerName = e.organizerName ?? account.name;
+      if (e.visibility === "public") {
+        const saved = await createPublicEvent(
+          { ...e, organizerId: account.id, organizerName },
+          account.id,
+          organizerName,
+        );
+        setCloudEvents((prev) => [saved, ...prev.filter((x) => x.id !== saved.id)]);
+        return true;
+      }
+      const created: EventItem = { ...e, organizerId: account.id, organizerName };
+      setState((s) => ({ ...s, events: [created, ...s.events] }));
+      return true;
+    },
+    [account],
+  );
 
   const loadPrivateEventInvite = useCallback(async (code: string, responseToken: string | null) => {
     const result = await fetchPrivateEventInvite(code, responseToken);
@@ -326,6 +395,54 @@ function useStoreValue() {
     (id: string, status: EventStatus, rejectionReason?: string | undefined) =>
       updateEvent(id, { status, rejectionReason }),
     [updateEvent],
+  );
+
+  /** Moderatorernas godkännande/avslag – kontrolleras av RPC:n i databasen. */
+  const reviewPublicEvent = useCallback(
+    async (id: string, status: EventStatus, reason?: string) => {
+      if (cloudEvents.some((e) => e.id === id)) {
+        await moderatePublicEvent(id, status, reason);
+        setCloudEvents((prev) =>
+          prev.map((e) =>
+            e.id === id
+              ? {
+                  ...e,
+                  status,
+                  rejectionReason:
+                    status === "rejected" ? (reason ?? "Uppfyller inte riktlinjerna.") : undefined,
+                }
+              : e,
+          ),
+        );
+        return;
+      }
+      // Äldre event som bara finns lokalt (skapade före public_events).
+      setStatus(id, status, reason);
+    },
+    [cloudEvents, setStatus],
+  );
+
+  /** Sponsring efter godkännande. Pris och betalning sköts av användaren. */
+  const sponsorEvent = useCallback(async (id: string) => {
+    await sponsorPublicEvent(id);
+    setCloudEvents((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, sponsored: true, promoted: true } : e)),
+    );
+  }, []);
+
+  /** Moderatorns redigering av ett publikt event (endast innehållet). */
+  const updatePublicEvent = useCallback(
+    async (id: string, patch: Partial<EventItem>) => {
+      const current = cloudEvents.find((e) => e.id === id);
+      if (!current) {
+        updateEvent(id, patch);
+        return;
+      }
+      const next: EventItem = { ...current, ...patch };
+      await updatePublicEventContent(next);
+      setCloudEvents((prev) => prev.map((e) => (e.id === id ? next : e)));
+    },
+    [cloudEvents, updateEvent],
   );
 
   const setInviteStatus = useCallback(
@@ -485,12 +602,37 @@ function useStoreValue() {
     [state.stats, state.saved, state.interested],
   );
 
+  // Allt appen känner till: lokala (privata) event, publika event från
+  // databasen och event från Visit Stockholm – utan dubbletter.
+  const allEvents = useMemo(() => {
+    const seen = new Set<string>();
+    return [...state.events, ...cloudEvents, ...apiEvents].filter((event) => {
+      if (seen.has(event.id)) return false;
+      seen.add(event.id);
+      return true;
+    });
+  }, [state.events, cloudEvents, apiEvents]);
+
   const publicEvents = useMemo(
-    () => [
-      ...state.events.filter((e) => e.visibility === "public" && e.status === "approved"),
-      ...apiEvents,
-    ],
-    [state.events, apiEvents],
+    () => allEvents.filter((e) => e.visibility === "public" && e.status === "approved"),
+    [allEvents],
+  );
+
+  const sponsoredEvents = useMemo(
+    () => publicEvents.filter((e) => e.sponsored || e.promoted),
+    [publicEvents],
+  );
+
+  /** Egna event, inklusive de som väntar på granskning eller avvisats. */
+  const myEvents = useMemo(
+    () => allEvents.filter((e) => e.organizerId === me),
+    [allEvents, me],
+  );
+
+  /** Moderatorernas kö – endast synlig för dem tack vare RLS. */
+  const pendingPublicEvents = useMemo(
+    () => cloudEvents.filter((e) => e.visibility === "public" && e.status === "pending"),
+    [cloudEvents],
   );
 
   const myPrivateEvents = useMemo(
@@ -500,7 +642,7 @@ function useStoreValue() {
           e.visibility === "private" &&
           (e.organizerId === me || (e.invites ?? []).some((i) => i.userId === me)),
       ),
-    [state.events],
+    [state.events, me],
   );
 
   /** Alla permanenta platser som får visas publikt (mockdata + godkända förslag). */
@@ -553,7 +695,7 @@ function useStoreValue() {
     }
 
     return [...dynamic, ...NOTIFICATIONS];
-  }, [state.plans, state.events, state.saved]);
+  }, [state.plans, state.events, state.saved, me]);
 
   const unreadNotifications = notifications.filter(
     (n) =>
@@ -568,8 +710,16 @@ function useStoreValue() {
     account,
     authChecked,
     me,
-    events: [...state.events, ...apiEvents],
+    events: allEvents,
     publicEvents,
+    sponsoredEvents,
+    myEvents,
+    pendingPublicEvents,
+    isModerator: Boolean(account?.isModerator),
+    refreshCloudEvents,
+    reviewPublicEvent,
+    sponsorEvent,
+    updatePublicEvent,
     myPrivateEvents,
     apiEvents,
     apiLoading,
@@ -581,17 +731,9 @@ function useStoreValue() {
     toggleSavedPlace,
     toggleInterested,
     toggleFollow,
-    // Skapa event kräver inloggat konto (datalager-skydd – speglar
-    // kravet i UI och på sidan /skapa). Utan session skrivs inget in.
-    addEvent: (e: EventItem): boolean => {
-      if (!account) return false;
-      addEvent({
-        ...e,
-        organizerId: account.id,
-        organizerName: e.organizerName ?? account.name,
-      });
-      return true;
-    },
+    // Skapa event kräver inloggat konto (datalager-skydd – speglar kravet i
+    // UI och på sidan /skapa). Utan session skrivs inget in.
+    addEvent,
     loadPrivateEventInvite,
     loadPrivateEventInvites,
     addPrivateEvent,
@@ -737,7 +879,9 @@ export function sortEvents(events: EventItem[], mode: SortMode = "relevans") {
   if (mode === "popularitet") return arr.sort((a, b) => b.interested.length - a.interested.length);
   if (mode === "tid") return arr.sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
   return arr.sort((a, b) => {
-    if (!!b.promoted !== !!a.promoted) return b.promoted ? 1 : -1;
+    const aSponsored = Boolean(a.sponsored || a.promoted);
+    const bSponsored = Boolean(b.sponsored || b.promoted);
+    if (aSponsored !== bSponsored) return bSponsored ? 1 : -1;
     const t = (a.date + a.start).localeCompare(b.date + b.start);
     if (t !== 0) return t;
     return b.interested.length - a.interested.length;

@@ -88,7 +88,7 @@ function EventPage() {
         >
           <X className="h-5 w-5" />
         </button>
-        {event.promoted && (
+        {(event.sponsored || event.promoted) && (
           <SponsoredBadge tone="onMedia" className="absolute right-4 top-4 max-w-[45%]" />
         )}
       </div>
