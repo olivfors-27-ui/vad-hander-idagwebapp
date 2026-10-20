@@ -1,4 +1,4 @@
-import { SlidersHorizontal, X } from "lucide-react";
+import { LocateFixed, SlidersHorizontal, X } from "lucide-react";
 import { useState } from "react";
 import { CATEGORIES } from "@/lib/hander-data";
 import {
@@ -11,6 +11,7 @@ import {
   type TimeFilter,
   type VisibilityFilter,
   TIME_RANGES,
+  useHander,
 } from "@/lib/hander-store";
 import { cn } from "@/lib/utils";
 
@@ -132,6 +133,7 @@ export function FilterSheet({
   setFilters: (f: Filters) => void;
 }) {
   const [draft, setDraft] = useState<Filters>(filters);
+  const { userLocation, locationStatus, askForLocation } = useHander();
   if (!open) return null;
   const set = (p: Partial<Filters>) => setDraft({ ...draft, ...p });
 
@@ -269,6 +271,28 @@ export function FilterSheet({
               Avstånd
             </p>
             <p className="text-xs font-bold">{draft.maxDistance} km</p>
+          </div>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-[11px] leading-tight text-muted-foreground">
+              {locationStatus === "asking"
+                ? "Hämtar din position…"
+                : locationStatus === "ok" && userLocation
+                  ? "Avstånd räknas från din position."
+                  : locationStatus === "denied"
+                    ? "Plats nekad – avstånd räknas från Stockholm."
+                    : locationStatus === "unsupported"
+                      ? "Webbläsaren kan inte dela position – avstånd från Stockholm."
+                      : "Avstånd räknas från Stockholm tills du delar din position."}
+            </p>
+            <button
+              type="button"
+              onClick={() => void askForLocation()}
+              disabled={locationStatus === "asking"}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-[11px] font-bold disabled:opacity-60"
+            >
+              <LocateFixed className="h-3.5 w-3.5" />
+              {locationStatus === "ok" && userLocation ? "Uppdatera" : "Min position"}
+            </button>
           </div>
           <input
             type="range"

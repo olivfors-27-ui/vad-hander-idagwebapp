@@ -7,6 +7,4 @@
 - Pins bundna till latitude/longitude; objekt utan koordinater får ingen nål.
 - Avstånd beräknas med haversine i stället för slumptal.
 - Publika event kräver vald adress och går till moderatorgranskning före publicering.
-
-## Nästa steg (ej begärt än)
-- Använd användarens riktiga position som referens för avstånd.
+- Avstånd räknas från användarens riktiga position när den delas ("Min position" i filtret), annars från Stockholm.

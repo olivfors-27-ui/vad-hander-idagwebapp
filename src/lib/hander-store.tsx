@@ -15,6 +15,7 @@ import {
   NOTIFICATIONS,
   PLACES,
   TODAY,
+  geoOf,
   weekendDates,
   type EventItem,
   type EventStatus,
@@ -26,6 +27,8 @@ import {
   baseStats,
 } from "./hander-data";
 import { uid, type Plan, type PlanReply } from "./hander-plans";
+import { distanceKm } from "./geocode";
+import { useUserLocation } from "./user-location";
 import { fetchEventsWithCache } from "./visitstockholm";
 import { watchAccount, type Account } from "./auth";
 import {
@@ -94,6 +97,14 @@ const StoreContext = createContext<Ctx | null>(null);
 
 function useStoreValue() {
   const [state, setState] = useState<Persisted>(initial);
+  // Användarens riktiga position är referens för alla avstånd. Saknas den
+  // (nekad åtkomst, äldre webbläsare) behålls avståndet som sparades när
+  // eventet skapades.
+  const {
+    coords: userLocation,
+    status: locationStatus,
+    ask: askForLocation,
+  } = useUserLocation();
   const [hydrated, setHydrated] = useState(false);
   const [apiEvents, setApiEvents] = useState<EventItem[]>([]);
   const [apiLoading, setApiLoading] = useState(true);
@@ -602,16 +613,32 @@ function useStoreValue() {
     [state.stats, state.saved, state.interested],
   );
 
+  /** Räknar om avståndet från användarens position när den är känd. */
+  const withDistance = useCallback(
+    <T extends { lat?: number | undefined; lng?: number | undefined; distance: number }>(
+      item: T,
+    ): T => {
+      if (!userLocation) return item;
+      const geo = geoOf(item);
+      if (!geo) return item;
+      const distance = distanceKm(userLocation, geo);
+      return distance === item.distance ? item : { ...item, distance };
+    },
+    [userLocation],
+  );
+
   // Allt appen känner till: lokala (privata) event, publika event från
   // databasen och event från Visit Stockholm – utan dubbletter.
   const allEvents = useMemo(() => {
     const seen = new Set<string>();
-    return [...state.events, ...cloudEvents, ...apiEvents].filter((event) => {
-      if (seen.has(event.id)) return false;
-      seen.add(event.id);
-      return true;
-    });
-  }, [state.events, cloudEvents, apiEvents]);
+    return [...state.events, ...cloudEvents, ...apiEvents]
+      .filter((event) => {
+        if (seen.has(event.id)) return false;
+        seen.add(event.id);
+        return true;
+      })
+      .map(withDistance);
+  }, [state.events, cloudEvents, apiEvents, withDistance]);
 
   const publicEvents = useMemo(
     () => allEvents.filter((e) => e.visibility === "public" && e.status === "approved"),
@@ -647,8 +674,11 @@ function useStoreValue() {
 
   /** Alla permanenta platser som får visas publikt (mockdata + godkända förslag). */
   const places = useMemo(
-    () => [...PLACES, ...state.placeSuggestions.filter((p) => p.status === "approved")],
-    [state.placeSuggestions],
+    () =>
+      [...PLACES, ...state.placeSuggestions.filter((p) => p.status === "approved")].map(
+        withDistance,
+      ),
+    [state.placeSuggestions, withDistance],
   );
 
   const pendingPlaces = useMemo(
@@ -709,6 +739,9 @@ function useStoreValue() {
     patch,
     account,
     authChecked,
+    userLocation,
+    locationStatus,
+    askForLocation,
     me,
     events: allEvents,
     publicEvents,
