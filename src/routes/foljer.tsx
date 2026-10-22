@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/hander/AppShell";
 import { Avatar, EventCard, MaybeEventLink } from "@/components/hander/EventBits";
 import { USERS, userById } from "@/lib/hander-data";
-import { hasEnded, useHander } from "@/lib/hander-store";
+import { isEventVisible, useHander } from "@/lib/hander-store";
 
 export const Route = createFileRoute("/foljer")({
   head: () => ({
@@ -24,7 +24,7 @@ const avatarBorder = (id: string) =>
 function FeedPage() {
   const store = useHander();
   const fromFollowing = store.publicEvents.filter(
-    (e) => store.following.includes(e.organizerId) && !hasEnded(e),
+    (e) => store.following.includes(e.organizerId) && isEventVisible(e),
   );
   const suggestions = USERS.filter((u) => u.id !== "u1" && !store.following.includes(u.id));
 

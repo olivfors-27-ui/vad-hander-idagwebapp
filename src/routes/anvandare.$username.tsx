@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/hander/AppShell";
 import { EventRow } from "@/components/hander/EventBits";
 import { ME, type User } from "@/lib/hander-data";
-import { hasEnded, useHander } from "@/lib/hander-store";
+import { isEventVisible, useHander } from "@/lib/hander-store";
 import { fetchFollowerIds, fetchFollowingIds, fetchProfileByUsername, type Profile } from "@/lib/profiles";
 import { cn } from "@/lib/utils";
 
@@ -106,10 +106,10 @@ function UserPage() {
       e.organizerId === user.id &&
       e.visibility === "public" &&
       e.status === "approved" &&
-      !hasEnded(e),
+      isEventVisible(e),
   );
   const interestedIn = store.events.filter(
-    (e) => e.interested.includes(user.id) && e.visibility === "public" && !hasEnded(e),
+    (e) => e.interested.includes(user.id) && e.visibility === "public" && isEventVisible(e),
   );
   const totalInterested = created.reduce((a, e) => a + e.interested.length, 0);
 

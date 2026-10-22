@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Bell, Bookmark, CalendarPlus, Home, Map, Plus, Search, User, Users } from "lucide-react";
-import { type ReactNode, useLayoutEffect, useRef } from "react";
+import { type ReactNode, useCallback, useEffect, useRef } from "react";
 import { useHander } from "@/lib/hander-store";
 import { cn } from "@/lib/utils";
 
@@ -141,8 +141,34 @@ export function AppShell({
   subtitle?: string | undefined;
   bare?: boolean;
 }) {
+  const mainRef = useRef<HTMLElement | null>(null);
+
+  // Ref-callbacken måste vara stabil. En inline-arrow får ny identitet vid VARJE
+  // rendering, och då anropar React den igen (null följt av noden) – vilket
+  // nollställde scrollen mitt i en interaktion, t.ex. när man skrev i ett fält.
+  const setMainRef = useCallback((node: HTMLElement | null) => {
+    mainRef.current = node;
+  }, []);
+
+  // Scrollen nollställs bara när sidan faktiskt byts (AppShell monteras om),
+  // aldrig vid en vanlig omrendering. Kartan minns sin position.
+  useEffect(() => {
+    const node = mainRef.current;
+    if (!node) return;
+    if (title === "Karta") {
+      node.scrollTop = savedMapScrollTop;
+      const remember = () => {
+        savedMapScrollTop = node.scrollTop;
+      };
+      node.addEventListener("scroll", remember, { passive: true });
+      return () => node.removeEventListener("scroll", remember);
+    }
+    node.scrollTop = 0;
+    return undefined;
+  }, [title]);
+
   return (
-    <div className="relative mx-auto flex h-screen min-h-0 w-full max-w-md flex-col bg-background hander-phone">
+    <div className="relative mx-auto flex h-svh min-h-0 w-full max-w-md flex-col bg-background hander-phone">
       <div className="hander-notch" aria-hidden />
       {!bare && title ? (
         <>
@@ -152,18 +178,8 @@ export function AppShell({
         </>
       ) : null}
       <main
-        ref={(node) => {
-          if (!node) return;
-          if (title === "Karta") {
-            node.scrollTop = savedMapScrollTop;
-            node.onscroll = () => {
-              savedMapScrollTop = node.scrollTop;
-            };
-          } else {
-            node.scrollTop = 0;
-          }
-        }}
-        className="relative z-10 flex-1 pb-[102px]"
+        ref={setMainRef}
+        className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden pb-[calc(128px+env(safe-area-inset-bottom))]"
       >
         {children}
       </main>

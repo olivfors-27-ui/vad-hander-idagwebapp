@@ -10,6 +10,7 @@ import { MAX_EVENT_GUESTS, limitMessage } from "@/lib/event-admin";
 import { ME, userById, type EventItem, type User } from "@/lib/hander-data";
 import type { GuestRow } from "@/lib/private-event-invites";
 import { formatDay, useHander } from "@/lib/hander-store";
+import { truncateDescription } from "@/lib/text";
 
 export const Route = createFileRoute("/join/$code")({
   head: () => ({
@@ -167,7 +168,7 @@ function JoinPage() {
           </p>
           {event.description && (
             <p className="mt-2 border-t border-border/60 pt-2 text-sm text-[#2A2421]">
-              {event.description}
+              {truncateDescription(event.description)}
             </p>
           )}
         </div>

@@ -21,6 +21,7 @@ import {
   type User,
 } from "@/lib/hander-data";
 import { useIsLoggedIn } from "@/lib/auth-guard";
+import { useEventViewCounts } from "@/lib/event-views";
 import { formatDay, hasEnded, useHander } from "@/lib/hander-store";
 import { cn } from "@/lib/utils";
 
@@ -67,6 +68,8 @@ function OrganizerPage() {
       }
     : userById(ME);
   const [editing, setEditing] = useState<string | null>(null);
+  // Unika besökare kommer från databasen – aldrig från lokal statistik.
+  const viewCounts = useEventViewCounts();
 
   const mine = store.myEvents;
   const upcoming = mine.filter((e) => !hasEnded(e));
@@ -78,6 +81,7 @@ function OrganizerPage() {
     },
     { views: 0, clicks: 0, saves: 0, interested: 0, shares: 0, plans: 0 } as Record<StatKey, number>,
   );
+  totals.views = Object.values(viewCounts).reduce((sum, n) => sum + n, 0);
 
   return (
     <AppShell title="Arrangörspanel" subtitle="Dina event, intresserade och statistik">
@@ -137,7 +141,12 @@ function OrganizerPage() {
             editing === e.id ? (
               <EditCard key={e.id} event={e} onDone={() => setEditing(null)} />
             ) : (
-              <OrganizerEventCard key={e.id} event={e} onEdit={() => setEditing(e.id)} />
+              <OrganizerEventCard
+                key={e.id}
+                event={e}
+                views={viewCounts[e.id] ?? 0}
+                onEdit={() => setEditing(e.id)}
+              />
             ),
           )}
         </section>
@@ -166,7 +175,15 @@ function StatusBadge({ event }: { event: EventItem }) {
   );
 }
 
-function OrganizerEventCard({ event, onEdit }: { event: EventItem; onEdit: () => void }) {
+function OrganizerEventCard({
+  event,
+  onEdit,
+  views,
+}: {
+  event: EventItem;
+  onEdit: () => void;
+  views: number;
+}) {
   const store = useHander();
   const stats = store.eventStats(event);
   return (
@@ -198,7 +215,9 @@ function OrganizerEventCard({ event, onEdit }: { event: EventItem; onEdit: () =>
       <div className="grid grid-cols-3 gap-px border-t border-border bg-border text-center">
         {STAT_ORDER.map((k) => (
           <div key={k} className="bg-card px-2 py-2">
-            <p className="font-display text-sm font-bold">{stats[k]}</p>
+            <p className="font-display text-sm font-bold">
+              {k === "views" ? views : stats[k]}
+            </p>
             <p className="text-[9px] uppercase text-muted-foreground">{STAT_LABELS[k]}</p>
           </div>
         ))}

@@ -27,7 +27,11 @@ import {
   baseStats,
 } from "./hander-data";
 import { uid, type Plan, type PlanReply } from "./hander-plans";
+import { isEventVisible } from "./event-time";
 import { distanceKm } from "./geocode";
+
+// Synlighetsregeln bor i event-time.ts (datalagret behöver den också).
+export { eventVisibleUntil, isEventVisible } from "./event-time";
 import { useUserLocation } from "./user-location";
 import { fetchEventsWithCache } from "./visitstockholm";
 import { watchAccount, type Account } from "./auth";
@@ -41,6 +45,7 @@ import {
 import { deleteEvent as deleteEventRequest } from "./event-admin";
 import {
   createPublicEvent,
+  fetchMyPublicEvents,
   fetchPublicEvents,
   moderatePublicEvent,
   sponsorPublicEvent,
@@ -113,7 +118,10 @@ function useStoreValue() {
   const [apiError, setApiError] = useState<string | null>(null);
   // Publika event skapade i appen – hämtas från Supabase. RLS ger godkända
   // event till alla, egna till ägaren och allt till moderatorer.
+  // cloudEvents är bara de som fortfarande ska synas publikt (databasvyn
+  // visible_public_events). myCloudEvents är ägarens egna, inklusive avslutade.
   const [cloudEvents, setCloudEvents] = useState<EventItem[]>([]);
+  const [myCloudEvents, setMyCloudEvents] = useState<EventItem[]>([]);
 
   useEffect(() => {
     try {
@@ -198,6 +206,11 @@ function useStoreValue() {
   const refreshCloudEvents = useCallback(async () => {
     try {
       setCloudEvents(await fetchPublicEvents());
+    } catch {
+      /* offline – behåll det vi redan har */
+    }
+    try {
+      setMyCloudEvents(await fetchMyPublicEvents());
     } catch {
       /* offline – behåll det vi redan har */
     }
@@ -310,6 +323,7 @@ function useStoreValue() {
           organizerName,
         );
         setCloudEvents((prev) => [saved, ...prev.filter((x) => x.id !== saved.id)]);
+        setMyCloudEvents((prev) => [saved, ...prev.filter((x) => x.id !== saved.id)]);
         return true;
       }
       const created: EventItem = { ...e, organizerId: account.id, organizerName };
@@ -432,6 +446,7 @@ function useStoreValue() {
       interested: s.interested.filter((interestedId) => interestedId !== id),
     }));
     setCloudEvents((prev) => prev.filter((event) => event.id !== id));
+    setMyCloudEvents((prev) => prev.filter((event) => event.id !== id));
   }, []);
 
   const updateEvent = useCallback((id: string, p: Partial<EventItem>) => {
@@ -440,6 +455,24 @@ function useStoreValue() {
       events: s.events.map((e) => (e.id === id ? { ...e, ...p } : e)),
     }));
   }, []);
+
+  /**
+   * Sparar ett privat event i databasen. Utan detta skulle en ändring bara
+   * finnas i den här webbläsaren – gästerna ser den aldrig. Upsert reparerar
+   * samtidigt äldre event som skapades innan private_events fanns.
+   */
+  const persistPrivateEvent = useCallback(
+    async (event: EventItem) => {
+      if (!account) throw new Error("Inte inloggad");
+      await savePrivateEventInvite(event, account.id);
+      setMyCloudEvents((prev) =>
+        prev.some((stored) => stored.id === event.id)
+          ? prev.map((stored) => (stored.id === event.id ? event : stored))
+          : prev,
+      );
+    },
+    [account],
+  );
 
   const setStatus = useCallback(
     (id: string, status: EventStatus, rejectionReason?: string | undefined) =>
@@ -483,7 +516,9 @@ function useStoreValue() {
   /** Moderatorns redigering av ett publikt event (endast innehållet). */
   const updatePublicEvent = useCallback(
     async (id: string, patch: Partial<EventItem>) => {
-      const current = cloudEvents.find((e) => e.id === id);
+      // Egna event kan ha försvunnit ur den publika vyn (avslutade) men finns
+      // fortfarande i myCloudEvents – arrangören ska kunna redigera dem ändå.
+      const current = myCloudEvents.find((e) => e.id === id) ?? cloudEvents.find((e) => e.id === id);
       if (!current) {
         updateEvent(id, patch);
         return;
@@ -491,8 +526,9 @@ function useStoreValue() {
       const next: EventItem = { ...current, ...patch };
       await updatePublicEventContent(next);
       setCloudEvents((prev) => prev.map((e) => (e.id === id ? next : e)));
+      setMyCloudEvents((prev) => prev.map((e) => (e.id === id ? next : e)));
     },
-    [cloudEvents, updateEvent],
+    [cloudEvents, myCloudEvents, updateEvent],
   );
 
   const setInviteStatus = useCallback(
@@ -609,6 +645,9 @@ function useStoreValue() {
 
   /** Registrera en händelse för arrangörsstatistiken. */
   const track = useCallback((eventId: string, key: StatKey, amount = 1) => {
+    // Visningar räknas bara i databasen (unika besökare). Att räkna dem lokalt
+    // gav en uppblåst siffra vid varje sidladdning och omrendering.
+    if (key === "views") return;
     setState((s) => {
       const cur = s.stats[eventId] ?? {};
       return {
@@ -641,7 +680,9 @@ function useStoreValue() {
         interested: state.interested.includes(e.id) ? 1 : 0,
       };
       return {
-        views: base.views + (extra.views ?? 0),
+        // Antalet unika besökare hämtas från databasen (event_view_counts) –
+        // aldrig från lokal statistik eller påhittade basvärden.
+        views: 0,
         clicks: base.clicks + (extra.clicks ?? 0),
         saves: base.saves + (extra.saves ?? 0) + mine.saves,
         interested: base.interested + mine.interested,
@@ -667,20 +708,27 @@ function useStoreValue() {
   );
 
   // Allt appen känner till: lokala (privata) event, publika event från
-  // databasen och event från Visit Stockholm – utan dubbletter.
+  // databasen (både de som syns och ägarens egna) och event från Visit
+  // Stockholm – utan dubbletter.
   const allEvents = useMemo(() => {
     const seen = new Set<string>();
-    return [...state.events, ...cloudEvents, ...apiEvents]
+    return [...state.events, ...cloudEvents, ...myCloudEvents, ...apiEvents]
       .filter((event) => {
         if (seen.has(event.id)) return false;
         seen.add(event.id);
         return true;
       })
       .map(withDistance);
-  }, [state.events, cloudEvents, apiEvents, withDistance]);
+  }, [state.events, cloudEvents, myCloudEvents, apiEvents, withDistance]);
 
+  // Publika ytor (karta, listor, sök) visar bara event som inte är avslutade.
+  // Databasen filtrerar redan de egna eventen; här fångas även event från
+  // Visit Stockholm med samma regel.
   const publicEvents = useMemo(
-    () => allEvents.filter((e) => e.visibility === "public" && e.status === "approved"),
+    () =>
+      allEvents.filter(
+        (e) => e.visibility === "public" && e.status === "approved" && isEventVisible(e),
+      ),
     [allEvents],
   );
 
@@ -803,6 +851,7 @@ function useStoreValue() {
     toggleSavedPlace,
     toggleInterested,
     toggleFollow,
+    persistPrivateEvent,
     // Skapa event kräver inloggat konto (datalager-skydd – speglar kravet i
     // UI och på sidan /skapa). Utan session skrivs inget in.
     addEvent,
@@ -925,7 +974,9 @@ export function isHappeningNow(e: EventItem, now = new Date()) {
 export function filterEvents(events: EventItem[], f: Filters) {
   const weekend = weekendDates();
   return events.filter((e) => {
-    if (hasEnded(e)) return false;
+    // Samma regel som databasvyn: eventet syns till 3 h efter slut (4 h efter
+    // start utan sluttid), inte bara fram till sluttiden.
+    if (!isEventVisible(e)) return false;
     if (f.categories.length && !f.categories.includes(e.category)) return false;
     if (f.date === "idag" && e.date !== TODAY) return false;
     if (f.date === "nu" && !isHappeningNow(e)) return false;

@@ -6,6 +6,7 @@
 // sponsor_public_event – aldrig direkt från klienten.
 
 import { supabase } from "@/integrations/supabase/client";
+import { isEventVisible } from "@/lib/event-time";
 import type { CategoryId, EventItem, EventStatus } from "@/lib/hander-data";
 
 export type PublicEventRow = {
@@ -56,13 +57,50 @@ export function publicEventFromRow(row: PublicEventRow): EventItem {
   };
 }
 
-/** Alla event som RLS ger tillgång till (godkända + egna + moderatorers). */
+const EVENT_COLUMNS =
+  "id, organizer_id, organizer_name, payload, status, rejection_reason, sponsor_status, sponsored_at, created_at";
+
+/**
+ * Publika event som fortfarande ska synas i appen (karta, listor, sök).
+ *
+ * `visible_public_events` filtrerar i databasen: ett event syns till 3 timmar
+ * efter sluttiden, eller 4 timmar efter starttiden när sluttid saknas
+ * (Europe/Stockholm). Därför behöver ingen skärm filtrera själv.
+ */
 export async function fetchPublicEvents(): Promise<EventItem[]> {
   const { data, error } = await supabase
-    .from("public_events")
-    .select("id, organizer_id, organizer_name, payload, status, rejection_reason, sponsor_status, sponsored_at, created_at")
+    .from("visible_public_events")
+    .select(EVENT_COLUMNS)
     .order("created_at", { ascending: false })
     .limit(500);
+
+  if (!error) return ((data ?? []) as PublicEventRow[]).map(publicEventFromRow);
+
+  // Vyn finns inte förrän migrationen 20261022120000 är körd. Läs då tabellen
+  // och använd samma tidsregel här, så att appen fungerar även utan vyn.
+  console.warn("[hander] visible_public_events saknas – filtrerar i klienten", error.message);
+  const fallback = await supabase
+    .from("public_events")
+    .select(EVENT_COLUMNS)
+    .order("created_at", { ascending: false })
+    .limit(500);
+  if (fallback.error) throw fallback.error;
+  return ((fallback.data ?? []) as PublicEventRow[])
+    .map(publicEventFromRow)
+    .filter((event) => isEventVisible(event));
+}
+
+/**
+ * Egna event, inklusive avslutade och de som väntar på granskning. Behövs för
+ * arrangörspanelen: ett avslutat event ska gå att hantera även när det inte
+ * längre syns för besökare.
+ */
+export async function fetchMyPublicEvents(): Promise<EventItem[]> {
+  const { data, error } = await supabase
+    .from("public_events")
+    .select(EVENT_COLUMNS)
+    .order("created_at", { ascending: false })
+    .limit(200);
   if (error) throw error;
   return ((data ?? []) as PublicEventRow[]).map(publicEventFromRow);
 }

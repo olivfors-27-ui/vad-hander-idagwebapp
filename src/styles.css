@@ -808,8 +808,16 @@
     max-width: 414px;
     min-height: 100svh;
     max-height: 100svh;
-    overflow-x: hidden;
+    /* Bara <main> scrollar. Då ligger bottenbaren still och sidans padding
+       (som tar hänsyn till baren och safe-area) gäller på riktigt. */
+    overflow: hidden;
     border-radius: 0;
+  }
+  .hander-phone > main {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
   }
   .hander-phone main,
   .hander-phone header,
@@ -825,9 +833,8 @@
   .hander-phone .space-y-5 > :not([hidden]) ~ :not([hidden]) {
     margin-top: 1rem;
   }
-  .hander-phone .p-4 {
-    padding: 0.875rem;
-  }
+  /* Ingen egen .p-4-regel här: den slog ut sidornas pb-44 (samma element hade
+     båda klasserna) och gjorde att innehållet hamnade bakom bottenbaren. */
   .hander-phone .map-list-view {
     min-width: 0;
   }
@@ -904,7 +911,9 @@
     overflow-y: auto;
     overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: calc(102px + env(safe-area-inset-bottom));
+    /* Plats för bottenbaren (76 px + marginal) OCH den översta +-knappen som
+       sticker upp 36 px ovanför den, samt safe-area på telefoner med hemindikator. */
+    padding-bottom: calc(128px + env(safe-area-inset-bottom));
   }
 
   .hander-phone > .hander-bottom-nav {

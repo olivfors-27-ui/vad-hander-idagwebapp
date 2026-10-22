@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/hander/AppShell";
 import { AddressSearch } from "@/components/hander/AddressSearch";
-import { distanceFromHome, type GeoHit } from "@/lib/geocode";
+import { distanceFromHome, isInSweden, type GeoHit } from "@/lib/geocode";
 import {
   CATEGORIES,
   CATEGORY_GRADIENT,
@@ -90,6 +90,18 @@ function CreatePage() {
     // Adress krävs endast för publika event (de ska kunna visas på kartan).
     if (visibility === "public" && !location) {
       toast.error("Sök upp och välj en riktig adress – annars kan eventet inte få en nål.");
+      return;
+    }
+    // Bara Sverige. Geokodningen är landbegränsad, men kontrollera även det
+    // valda förslaget så att inget utländskt kan smyga in.
+    if (location && !isInSweden(location)) {
+      toast.error("Platsen måste ligga i Sverige. Sök upp en svensk adress.");
+      return;
+    }
+    // Sluttiden måste vara efter starttiden. (Event över midnatt kan inte
+    // uttryckas med ett enda datum – då krävs ett separat slutdatum.)
+    if (start && end && end <= start) {
+      toast.error("Sluttiden måste vara efter starttiden.");
       return;
     }
     const item: EventItem = {

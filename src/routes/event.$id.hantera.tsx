@@ -3,6 +3,7 @@ import { BarChart3, Check, Copy, Eye, Pencil, Sparkles, Users, X } from "lucide-
 import { useState } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/hander/AppShell";
+import { AddressSearch } from "@/components/hander/AddressSearch";
 import { Avatar, EventCover, CategoryChip, priceLabel } from "@/components/hander/EventBits";
 import {
   CATEGORIES,
@@ -15,6 +16,9 @@ import {
   type User,
 } from "@/lib/hander-data";
 import { useProfileName } from "@/lib/auth";
+import { saveEventErrorMessage } from "@/lib/event-admin";
+import { useEventViewCounts } from "@/lib/event-views";
+import { distanceFromHome, isInSweden, type GeoHit } from "@/lib/geocode";
 import { formatDay, useHander } from "@/lib/hander-store";
 import { appUrl } from "@/lib/app-url";
 import { SPONSORSHIP, sponsorshipPriceLabel } from "@/lib/sponsorship";
@@ -46,6 +50,7 @@ function ManageEventPage() {
   const { id } = useParams({ from: "/event/$id/hantera" });
   const store = useHander();
   const [tab, setTab] = useState<TabId>("oversikt");
+  const viewCounts = useEventViewCounts();
   const event = store.events.find((e) => e.id === id);
   // Arrangörens visningsnamn: sparat på eventet, annars från profilen.
   const organizerName = useProfileName(event?.organizerId, event?.organizerName);
@@ -147,7 +152,9 @@ function ManageEventPage() {
               <div className="mt-3 grid grid-cols-3 gap-2 text-center">
                 {(Object.keys(STAT_LABELS) as (keyof typeof STAT_LABELS)[]).map((k) => (
                   <div key={k} className="rounded-xl bg-card p-2">
-                    <p className="font-display text-lg font-bold text-[#2A2421]">{stats[k]}</p>
+                    <p className="font-display text-lg font-bold text-[#2A2421]">
+                      {k === "views" ? (viewCounts[event.id] ?? 0) : stats[k]}
+                    </p>
                     <p className="text-[10px] uppercase text-muted-foreground">{STAT_LABELS[k]}</p>
                   </div>
                 ))}
@@ -179,7 +186,6 @@ function EditTab({ eventId }: { eventId: string }) {
 }
 
 function EditForm({ eventId }: { eventId: string }) {
-  const { updateEvent, updatePublicEvent } = useHander();
   const store = useHander();
   const event = store.events.find((e) => e.id === eventId);
   const [name, setName] = useState(event?.name ?? "");
@@ -188,16 +194,43 @@ function EditForm({ eventId }: { eventId: string }) {
   const [start, setStart] = useState(event?.start ?? "");
   const [end, setEnd] = useState(event?.end ?? "");
   const [place, setPlace] = useState(event?.place ?? "");
+  // Den riktiga platsen (adress + koordinater), inte bara etiketten. Utgår från
+  // eventets sparade position så att kartnålen kan flyttas utan att först
+  // sökas upp på nytt.
+  const [location, setLocation] = useState<GeoHit | null>(() =>
+    event && typeof event.lat === "number" && typeof event.lng === "number"
+      ? {
+          label: event.address || event.place,
+          short: event.address || event.place,
+          lat: event.lat,
+          lng: event.lng,
+        }
+      : null,
+  );
   const [price, setPrice] = useState(String(event?.price ?? 0));
   const [description, setDescription] = useState(event?.description ?? "");
+  const [saving, setSaving] = useState(false);
 
   if (!event) return null;
 
-  const save = () => {
+  const save = async () => {
     if (!name.trim() || !place.trim()) {
       toast.error("Eventnamn och plats behövs.");
       return;
     }
+    if (start && end && end <= start) {
+      toast.error("Sluttiden måste vara efter starttiden.");
+      return;
+    }
+    if (location && !isInSweden(location)) {
+      toast.error("Platsen måste ligga i Sverige. Sök upp en svensk adress.");
+      return;
+    }
+    if (event.visibility === "public" && !location) {
+      toast.error("Välj en adress i Sverige – annars kan eventet inte visas på kartan.");
+      return;
+    }
+
     const patch: Partial<EventItem> = {
       name: name.trim(),
       category,
@@ -205,20 +238,36 @@ function EditForm({ eventId }: { eventId: string }) {
       start,
       end,
       place: place.trim(),
+      // Adressen och koordinaterna följer med, så att kartan visar rätt plats.
+      address: location?.short ?? event.address,
+      // Rensar man adressfältet utan att välja ny plats behålls den gamla
+      // positionen – annars skulle adress och nål peka på olika ställen.
+      lat: location?.lat ?? event.lat,
+      lng: location?.lng ?? event.lng,
+      distance: location ? distanceFromHome(location) : event.distance,
       price: Number(price) || 0,
       description: description.trim(),
       ...(event.visibility === "public" ? { status: "pending" as const } : {}),
     };
-    if (event.visibility === "public") {
-      void updatePublicEvent(eventId, patch).catch(() =>
-        toast.error("Ändringen kunde inte sparas. Försök igen."),
-      );
-    } else {
-      updateEvent(eventId, patch);
+
+    setSaving(true);
+    try {
+      if (event.visibility === "public") {
+        await store.updatePublicEvent(eventId, patch);
+        toast.success("Ändringen skickades för granskning.");
+      } else {
+        store.updateEvent(eventId, patch);
+        // Privata event måste även skrivas till databasen – annars ser gästerna
+        // den gamla adressen. Upserten lagar äldre event som bara fanns lokalt.
+        await store.persistPrivateEvent({ ...event, ...patch });
+        toast.success("Eventet uppdaterat.");
+      }
+    } catch (error) {
+      console.error("Could not save event changes", error);
+      toast.error(saveEventErrorMessage(error));
+    } finally {
+      setSaving(false);
     }
-    toast.success(
-      event.visibility === "public" ? "Ändringen skickades för granskning." : "Eventet uppdaterat.",
-    );
   };
 
   return (
@@ -267,6 +316,17 @@ function EditForm({ eventId }: { eventId: string }) {
       <p className={labelCls}>Plats</p>
       <input className={field} value={place} onChange={(e) => setPlace(e.target.value)} />
 
+      <p className={labelCls}>Adress (styr kartans nål)</p>
+      <AddressSearch
+        value={location}
+        onSelect={setLocation}
+        onClear={() => setLocation(null)}
+      />
+      <p className="text-[11px] text-muted-foreground">
+        Bara adresser i Sverige. Välj ett förslag för att flytta nålen – platsnamnet ovan är bara
+        etiketten som visas i texten.
+      </p>
+
       <p className={labelCls}>Beskrivning</p>
       <textarea
         className={cn(field, "min-h-20 resize-none")}
@@ -282,10 +342,11 @@ function EditForm({ eventId }: { eventId: string }) {
 
       <button
         type="button"
-        onClick={save}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#E45048] px-4 py-3 text-sm font-bold text-[#FFFDF9] shadow-[0_3px_0_rgba(112,28,23,.25)] active:translate-y-[2px]"
+        onClick={() => void save()}
+        disabled={saving}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#E45048] px-4 py-3 text-sm font-bold text-[#FFFDF9] shadow-[0_3px_0_rgba(112,28,23,.25)] active:translate-y-[2px] disabled:opacity-60"
       >
-        <Check className="h-4 w-4" /> Spara ändringar
+        <Check className="h-4 w-4" /> {saving ? "Sparar…" : "Spara ändringar"}
       </button>
     </div>
   );

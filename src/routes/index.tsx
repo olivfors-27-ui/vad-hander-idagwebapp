@@ -6,7 +6,7 @@ import { EventCover, priceLabel, SponsoredBadge } from "@/components/hander/Even
 import { CATEGORY_GRADIENT, ME, USERS, categoryById, type EventItem } from "@/lib/hander-data";
 import type { Plan } from "@/lib/hander-plans";
 import { useIsLoggedIn } from "@/lib/auth-guard";
-import { formatDay, hasEnded, useHander } from "@/lib/hander-store";
+import { formatDay, isEventVisible, useHander } from "@/lib/hander-store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -279,13 +279,13 @@ function Home() {
   const popular = useMemo(
     () =>
       publicEvents
-        .filter((e) => !(e.sponsored || e.promoted) && !hasEnded(e))
+        .filter((e) => !(e.sponsored || e.promoted) && isEventVisible(e))
         .sort((a, b) => b.interested.length - a.interested.length)
         .slice(0, 8),
     [publicEvents],
   );
   const sponsored = useMemo(
-    () => sponsoredEvents.filter((e) => !hasEnded(e)),
+    () => sponsoredEvents.filter((e) => isEventVisible(e)),
     [sponsoredEvents],
   );
   const activePlans = useMemo(() => plans.filter((p) => !isDone(p)).slice(0, 4), [plans]);

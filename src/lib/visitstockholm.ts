@@ -135,7 +135,9 @@ const toEvent = ({ id, title, description, address, venue, date, start, end, lat
     address: address || "Stockholm",
     price: price ?? 0,
     priceKnown: price !== undefined,
-    description: description.slice(0, 280),
+    // Hela beskrivningen sparas. Kapning sker först vid visning och då vid en
+    // meningsgräns (se truncateDescription).
+    description,
     ...(typeof image === "string" && /^https?:\/\//i.test(image) ? { image } : {}),
     organizerId,
     interested: [],

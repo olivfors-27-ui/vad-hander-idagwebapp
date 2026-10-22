@@ -21,6 +21,7 @@ import {
   Search,
   X,
 } from "lucide-react";
+import { isInSweden } from "@/lib/geocode";
 import { CATEGORY_COLOR, PLACE_TYPES, geoOf, type EventItem, type Place } from "@/lib/hander-data";
 import { isHappeningNow, useHander } from "@/lib/hander-store";
 import { DEFAULT_MAP_VIEW, readMapView, saveMapView } from "@/lib/map-view";
@@ -287,6 +288,8 @@ function MapSearch({ map, top }: { map: L.Map; top: number }) {
         format: "jsonv2",
         limit: "1",
         "accept-language": "sv",
+        // Kartan är en Sverigekarta: sökningen får aldrig hoppa utomlands.
+        countrycodes: "se",
         q: term,
       });
       const response = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
@@ -307,6 +310,10 @@ function MapSearch({ map, top }: { map: L.Map; top: number }) {
       const lng = Number(hit.lon);
       if (!Number.isFinite(lat) || !Number.isFinite(lng))
         throw new Error("Invalid location result");
+      if (!isInSweden({ lat, lng })) {
+        toast.info("Platsen ligger utanför Sverige. Sök på en adress i Sverige.");
+        return;
+      }
       map.flyTo([lat, lng], 16);
       setQuery(hit.display_name.split(",")[0] ?? term);
     } catch (error) {
@@ -422,8 +429,11 @@ export function LeafletMap({
     : [];
 
   return (
+    // isolate + z-0 håller Leaflets egna z-index (panes 400, kontroller 500)
+    // innanför kartrutan. Utan det konkurrerade minimapen med sidans modaler,
+    // ark och beskrivningspanel och hamnade ovanpå allt.
     <div
-      className={cn("relative h-full w-full", className)}
+      className={cn("relative isolate z-0 h-full w-full", className)}
       style={{ "--map-controls-bottom": `${28 + bottomInset}px` } as React.CSSProperties}
     >
       <MapContainer

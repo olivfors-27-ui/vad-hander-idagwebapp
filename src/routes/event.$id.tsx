@@ -27,9 +27,11 @@ import {
 import { MapCanvas } from "@/components/hander/MapCanvas";
 import { useGoCreate } from "@/lib/auth-guard";
 import { useProfile } from "@/lib/auth";
-import { limitMessage } from "@/lib/event-admin";
+import { deleteEventErrorMessage, limitMessage } from "@/lib/event-admin";
+import { recordEventView } from "@/lib/event-views";
 import { CATEGORY_GRADIENT, ME, userById } from "@/lib/hander-data";
 import { formatDay, useHander } from "@/lib/hander-store";
+import { truncateDescription } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/event/$id")({
@@ -53,15 +55,18 @@ function EventPage() {
   const [shareOpen, setShareOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const event = store.events.find((e) => e.id === id);
-  const track = store.track;
   // Arrangörens riktiga profil. Eventet sparar organizerName, men äldre event
   // och inbjudningar kan sakna det – då hämtas namnet från profiles (publikt
   // läsbar enligt RLS) i stället för att falla tillbaka på "Okänd användare".
   const organizerProfile = useProfile(event?.organizerId);
 
+  // En person räknas en gång per event – databasen dedupliserar på besökare,
+  // så en omrendering eller en ny sidladdning ändrar aldrig siffran.
+  const eventId = event?.id;
   useEffect(() => {
-    if (event) track(event.id, "views");
-  }, [event?.id, track]);
+    if (!eventId) return;
+    void recordEventView(eventId);
+  }, [eventId]);
 
   if (!event) {
     return (
@@ -110,7 +115,7 @@ function EventPage() {
       void router.navigate({ to: "/profil" });
     } catch (error) {
       console.error("Could not delete event", error);
-      toast.error(limitMessage(error) ?? "Eventet kunde inte tas bort. Försök igen.");
+      toast.error(limitMessage(error) ?? deleteEventErrorMessage(error));
     } finally {
       setDeleting(false);
     }
@@ -198,7 +203,9 @@ function EventPage() {
           </div>
         </div>
 
-        <p className="text-sm leading-relaxed text-foreground/90">{event.description}</p>
+        <p className="text-sm leading-relaxed text-foreground/90">
+          {truncateDescription(event.description)}
+        </p>
         {event.sourceUrl && (
           <a
             href={event.sourceUrl}

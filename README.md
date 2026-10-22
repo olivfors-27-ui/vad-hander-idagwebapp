@@ -64,6 +64,12 @@ idempotenta (kan köras om) och skapar allt appen behöver:
 4. `20261019090000_profiles_moderation_sponsorship.sql` – `username`,
    `is_moderator`, `follows`, `public_events` (status + sponsring) och RPC:erna
    `moderate_public_event` / `sponsor_public_event`
+5. `20261020120000_event_interests_limits_delete.sql` – gästintressen, max 10
+   deltagare, max 5 event per konto och `delete_event`
+6. `20261022120000_visibility_views_sweden.sql` – inbjudnings-RPC:er med
+   pgcrypto i `search_path`, tidsordning/Sverige-kontroller, vyn
+   `visible_public_events` (3 h efter slut, annars 4 h efter start) och unika
+   besökare i `event_views` + `record_event_view` / `event_view_counts`
 
 Saknas `public.profiles` får appen inga sökträffar på personer alls – det är det
 vanligaste tecknet på att steg 2 inte har körts. Kontrollera med:

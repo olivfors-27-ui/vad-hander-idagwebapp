@@ -246,7 +246,21 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      visible_public_events: {
+        Row: {
+          created_at: string;
+          id: string;
+          organizer_id: string;
+          organizer_name: string;
+          payload: Json;
+          rejection_reason: string | null;
+          sponsor_status: string;
+          sponsored_at: string | null;
+          status: string;
+          updated_at: string;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
       is_moderator: {
@@ -286,6 +300,14 @@ export type Database = {
       delete_event: {
         Args: { p_event_id: string };
         Returns: boolean;
+      };
+      record_event_view: {
+        Args: { p_event_id: string; p_anonymous_id?: string | null };
+        Returns: number;
+      };
+      event_view_counts: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
       };
     };
     Enums: {

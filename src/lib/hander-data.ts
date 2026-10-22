@@ -317,7 +317,9 @@ export type StatKey = "views" | "clicks" | "saves" | "interested" | "shares" | "
 export type EventStats = Record<StatKey, number>;
 
 export const STAT_LABELS: Record<StatKey, string> = {
-  views: "Visningar",
+  // Räknas i databasen (public.event_views): en person räknas en gång per event,
+  // oavsett hur många gånger eventet öppnas.
+  views: "Unika besökare",
   clicks: "Klick",
   saves: "Sparningar",
   interested: "Intresserade",
@@ -331,17 +333,19 @@ const hashString = (s: string) => {
   return h;
 };
 
-/** Deterministisk basstatistik så prototypen visar trovärdiga siffror. */
+/**
+ * Basstatistik för arrangörspanelen. Visningar är alltid 0 här: de räknas som
+ * unika besökare i databasen och får aldrig påhittade värden.
+ */
 export function baseStats(e: EventItem): EventStats {
   const h = hashString(e.id);
   const interest = e.interested.length;
-  const views = 60 + (h % 540) + interest * 18;
   return {
-    views,
-    clicks: Math.round(views * (0.2 + (h % 17) / 100)),
-    saves: Math.round(views * 0.06) + (h % 7),
+    views: 0,
+    clicks: Math.round(interest * 2.4) + (h % 9),
+    saves: interest + (h % 5),
     interested: interest,
-    shares: Math.round(views * 0.03) + (h % 4),
+    shares: Math.round(interest / 2) + (h % 3),
     plans: Math.max(0, Math.round(interest / 2) + (h % 3) - 1),
   };
 }
