@@ -7,8 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 /** Max antal deltagare (kommer + kanske) per privat event. */
 export const MAX_EVENT_GUESTS = 10;
-/** Max antal event (privata + publika) per konto. */
-export const MAX_EVENTS_PER_ACCOUNT = 5;
+/** Max antal event (privata + publika) per konto och dag (svensk tid). */
+export const MAX_EVENTS_PER_DAY = 5;
 
 /**
  * Sant när databasen säger att raden redan är borta. Då är raderingen klar:

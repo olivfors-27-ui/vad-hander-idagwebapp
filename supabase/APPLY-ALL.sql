@@ -807,7 +807,7 @@ grant execute on function public.get_private_event_invite(text, text) to anon, a
 --  * list_private_event_guests: gästlista (namn + intressen) för arrangören
 --    och för gäster som redan svarat – inte för vem som helst med länken.
 --  * max 10 deltagare (accepted/maybe) per privat event.
---  * max 5 event (privata + publika) per konto.
+--  * max 5 event (privata + publika) per konto och dag (Europe/Stockholm).
 --  * delete_event: bara skaparen, och gästsvaren följer med via cascade.
 
 -- ------------------------------------------------------------- intressen
@@ -962,7 +962,7 @@ create trigger private_event_replies_capacity
   before insert or update on public.private_event_replies
   for each row execute function public.enforce_private_event_capacity();
 
--- --------------------------------------------- max 5 event per konto
+-- --------------------------------------------- max 5 event per konto och dag
 
 create or replace function public.enforce_event_creation_limit()
 returns trigger
@@ -972,14 +972,18 @@ set search_path = public
 as $$
 declare
   used integer;
-  max_events constant integer := 5;
+  max_events_per_day constant integer := 5;
+  day_start timestamptz :=
+    date_trunc('day', now() at time zone 'Europe/Stockholm') at time zone 'Europe/Stockholm';
 begin
   select
-    (select count(*) from public.private_events where organizer_id = new.organizer_id)
-    + (select count(*) from public.public_events where organizer_id = new.organizer_id)
+    (select count(*) from public.private_events
+      where organizer_id = new.organizer_id and created_at >= day_start)
+    + (select count(*) from public.public_events
+      where organizer_id = new.organizer_id and created_at >= day_start)
   into used;
 
-  if used >= max_events then
+  if used >= max_events_per_day then
     raise exception 'event_limit_reached' using errcode = 'P0001';
   end if;
 

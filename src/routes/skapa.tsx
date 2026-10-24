@@ -14,7 +14,6 @@ import {
 } from "@/lib/hander-data";
 import { useHander } from "@/lib/hander-store";
 import { describeDbError } from "@/lib/db-error";
-import { MAX_EVENTS_PER_ACCOUNT } from "@/lib/event-admin";
 import { appUrl } from "@/lib/app-url";
 import { SPONSORSHIP, sponsorshipPriceLabel } from "@/lib/sponsorship";
 import { useRequireAccount } from "@/lib/auth-guard";
@@ -57,10 +56,8 @@ const DIVIDER_COLORS = {
 function CreatePage() {
   const useHanderStore = useHander();
   const { me } = useHanderStore;
-  // Antal event kontot redan skapat (privata + publika). Databasen har samma
-  // gräns – här bara så att användaren får veta det innan hen fyller i allt.
-  const createdEventCount = useHanderStore.createdEventCount;
-  const atEventLimit = createdEventCount >= MAX_EVENTS_PER_ACCOUNT;
+  // Gränsen (5 event per konto och dag) ligger i databasen – den räknar på
+  // eventets created_at, så klienten kan inte räkna ut den själv.
   // Skapa event kräver inloggat konto: omdirigerar till /loggain?redirect=…
   // om ingen session finns (datalagret avvisar dessutom skrivningar).
   const { loggedIn, checked } = useRequireAccount();
@@ -79,10 +76,6 @@ function CreatePage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (atEventLimit) {
-      toast.error(`Du kan som mest skapa ${MAX_EVENTS_PER_ACCOUNT} event per konto.`);
-      return;
-    }
     // Namn och plats krävs endast för publika event; privata får standardvärden.
     if (visibility === "public" && (!name.trim() || !place.trim())) {
       toast.error("Fyll i eventnamn och plats.");
@@ -511,19 +504,9 @@ function CreatePage() {
           </div>
         )}
 
-        {atEventLimit && (
-          <p
-            role="status"
-            className="rounded-2xl bg-[#FBECEB] px-4 py-3 text-xs font-bold text-[#B03A36]"
-          >
-            Du har redan {createdEventCount} av {MAX_EVENTS_PER_ACCOUNT} event. Radera ett event för
-            att kunna skapa ett nytt.
-          </p>
-        )}
-
         <button
           type="submit"
-          disabled={!loggedIn || atEventLimit}
+          disabled={!loggedIn}
           className="hander-cta-button flex w-full items-center justify-center gap-2 rounded-2xl bg-[#E45048] px-4 py-4 text-sm font-bold text-[#FFFDF9] transition-transform active:translate-y-[2px] disabled:opacity-50 disabled:pointer-events-none"
         >
           <Check className="h-4 w-4" />

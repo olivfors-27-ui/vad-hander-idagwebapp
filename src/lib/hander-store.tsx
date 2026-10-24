@@ -861,8 +861,6 @@ function useStoreValue() {
     replyToPrivateEvent,
     loadPrivateEventGuests,
     deleteEvent,
-    /** Antal event kontot har skapat (privata + publika) – max 5 tillåts. */
-    createdEventCount: myEvents.length,
     updateEvent,
     setStatus,
     setInviteStatus,

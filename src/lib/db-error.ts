@@ -1,4 +1,4 @@
-import { MAX_EVENTS_PER_ACCOUNT, MAX_EVENT_GUESTS } from "@/lib/event-admin";
+import { MAX_EVENTS_PER_DAY, MAX_EVENT_GUESTS } from "@/lib/event-admin";
 
 type ErrorLike = {
   code?: unknown;
@@ -35,7 +35,7 @@ export function describeDbError(error: unknown): string {
     return `Eventet är fullt (max ${MAX_EVENT_GUESTS} deltagare).`;
   }
   if (lower.includes("event_limit_reached")) {
-    return `Du kan som mest skapa ${MAX_EVENTS_PER_ACCOUNT} event per konto.`;
+    return `Du kan som mest skapa ${MAX_EVENTS_PER_DAY} event per konto och dag.`;
   }
 
   switch (code) {

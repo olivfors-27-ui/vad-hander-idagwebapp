@@ -70,6 +70,8 @@ idempotenta (kan köras om) och skapar allt appen behöver:
    pgcrypto i `search_path`, tidsordning/Sverige-kontroller, vyn
    `visible_public_events` (3 h efter slut, annars 4 h efter start) och unika
    besökare i `event_views` + `record_event_view` / `event_view_counts`
+7. `20261024130000_event_daily_creation_limit.sql` – max 5 event per konto och
+   dag (Europe/Stockholm) i stället för 5 totalt
 
 Saknas `public.profiles` får appen inga sökträffar på personer alls – det är det
 vanligaste tecknet på att steg 2 inte har körts. Kontrollera med:
