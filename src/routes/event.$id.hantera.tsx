@@ -16,7 +16,7 @@ import {
   type User,
 } from "@/lib/hander-data";
 import { useProfileName } from "@/lib/auth";
-import { saveEventErrorMessage } from "@/lib/event-admin";
+import { describeDbError } from "@/lib/db-error";
 import { useEventViewCounts } from "@/lib/event-views";
 import { distanceFromHome, isInSweden, type GeoHit } from "@/lib/geocode";
 import { formatDay, useHander } from "@/lib/hander-store";
@@ -264,7 +264,7 @@ function EditForm({ eventId }: { eventId: string }) {
       }
     } catch (error) {
       console.error("Could not save event changes", error);
-      toast.error(saveEventErrorMessage(error));
+      toast.error(describeDbError(error));
     } finally {
       setSaving(false);
     }

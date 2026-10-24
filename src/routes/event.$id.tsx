@@ -27,7 +27,7 @@ import {
 import { MapCanvas } from "@/components/hander/MapCanvas";
 import { useGoCreate } from "@/lib/auth-guard";
 import { useProfile } from "@/lib/auth";
-import { deleteEventErrorMessage, limitMessage } from "@/lib/event-admin";
+import { describeDbError } from "@/lib/db-error";
 import { recordEventView } from "@/lib/event-views";
 import { CATEGORY_GRADIENT, ME, userById } from "@/lib/hander-data";
 import { formatDay, useHander } from "@/lib/hander-store";
@@ -115,7 +115,7 @@ function EventPage() {
       void router.navigate({ to: "/profil" });
     } catch (error) {
       console.error("Could not delete event", error);
-      toast.error(limitMessage(error) ?? deleteEventErrorMessage(error));
+      toast.error(describeDbError(error));
     } finally {
       setDeleting(false);
     }

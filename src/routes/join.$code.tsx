@@ -6,7 +6,8 @@ import { AppShell } from "@/components/hander/AppShell";
 import { Avatar, EventCover } from "@/components/hander/EventBits";
 import { InviteReply } from "@/components/hander/InviteReply";
 import { useProfileName } from "@/lib/auth";
-import { MAX_EVENT_GUESTS, limitMessage } from "@/lib/event-admin";
+import { describeDbError } from "@/lib/db-error";
+import { MAX_EVENT_GUESTS } from "@/lib/event-admin";
 import { ME, userById, type EventItem, type User } from "@/lib/hander-data";
 import type { GuestRow } from "@/lib/private-event-invites";
 import { formatDay, useHander } from "@/lib/hander-store";
@@ -208,7 +209,7 @@ function JoinPage() {
                 })
                 .catch((error) => {
                   console.error("Could not save invite reply", error);
-                  toast.error(limitMessage(error) ?? "Svaret kunde inte sparas. Försök igen.");
+                  toast.error(describeDbError(error));
                 })
                 .finally(() => setReplying(false));
             }}

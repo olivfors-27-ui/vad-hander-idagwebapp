@@ -13,7 +13,8 @@ import {
   type EventItem,
 } from "@/lib/hander-data";
 import { useHander } from "@/lib/hander-store";
-import { MAX_EVENTS_PER_ACCOUNT, limitMessage } from "@/lib/event-admin";
+import { describeDbError } from "@/lib/db-error";
+import { MAX_EVENTS_PER_ACCOUNT } from "@/lib/event-admin";
 import { appUrl } from "@/lib/app-url";
 import { SPONSORSHIP, sponsorshipPriceLabel } from "@/lib/sponsorship";
 import { useRequireAccount } from "@/lib/auth-guard";
@@ -142,10 +143,7 @@ function CreatePage() {
         setCreated(createdEvent);
       } catch (error) {
         console.error("Could not create shareable private event", error);
-        toast.error(
-          limitMessage(error) ??
-            "Eventet kunde inte sparas. Kontrollera anslutningen och försök igen.",
-        );
+        toast.error(describeDbError(error));
         return;
       }
     } else {
@@ -158,10 +156,7 @@ function CreatePage() {
         }
       } catch (error) {
         console.error("Could not create public event", error);
-        toast.error(
-          limitMessage(error) ??
-            "Eventet kunde inte skickas in. Kontrollera anslutningen och försök igen.",
-        );
+        toast.error(describeDbError(error));
         return;
       }
       setCreated(item);
