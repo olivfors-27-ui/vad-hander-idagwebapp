@@ -1,4 +1,4 @@
-// Static host för Händer: alla sidor är klient-renderade (TanStack Start SPA),
+// Static host för Tagalong: alla sidor är klient-renderade (TanStack Start SPA),
 // så okända sökvägar faller tillbaka till index.html i stället för 404.
 export default {
   async fetch(request, env) {

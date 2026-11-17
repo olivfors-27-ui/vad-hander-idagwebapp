@@ -1,11 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { Bookmark, Heart, Lock, MapPin, Share2, Sparkles, User as UserIcon, Users } from "lucide-react";
+import { Bookmark, Heart, Lock, MapPin, Radio, Share2, Sparkles, User as UserIcon, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { SyntheticEvent } from "react";
 import { ShareSheet, absoluteUrl } from "@/components/hander/ShareSheet";
 import {
   CATEGORY_GRADIENT,
   categoryById,
+  isStockholmApiEvent,
   userById,
   type EventItem,
   type User,
@@ -79,6 +80,22 @@ export function SponsoredBadge({
     >
       <Sparkles className="h-3 w-3 shrink-0 text-primary" />
       <span className="truncate">Sponsrat</span>
+    </span>
+  );
+}
+
+/** Märkning för event som hämtats från Stockholms stads event-API. */
+export function StockholmApiBadge({ className }: { className?: string }) {
+  return (
+    <span
+      title="Eventet hämtas från Visit Stockholms öppna API"
+      className={cn(
+        "inline-flex max-w-full shrink-0 items-center gap-1 rounded-full border border-slate-300 bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600",
+        className,
+      )}
+    >
+      <Radio className="h-3 w-3 shrink-0" />
+      <span className="truncate">Stockholm API</span>
     </span>
   );
 }
@@ -242,6 +259,7 @@ export function EventCard({ event, compact }: { event: EventItem; compact?: bool
           {event.description && (
             <p className="line-clamp-2 text-xs text-muted-foreground">{event.description}</p>
           )}
+          {isStockholmApiEvent(event) && <StockholmApiBadge className="!mt-2" />}
           {!compact && event.visibility === "public" && (
             <p className="text-xs text-muted-foreground">
               {interestedCount(event)} {interestedCount(event) === 1 ? "person är" : "personer är"} intresserade
@@ -318,7 +336,7 @@ export function EventCard({ event, compact }: { event: EventItem; compact?: bool
           emoji: "📍",
           gradient: CATEGORY_GRADIENT[event.category],
           meta: `${formatDay(event.date)} ${event.start} · ${event.place}`,
-          cta: "Tryck för att se eventet i Händer.",
+          cta: "Tryck för att se eventet i Tagalong.",
           url: absoluteUrl(`/event/${event.id}`),
           displayUrl: absoluteUrl(`/event/${event.id}`),
           shareText: `Kolla in ${event.name} – ${formatDay(event.date)} ${event.start} på ${event.place}!`,
@@ -351,6 +369,7 @@ export function EventRow({ event }: { event: EventItem }) {
         <p className="truncate text-xs text-muted-foreground">
           {categoryById(event.category).emoji} {event.place} · {event.distance} km
         </p>
+        {isStockholmApiEvent(event) && <StockholmApiBadge className="mt-1" />}
         {(event.sponsored || event.promoted) && <SponsoredBadge className="mt-1" />}
         {follows.length > 0 && (
           <p className="text-[11px] font-semibold text-primary">

@@ -1,5 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Bookmark, CalendarHeart, List, MapPin, Share2, X } from "lucide-react";
+import {
+  Bookmark,
+  Building2,
+  CalendarHeart,
+  Layers,
+  List,
+  Map as MapIcon,
+  MapPin,
+  Share2,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/hander/AppShell";
 import { AvatarStack, CategoryChip, EventRow, priceLabel } from "@/components/hander/EventBits";
@@ -29,21 +40,27 @@ import { appUrl } from "@/lib/app-url";
 export const Route = createFileRoute("/karta")({
   head: () => ({
     meta: [
-      { title: "Karta – Händer" },
+      { title: "Karta – Tagalong" },
       { name: "description", content: "Se events och platser nära dig på kartan." },
-      { property: "og:title", content: "Karta – Händer" },
+      { property: "og:title", content: "Karta – Tagalong" },
       { property: "og:description", content: "Interaktiv karta med events och platser." },
     ],
   }),
   component: MapPage,
 });
 
+/** Vy-växlarens två lägen. */
+type MapView = "karta" | "lista";
+/** Vad som ska visas: tillfälliga event, fasta platser eller båda. */
+type ContentMode = "event" | "plats" | "bada";
+
 function MapPage() {
   const store = useHander();
   const navigate = useNavigate();
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [view, setView] = useState<"karta" | "lista">("karta");
+  const [view, setView] = useState<MapView>("karta");
+  const [mode, setMode] = useState<ContentMode>("bada");
   const [sort, setSort] = useState<SortMode>("relevans");
   const [selected, setSelected] = useState<EventItem | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
@@ -55,6 +72,10 @@ function MapPage() {
     [store.publicEvents, store.myPrivateEvents],
   );
   const events = useMemo(() => sortEvents(filterEvents(all, filters), sort), [all, filters, sort]);
+
+  const showEvents = mode !== "plats";
+  const showPlaces = mode !== "event";
+  const places = store.places;
 
   // Filteroverlayn ligger ovanpå kartan. Vi mäter dess höjd så att sökfältet i
   // kartan läggs precis under filtren i stället för att hamna bakom dem.
@@ -76,7 +97,11 @@ function MapPage() {
       subtitle={
         store.apiLoading
           ? "Läser in event från Visit Stockholm…"
-          : `${events.length} event nära dig`
+          : mode === "plats"
+            ? `${places.length} fasta platser`
+            : mode === "bada"
+              ? `${events.length} event · ${places.length} platser`
+              : `${events.length} event nära dig`
       }
     >
       {/* Verktygsraden hör bara till listvyn – i kartvyn ligger filtren som overlay
@@ -89,30 +114,10 @@ function MapPage() {
               Upptäck
             </h2>
           </div>
-          {/* Toggle + filter hålls på samma rad med tydlig luft mellan knapparna. */}
-          <div className="map-controls flex items-center gap-3">
-            <button
-              type="button"
-              role="switch"
-              aria-checked={false}
-              aria-label="Visa karta"
-              onClick={() => setView("karta")}
-              className="map-view-toggle-pill flex h-11 w-[156px] shrink-0 items-center justify-between rounded-full pl-2 pr-1.5"
-            >
-              <span className="flex items-center justify-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-bold uppercase text-[#E45048]">
-                <List className="h-4 w-4 shrink-0" />
-                <span className="w-[42px] text-left">lista</span>
-              </span>
-              <span
-                className="map-toggle-track relative flex h-7 w-11 shrink-0 items-center justify-start rounded-full px-1"
-                aria-hidden
-              >
-                <span
-                  className="map-toggle-knob h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.25)] transition-transform duration-200"
-                  style={{ transform: "translateX(16px)" }}
-                />
-              </span>
-            </button>
+          {/* Samma växlare som i kartvyn, följd av innehållsvalen och filtret. */}
+          <div className="map-controls flex flex-wrap items-center gap-2">
+            <ViewSwitch view={view} onChange={setView} />
+            <ContentModeSwitch mode={mode} onChange={setMode} />
             <FilterButton filters={filters} onOpen={() => setSheetOpen(true)} />
           </div>
           <QuickFilters filters={filters} setFilters={setFilters} />
@@ -128,11 +133,11 @@ function MapPage() {
         <div className="absolute inset-0 z-0 overflow-hidden bg-[#e8eee5]">
           <div className="absolute inset-0">
             <MapCanvas
-              events={events}
-              places={store.places}
+              events={showEvents ? events : []}
+              places={places}
               zoomable
               searchable
-              showPlaces
+              showPlaces={showPlaces}
               selectedId={selected?.id ?? selectedPlace?.id ?? null}
               searchTop={overlayHeight + 8}
               bottomInset={96}
@@ -154,16 +159,10 @@ function MapPage() {
             style={{ paddingTop: "max(10px, env(safe-area-inset-top))" }}
           >
             <div className="pointer-events-auto space-y-2 rounded-3xl border border-white/70 bg-white/80 p-2 shadow-[0_12px_30px_-18px_rgba(23,32,42,0.55)] backdrop-blur-xl">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <ViewSwitch view={view} onChange={setView} />
+                <ContentModeSwitch mode={mode} onChange={setMode} />
                 <FilterButton filters={filters} onOpen={() => setSheetOpen(true)} />
-                <button
-                  type="button"
-                  onClick={() => setView("lista")}
-                  aria-label="Visa lista"
-                  className="ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-card/90 text-foreground shadow-sm transition-colors hover:bg-secondary"
-                >
-                  <List className="h-4 w-4" />
-                </button>
               </div>
               <QuickFilters filters={filters} setFilters={setFilters} />
             </div>
@@ -175,13 +174,24 @@ function MapPage() {
             style={{ bottom: "calc(92px + env(safe-area-inset-bottom))" }}
           >
             <span className="rounded-full bg-white/85 px-2.5 py-1 text-[10px] font-semibold text-foreground/60 shadow-sm backdrop-blur">
-              {events.length} träffar · Eventdata från Visit Stockholm
+              {showEvents ? `${events.length} event` : ""}
+              {showEvents && showPlaces ? " · " : ""}
+              {showPlaces ? `${places.length} platser` : ""} · Eventdata från Visit Stockholm
             </span>
           </div>
 
-          {selectedPlace && (
-            <PlaceSheet place={selectedPlace} onClose={() => setSelectedPlace(null)} />
+          {/* Kort hint när Platser-läget är valt men datan ännu är tom. */}
+          {showPlaces && !showEvents && places.length === 0 && (
+            <div
+              className="pointer-events-none absolute inset-x-0 z-[550] flex justify-center px-3"
+              style={{ bottom: "calc(132px + env(safe-area-inset-bottom))" }}
+            >
+              <span className="max-w-[22rem] rounded-2xl border border-border/60 bg-white/95 px-3 py-2 text-center text-[11px] font-semibold text-foreground/80 shadow-[0_8px_20px_-12px_rgba(23,32,42,0.45)] backdrop-blur">
+                Inga fasta platser än – föreslå en plats så granskas den och dyker upp här.
+              </span>
+            </div>
           )}
+
         </div>
       ) : (
         <div className="map-list-view space-y-3 px-4">
@@ -189,13 +199,20 @@ function MapPage() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">Lista</p>
-                <p className="mt-0.5 text-sm font-semibold">{events.length} event att välja mellan</p>
+                <p className="mt-0.5 text-sm font-semibold">
+                  {showEvents && showPlaces
+                    ? `${events.length} event och ${places.length} platser`
+                    : showEvents
+                      ? `${events.length} event att välja mellan`
+                      : `${places.length} fasta platser`}
+                </p>
               </div>
               <List className="h-5 w-5 text-primary" aria-hidden />
             </div>
           </div>
-          <SortBar sort={sort} setSort={setSort} />
-          {Object.entries(
+          {showEvents && <SortBar sort={sort} setSort={setSort} />}
+          {showEvents &&
+            Object.entries(
             events.reduce<Record<string, EventItem[]>>((acc, e) => {
               const key = formatDay(e.date);
               (acc[key] ||= []).push(e);
@@ -211,12 +228,36 @@ function MapPage() {
               ))}
             </div>
           ))}
-          {events.length === 0 && (
+          {showEvents && events.length === 0 && (
             <p className="py-10 text-center text-sm text-muted-foreground">
               Inga event matchar dina filter.
             </p>
           )}
+
+          {showPlaces && (
+            <div className="space-y-2">
+              <p className="pt-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                Fasta platser
+              </p>
+              {places.length === 0 && (
+                <p className="rounded-2xl border border-dashed border-border bg-card px-3 py-4 text-sm text-muted-foreground">
+                  Inga fasta platser än. Föreslå en plats så granskas den och dyker upp här.
+                </p>
+              )}
+              {places.map((place) => (
+                <PlaceRow
+                  key={place.id}
+                  place={place}
+                  onOpen={() => setSelectedPlace(place)}
+                />
+              ))}
+            </div>
+          )}
         </div>
+      )}
+
+      {selectedPlace && (
+        <PlaceSheet place={selectedPlace} onClose={() => setSelectedPlace(null)} />
       )}
 
       <FilterSheet
@@ -226,6 +267,119 @@ function MapPage() {
         setFilters={setFilters}
       />
     </AppShell>
+  );
+}
+
+/**
+ * Samma knapp i list- och kartvyn: en pill som växlar mellan lägena och visar
+ * vilket läge man är i. Tidigare hade kartvyn en egen fyrkantig ikonknapp.
+ */
+function ViewSwitch({ view, onChange }: { view: MapView; onChange: (view: MapView) => void }) {
+  const showingMap = view === "karta";
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={showingMap}
+      aria-label={showingMap ? "Visa lista" : "Visa karta"}
+      onClick={() => onChange(showingMap ? "lista" : "karta")}
+      className="map-view-toggle-pill flex h-11 w-[156px] shrink-0 items-center justify-between rounded-full pl-2 pr-1.5"
+    >
+      <span className="flex items-center justify-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-bold uppercase text-[#E45048]">
+        {showingMap ? (
+          <MapIcon className="h-4 w-4 shrink-0" />
+        ) : (
+          <List className="h-4 w-4 shrink-0" />
+        )}
+        <span className="w-[42px] text-left">{showingMap ? "karta" : "lista"}</span>
+      </span>
+      <span
+        className="map-toggle-track relative flex h-7 w-11 shrink-0 items-center justify-start rounded-full px-1"
+        aria-hidden
+      >
+        <span
+          className="map-toggle-knob h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.25)] transition-transform duration-200"
+          style={{ transform: showingMap ? "translateX(0px)" : "translateX(16px)" }}
+        />
+      </span>
+    </button>
+  );
+}
+
+/** Innehållsval: bara tillfälliga event, bara fasta platser eller båda. */
+const CONTENT_MODES: {
+  id: ContentMode;
+  label: string;
+  icon: typeof Sparkles;
+  color: string;
+}[] = [
+  { id: "event", label: "Event", icon: Sparkles, color: "#E45048" },
+  { id: "plats", label: "Platser", icon: Building2, color: "#0F766E" },
+  { id: "bada", label: "Båda", icon: Layers, color: "#394fc4" },
+];
+
+function ContentModeSwitch({
+  mode,
+  onChange,
+}: {
+  mode: ContentMode;
+  onChange: (mode: ContentMode) => void;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label="Vad som visas"
+      className="no-scrollbar flex shrink-0 items-center gap-1.5 overflow-x-auto"
+    >
+      {CONTENT_MODES.map(({ id, label, icon: Icon, color }) => {
+        const active = mode === id;
+        return (
+          <button
+            key={id}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onChange(id)}
+            className={cn(
+              "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-bold transition-colors",
+              active ? "text-white shadow-[var(--shadow-card)]" : "border border-border bg-card text-foreground",
+            )}
+            style={active ? { backgroundColor: color, color: "#ffffff", fontWeight: 700 } : undefined}
+          >
+            <Icon className="h-3.5 w-3.5 shrink-0" />
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Rad för en fast plats i listvyn. */
+function PlaceRow({ place, onOpen }: { place: Place; onOpen: () => void }) {
+  const meta = PLACE_TYPES[place.type];
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-3 text-left shadow-[var(--shadow-card)] transition-colors hover:bg-secondary/60"
+    >
+      <span
+        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-lg"
+        style={{ backgroundColor: `${meta.color}1f` }}
+        aria-hidden
+      >
+        {meta.emoji}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-semibold">{place.name}</span>
+        <span className="block truncate text-xs text-muted-foreground">
+          {meta.label} · {place.address} · {place.distance} km
+        </span>
+      </span>
+      <span className="shrink-0 rounded-full bg-secondary px-2 py-1 text-[11px] font-bold">
+        {place.open}
+      </span>
+    </button>
   );
 }
 

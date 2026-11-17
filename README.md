@@ -1,4 +1,4 @@
-# Händer – Va Händer Idag?
+# Tagalong – Va Tagalong Idag?
 
 En social app för att hitta events, fester och platser i Stockholm – på en karta
 eller i lista – tillsammans med vänner.
@@ -85,12 +85,27 @@ profil (utan användarnamn/moderering) – använd migrationerna ovan i stället
 
 Under **Authentication → URL Configuration** i Supabase-dashboarden:
 
-- **Site URL**: appens publika bas-URL, samma värde som `VITE_APP_URL`.
+- **Site URL**: appens publika bas-URL, samma värde som `VITE_APP_URL`. Ett nytt
+  projekt har `http://localhost:3000` här, och **det är den adressen varje
+  mejllänk faller tillbaka på** när den adress koden ber om inte är tillåten.
 - **Redirect URLs**: `<VITE_APP_URL>/auth/callback` (dit bekräftelsemejlet går och
-som sedan visar tack-sidan `/valkommen`) samt `<VITE_APP_URL>/valkommen`.
+  som sedan visar tack-sidan `/valkommen`) samt `<VITE_APP_URL>/valkommen`.
+  För lokal utveckling även `http://127.0.0.1:4173/auth/callback` och
+  `http://localhost:4173/auth/callback`.
 
 Koden skickar `emailRedirectTo: <VITE_APP_URL>/auth/callback` vid registrering,
 så `VITE_APP_URL` måste vara appens riktiga publika adress – aldrig `localhost`.
+Pekar `VITE_APP_URL` på localhost medan appen körs på en publik adress ignoreras
+värdet och webbläsarens egen origin används i stället (se
+`src/lib/app-url.ts`).
+
+**Öppnar bekräftelsemejlet fortfarande `localhost`?** Då finns appens adress inte
+med bland **Redirect URLs**, och Supabase använder **Site URL** i stället. Lägg
+till adressen exakt som den står i webbläsaren (protokoll, domän och eventuell
+port) och skicka ett **nytt** mejl – länkar som redan skickats behåller sin
+`redirect_to`. Kontrollera också att Cloudflare Pages har `VITE_APP_URL` satt
+för både Production och Preview, och bygg om efter ändringen eftersom
+`VITE_`-variabler bakas in i klienten.
 
 Moderatorrollen ligger i `public.moderators` och är pinnad på konto-id, inte på
 användarnamn – den som registrerar "oliver" i efterhand får aldrig rollen.

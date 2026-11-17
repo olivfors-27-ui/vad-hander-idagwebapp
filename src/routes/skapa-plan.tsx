@@ -33,13 +33,13 @@ export const Route = createFileRoute("/skapa-plan")({
   }),
   head: () => ({
     meta: [
-      { title: "Planera med kompisar – Händer" },
+      { title: "Planera med kompisar – Tagalong" },
       {
         name: "description",
         content:
           "Skapa en plan på 30 sekunder: välj aktivitet, datum och tider – dela sedan länken med gänget.",
       },
-      { property: "og:title", content: "Planera med kompisar – Händer" },
+      { property: "og:title", content: "Planera med kompisar – Tagalong" },
       {
         property: "og:description",
         content: "Välj datum och tider, dela länken och låt kompisarna svara utan appen.",

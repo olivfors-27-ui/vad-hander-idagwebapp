@@ -6,12 +6,12 @@ import { useAccount } from "@/lib/auth";
 export const Route = createFileRoute("/valkommen")({
   head: () => ({
     meta: [
-      { title: "Tack för att du har registrerat dig – Händer" },
+      { title: "Tack för att du har registrerat dig – Tagalong" },
       {
         name: "description",
         content: "Ditt konto är bekräftat. Logga in och börja hitta det som händer.",
       },
-      { property: "og:title", content: "Tack för att du har registrerat dig – Händer" },
+      { property: "og:title", content: "Tack för att du har registrerat dig – Tagalong" },
     ],
   }),
   component: WelcomePage,

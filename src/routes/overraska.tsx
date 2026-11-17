@@ -19,13 +19,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/overraska")({
   head: () => ({
     meta: [
-      { title: "Överraska oss – Händer" },
+      { title: "Överraska oss – Tagalong" },
       {
         name: "description",
         content:
-          "Vet ni att ni vill göra något men inte vad? Svara på fem snabba frågor så föreslår Händer en aktivitet.",
+          "Vet ni att ni vill göra något men inte vad? Svara på fem snabba frågor så föreslår Tagalong en aktivitet.",
       },
-      { property: "og:title", content: "Överraska oss – Händer" },
+      { property: "og:title", content: "Överraska oss – Tagalong" },
       {
         property: "og:description",
         content: "Fem snabba val – ett konkret förslag som ni kan göra till en plan direkt.",

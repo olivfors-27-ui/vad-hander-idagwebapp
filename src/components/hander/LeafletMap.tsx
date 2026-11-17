@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { createPortal } from "react-dom";
 import { renderToStaticMarkup } from "react-dom/server";
-import { CircleMarker, MapContainer, Marker, TileLayer, useMap } from "react-leaflet";
+import { CircleMarker, MapContainer, TileLayer, useMap } from "react-leaflet";
 import "leaflet.markercluster";
 import {
   BookOpen,
@@ -22,7 +22,14 @@ import {
   X,
 } from "lucide-react";
 import { isInSweden } from "@/lib/geocode";
-import { CATEGORY_COLOR, PLACE_TYPES, geoOf, type EventItem, type Place } from "@/lib/hander-data";
+import {
+  CATEGORY_COLOR,
+  PLACE_TYPES,
+  geoOf,
+  isStockholmApiEvent,
+  type EventItem,
+  type Place,
+} from "@/lib/hander-data";
 import { isHappeningNow, useHander } from "@/lib/hander-store";
 import { DEFAULT_MAP_VIEW, readMapView, saveMapView } from "@/lib/map-view";
 import { cn } from "@/lib/utils";
@@ -57,12 +64,18 @@ const eventPin = (
   color: string,
   live: boolean,
   selected: boolean,
+  fromStockholmApi: boolean,
 ) => {
   const Icon = CATEGORY_ICON[category] ?? Sparkles;
   const iconHtml = renderToStaticMarkup(<Icon size={17} strokeWidth={2.4} aria-hidden="true" />);
+  // Event från Stockholms stads API får en grå ring utanför den vita kanten så
+  // att de går att skilja från appens egna event redan på kartan.
+  const shadow = fromStockholmApi
+    ? "0 0 0 3px #cbd5e1,0 0 0 5px #94a3b8,0 2px 8px #17202a88"
+    : "0 2px 8px #17202a88";
   return divIcon({
     className: "hander-leaflet-pin",
-    html: `<span class="hander-pin-dot${selected ? " is-selected" : ""}" role="img" aria-label="${escapeHtml(category)}" style="position:relative;display:grid;width:38px;height:38px;place-items:center;border:3px solid #fff;border-radius:50% 50% 50% 8px;background:${color};color:#fff;box-shadow:0 2px 8px #17202a88;transform:rotate(-45deg);--pin-icon-size:17px;${selected ? "outline:3px solid #394fc4;outline-offset:2px;" : ""}"><span aria-hidden="true" style="display:grid;place-items:center;transform:rotate(45deg)">${iconHtml}</span>${live ? '<i aria-hidden="true" style="position:absolute;top:-3px;right:-3px;width:10px;height:10px;border:2px solid #fff;border-radius:50%;background:#22c55e"></i>' : ""}</span>`,
+    html: `<span class="hander-pin-dot${selected ? " is-selected" : ""}" role="img" aria-label="${escapeHtml(category)}" style="position:relative;display:grid;width:38px;height:38px;place-items:center;border:3px solid #fff;border-radius:50% 50% 50% 8px;background:${color};color:#fff;box-shadow:${shadow};transform:rotate(-45deg);--pin-icon-size:17px;${selected ? "outline:3px solid #394fc4;outline-offset:2px;" : ""}"><span aria-hidden="true" style="display:grid;place-items:center;transform:rotate(45deg)">${iconHtml}</span>${live ? '<i aria-hidden="true" style="position:absolute;top:-3px;right:-3px;width:10px;height:10px;border:2px solid #fff;border-radius:50%;background:#22c55e"></i>' : ""}</span>`,
     iconSize: [42, 48],
     iconAnchor: [21, 46],
   });
@@ -84,45 +97,120 @@ const clusterIcon = (cluster: { getChildCount: () => number }) => {
   });
 };
 
+/**
+ * DivIcons cachas per utseende. Tidigare byggdes en ny ikon (med React-render
+ * till HTML-sträng) för varje markör och varje gång kartan renderades om, vilket
+ * blev dyrt med hundratals event och platser.
+ */
+const eventIconCache = new Map<string, L.DivIcon>();
+const placeIconCache = new Map<string, L.DivIcon>();
+
+function cachedEventPin(
+  category: EventItem["category"],
+  color: string,
+  live: boolean,
+  selected: boolean,
+  fromStockholmApi: boolean,
+): L.DivIcon {
+  const key = `${category}|${color}|${live ? 1 : 0}|${selected ? 1 : 0}|${fromStockholmApi ? 1 : 0}`;
+  let icon = eventIconCache.get(key);
+  if (!icon) {
+    icon = eventPin(category, color, live, selected, fromStockholmApi);
+    eventIconCache.set(key, icon);
+  }
+  return icon;
+}
+
+function cachedPlacePin(color: string): L.DivIcon {
+  let icon = placeIconCache.get(color);
+  if (!icon) {
+    icon = placePin(color);
+    placeIconCache.set(color, icon);
+  }
+  return icon;
+}
+
 function MapLayers({
   events,
+  places,
+  showPlaces,
   selectedId,
   onSelectEvent,
+  onSelectPlace,
 }: {
   events: EventItem[];
+  places: Place[];
+  showPlaces: boolean;
   selectedId: string | null | undefined;
   onSelectEvent: (event: EventItem) => void;
+  onSelectPlace?: ((place: Place) => void) | undefined;
 }) {
   const map = useMap();
   useEffect(() => {
     const cluster = new L.MarkerClusterGroup({
+      // En större radie ger färre och tydligare bollar i stället för hundratals
+      // enskilda prickar, och chunkedLoading bygger klustret utan att hacka.
       chunkedLoading: true,
+      chunkInterval: 120,
+      chunkDelay: 40,
       showCoverageOnHover: false,
-      spiderfyOnMaxZoom: true,
-      maxClusterRadius: 70,
+      spiderfyOnMaxZoom: false,
+      zoomToBoundsOnClick: true,
+      removeOutsideVisibleBounds: true,
+      animate: false,
+      maxClusterRadius: 110,
+      // Vid zoom 16+ släpps klustren helt: då ska varje event och plats gå att
+      // klicka på var för sig i stället för att ligga kvar i en boll.
+      disableClusteringAtZoom: 16,
       iconCreateFunction: clusterIcon,
     });
-    const markers = events.flatMap((event) => {
+
+    const markers: L.Marker[] = [];
+    for (const event of events) {
       const geo = geoOf(event);
-      if (!geo) return [];
+      if (!geo) continue;
       const color =
         event.visibility === "private" ? "#64748b" : (CATEGORY_COLOR[event.category] ?? "#E45048");
       const marker = L.marker([geo.lat, geo.lng], {
-        icon: eventPin(event.category, color, isHappeningNow(event), selectedId === event.id),
+        icon: cachedEventPin(
+          event.category,
+          color,
+          isHappeningNow(event),
+          selectedId === event.id,
+          isStockholmApiEvent(event),
+        ),
         title: event.name,
         alt: event.name,
         keyboard: true,
       });
       marker.on("click", () => onSelectEvent(event));
-      return [marker];
-    });
+      markers.push(marker);
+    }
+
+    if (showPlaces) {
+      for (const place of places) {
+        const geo = geoOf(place);
+        const type = PLACE_TYPES[place.type];
+        if (!geo || !type) continue;
+        const marker = L.marker([geo.lat, geo.lng], {
+          icon: cachedPlacePin(type.color),
+          title: place.name,
+          alt: place.name,
+          keyboard: true,
+        });
+        if (onSelectPlace) marker.on("click", () => onSelectPlace(place));
+        markers.push(marker);
+      }
+    }
+
+    // Alla markörer läggs in i ett svep – klustret räknar om en gång, inte per pin.
     cluster.addLayers(markers);
     map.addLayer(cluster);
     return () => {
       map.removeLayer(cluster);
       cluster.clearLayers();
     };
-  }, [events, map, onSelectEvent, selectedId]);
+  }, [events, map, onSelectEvent, onSelectPlace, places, selectedId, showPlaces]);
   return null;
 }
 
@@ -420,14 +508,6 @@ export function LeafletMap({
     ? savedView
     : { lat: fallbackCenter.lat, lng: fallbackCenter.lng, zoom: initialZoom };
   const center: LatLngExpression = [view.lat, view.lng];
-  const placeItems = showPlaces
-    ? places.flatMap((place) => {
-        const geo = geoOf(place);
-        const type = PLACE_TYPES[place.type];
-        return geo && type ? [{ place, geo, type }] : [];
-      })
-    : [];
-
   return (
     // isolate + z-0 håller Leaflets egna z-index (panes 400, kontroller 500)
     // innanför kartrutan. Utan det konkurrerade minimapen med sidans modaler,
@@ -451,22 +531,19 @@ export function LeafletMap({
         className="h-full w-full"
         preferCanvas
       >
-        <MapLayers events={events} selectedId={selectedId} onSelectEvent={onSelectEvent} />
+        <MapLayers
+          events={events}
+          places={places}
+          showPlaces={showPlaces}
+          selectedId={selectedId}
+          onSelectEvent={onSelectEvent}
+          onSelectPlace={onSelectPlace}
+        />
         <TileLayer
           url={TILE_URL}
           maxZoom={19}
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
-        {placeItems.map(({ place, geo, type }) => (
-          <Marker
-            key={place.id}
-            position={[geo.lat, geo.lng]}
-            icon={placePin(type.color)}
-            title={place.name}
-            alt={place.name}
-            eventHandlers={{ click: () => onSelectPlace?.(place) }}
-          />
-        ))}
         {userLocation && (
           <>
             {/* Mjuk halo runt punkten så den syns även över täta kluster. */}

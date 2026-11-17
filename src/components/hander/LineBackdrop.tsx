@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
 /**
- * Återkommande visuellt tema för Händer: mjuka, organiska linjer i
+ * Återkommande visuellt tema för Tagalong: mjuka, organiska linjer i
  * orange/rött/gult/blått som löper genom sidan som en abstrakt karta.
  * Ligger alltid bakom innehållet (pointer-events-none, z-0).
  */

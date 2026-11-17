@@ -13,12 +13,12 @@ import { appUrl } from "@/lib/app-url";
 export const Route = createFileRoute("/privat/$id")({
   head: () => ({
     meta: [
-      { title: "Privat event – Händer" },
+      { title: "Privat event – Tagalong" },
       {
         name: "description",
         content: "Hantera gästlista och inbjudningslänk för ditt privata event.",
       },
-      { property: "og:title", content: "Privat event – Händer" },
+      { property: "og:title", content: "Privat event – Tagalong" },
       { property: "og:description", content: "Bjud in vänner med en länk." },
     ],
   }),

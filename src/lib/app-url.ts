@@ -4,28 +4,42 @@
 //   1. VITE_APP_URL – appens publika adress, sätts per miljö (Cloudflare/Pages).
 //   2. Den origin som faktiskt serverar appen (webbläsarens location).
 //
-// Ingen hårdkodad domän: appen pekar aldrig på en adress som deploymenten inte
-// äger. Körs appen lokalt utan VITE_APP_URL blir basen localhost, vilket är
-// sant för den körningen – varningen nedan säger till att sätta variabeln.
+// En VITE_APP_URL som pekar på localhost ignoreras när appen körs på en publik
+// adress. Annars skulle bekräftelsemejl skicka folk till deras egen dator – och
+// när adressen inte finns bland Redirect URLs i Supabase faller länken dessutom
+// tillbaka på projektets Site URL, som ofta är just http://localhost:3000.
+const LOOPBACK = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i;
+
 const configured = ((import.meta.env["VITE_APP_URL"] as string | undefined) ?? "")
   .trim()
   .replace(/\/+$/, "");
 
 const browserOrigin = typeof window !== "undefined" ? window.location.origin : "";
 
+const configuredIsLoopback = LOOPBACK.test(configured);
+const browserIsLoopback = LOOPBACK.test(browserOrigin);
+
+/** True när VITE_APP_URL pekar på localhost men appen körs på en publik adress. */
+export const APP_URL_IGNORED_LOOPBACK =
+  Boolean(configured) && configuredIsLoopback && Boolean(browserOrigin) && !browserIsLoopback;
+
+const base = APP_URL_IGNORED_LOOPBACK ? browserOrigin : configured || browserOrigin;
+
 /** Appens publika bas-URL utan avslutande snedstreck. */
-export const APP_URL = (configured || browserOrigin).replace(/\/+$/, "");
+export const APP_URL = base.replace(/\/+$/, "");
 
 /** True när bas-URL:en kommer från VITE_APP_URL. */
-export const APP_URL_CONFIGURED = Boolean(configured);
+export const APP_URL_CONFIGURED = Boolean(configured) && !APP_URL_IGNORED_LOOPBACK;
 
-if (
-  !configured &&
-  typeof window !== "undefined" &&
-  /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(browserOrigin)
-) {
+if (APP_URL_IGNORED_LOOPBACK) {
   console.warn(
-    "[hander] VITE_APP_URL saknas – inbjudnings- och bekräftelselänkar pekar nu på " +
+    `[tagalong] VITE_APP_URL pekar på ${configured} men appen körs på ${browserOrigin} – använder ${browserOrigin} i länkar i stället.`,
+  );
+}
+
+if (!configured && browserIsLoopback) {
+  console.warn(
+    "[tagalong] VITE_APP_URL saknas – inbjudnings- och bekräftelselänkar pekar nu på " +
       browserOrigin +
       ". Sätt VITE_APP_URL till appens publika adress innan du delar en länk.",
   );

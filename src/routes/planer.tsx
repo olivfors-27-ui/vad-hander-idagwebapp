@@ -9,12 +9,12 @@ import { useHander } from "@/lib/hander-store";
 export const Route = createFileRoute("/planer")({
   head: () => ({
     meta: [
-      { title: "Dina planer – Händer" },
+      { title: "Dina planer – Tagalong" },
       {
         name: "description",
         content: "Samla förslag, dela en länk och få gänget att bestämma vad ni ska göra.",
       },
-      { property: "og:title", content: "Dina planer – Händer" },
+      { property: "og:title", content: "Dina planer – Tagalong" },
       { property: "og:description", content: "Skapa en plan och låt kompisarna svara via länk." },
     ],
   }),

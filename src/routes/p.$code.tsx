@@ -8,13 +8,13 @@ import { useHander } from "@/lib/hander-store";
 export const Route = createFileRoute("/p/$code")({
   head: () => ({
     meta: [
-      { title: "Kan du? – en plan på Händer" },
+      { title: "Kan du? – en plan på Tagalong" },
       {
         name: "description",
         content:
           "Din kompis har skapat en plan. Se vad som gäller och svara direkt – inget konto behövs.",
       },
-      { property: "og:title", content: "Kan du? – en plan på Händer" },
+      { property: "og:title", content: "Kan du? – en plan på Tagalong" },
       {
         property: "og:description",
         content: "Svara på planen direkt i länken – ingen app och inget konto behövs.",

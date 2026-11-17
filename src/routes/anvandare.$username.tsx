@@ -11,10 +11,10 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/anvandare/$username")({
   head: () => ({
     meta: [
-      { title: "Profil – Händer" },
+      { title: "Profil – Tagalong" },
       { name: "description", content: "Se events och sparade favoriter från en användare." },
-      { property: "og:title", content: "Profil – Händer" },
-      { property: "og:description", content: "Följ arrangörer och vänner på Händer." },
+      { property: "og:title", content: "Profil – Tagalong" },
+      { property: "og:description", content: "Följ arrangörer och vänner på Tagalong." },
     ],
   }),
   component: UserPage,

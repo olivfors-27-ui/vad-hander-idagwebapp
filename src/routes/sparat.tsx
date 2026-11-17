@@ -10,13 +10,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/sparat")({
   head: () => ({
     meta: [
-      { title: "Sparat – Händer" },
+      { title: "Sparat – Tagalong" },
       {
         name: "description",
         content: "Dina sparade event, aktiviteter, upptäckter och favoritplatser.",
       },
-      { property: "og:title", content: "Sparat – Händer" },
-      { property: "og:description", content: "Allt du sparat på Händer, samlat." },
+      { property: "og:title", content: "Sparat – Tagalong" },
+      { property: "og:description", content: "Allt du sparat på Tagalong, samlat." },
     ],
   }),
   component: SavedPage,

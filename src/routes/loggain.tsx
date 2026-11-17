@@ -21,8 +21,8 @@ export const Route = createFileRoute("/loggain")({
   },
   head: () => ({
     meta: [
-      { title: "Logga in – Händer" },
-      { name: "description", content: "Logga in eller skapa konto på Händer." },
+      { title: "Logga in – Tagalong" },
+      { name: "description", content: "Logga in eller skapa konto på Tagalong." },
     ],
   }),
   component: LoginPage,

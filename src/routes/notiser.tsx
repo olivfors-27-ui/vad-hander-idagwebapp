@@ -8,9 +8,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/notiser")({
   head: () => ({
     meta: [
-      { title: "Notiser – Händer" },
+      { title: "Notiser – Tagalong" },
       { name: "description", content: "Påminnelser om event nära dig och vad dina vänner gör." },
-      { property: "og:title", content: "Notiser – Händer" },
+      { property: "og:title", content: "Notiser – Tagalong" },
       { property: "og:description", content: "Missa inget som händer runt hörnet." },
     ],
   }),

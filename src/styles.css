@@ -1443,3 +1443,25 @@
   font-weight: 700;
   letter-spacing: 0.02em;
 }
+
+/* Desktop (≥1024px): Instagram-inspirerad trespaltslayout – sidomeny, flöde och
+   högerkolumn. Telefonramen stängs av och bara <main> scrollar. Mobilvyn
+   (under 1024px) behåller hela telefonramen orörd. */
+@media (min-width: 1024px) {
+  body {
+    padding: 0;
+    overflow: hidden;
+    background: var(--background);
+  }
+
+  .hander-phone {
+    width: 100%;
+    max-width: 1260px;
+    height: 100svh;
+    min-height: 0;
+    flex-direction: row;
+    overflow: hidden;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}

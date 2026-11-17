@@ -37,3 +37,11 @@ supabase/.temp/
 *.njsproj
 *.sln
 *.sw?
+
+# Local preview/deploy artifacts
+.tools/
+deploy-assets/
+.deploy-assets/
+
+# Separat klon av GitHub-repot (pullas och kopieras in i roten)
+vad-hander-idagwebapp/

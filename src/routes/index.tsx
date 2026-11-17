@@ -11,13 +11,13 @@ import { formatDay, isEventVisible, useHander } from "@/lib/hander-store";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Vad Händer Idag?" },
+      { title: "Tagalong – hitta skoj i Stockholm idag" },
       {
         name: "description",
         content:
           "Hitta skoj i Stockholm idag. Upptäck events och aktiviteter nära dig och planera med kompisar – alla svarar utan konto.",
       },
-      { property: "og:title", content: "Vad Händer Idag?" },
+      { property: "og:title", content: "Tagalong – hitta skoj i Stockholm idag" },
       {
         property: "og:description",
         content: "Hitta skoj i Stockholm idag och planera med kompisar.",
@@ -90,7 +90,7 @@ function SectionHead({
   const actionClass = `section-action section-action--${tone}`;
   const badgeClass = `section-badge section-badge--${tone}`;
   return (
-    <div className="flex items-center justify-between gap-2 px-4">
+    <div className="flex items-center justify-between gap-2 px-4 lg:px-6">
       <h2 className={`flex min-w-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-bold text-[#2A2421] ${toneClass}`}>
         <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: dot }} />
         <span className="truncate">{title}</span>
@@ -120,7 +120,7 @@ function PopularCard({ event }: { event: EventItem }) {
       to="/event/$id"
       params={{ id: event.id }}
       aria-label={`Visa ${event.name}`}
-      className="popular-event-card relative block w-60 shrink-0 overflow-hidden rounded-3xl border-[7px] border-[#E45048] bg-[#FFFFFF] shadow-[var(--shadow-card)] transition-transform active:scale-[0.98]"
+      className="popular-event-card relative block w-60 shrink-0 overflow-hidden rounded-3xl border-[7px] border-[#E45048] bg-[#FFFFFF] shadow-[var(--shadow-card)] transition-transform active:scale-[0.98] lg:w-auto lg:min-w-0 lg:shrink lg:hover:-translate-y-0.5"
     >
       <EventCover event={event} className="h-44" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
@@ -296,10 +296,10 @@ function Home() {
   );
 
   return (
-    <AppShell title="Vad Händer Idag?" subtitle="Hitta skoj i Stockholm idag">
-      <div className="relative space-y-7 pb-4 pt-5">
+    <AppShell title="Tagalong" subtitle="Hitta skoj i Stockholm idag" rail>
+      <div className="relative space-y-7 pb-4 pt-5 lg:space-y-9 lg:pt-7">
         {/* Flikar: Upptäck (allt) och Sponsrat (betald placering). */}
-        <div className="mx-4 flex gap-1 rounded-full bg-[#F7E5D5] p-1">
+        <div className="mx-4 flex gap-1 rounded-full bg-[#F7E5D5] p-1 lg:mx-6 lg:max-w-md">
           {(
             [
               ["upptack", "Upptäck"],
@@ -328,7 +328,7 @@ function Home() {
               tone="pink"
               badge={sponsored.length ? `${sponsored.length}` : undefined}
             />
-            <div className="space-y-3 px-4">
+            <div className="space-y-3 px-4 lg:px-6">
               {sponsored.map((e) => (
                 <SponsoredCard key={e.id} event={e} />
               ))}
@@ -348,11 +348,11 @@ function Home() {
         {/* Sektion 1 – Mest populära */}
         <section className="section-zone section-zone--red relative space-y-3">
           <SectionHead title="Mest populära nära dig" to="/sok" dot="var(--section-red)" tone="red" />
-          <div className="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-1">
+          <div className="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-1 lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-visible lg:px-6 lg:pb-0">
             {popular.map((e) => (
               <PopularCard key={e.id} event={e} />
             ))}
-            <span className="w-px shrink-0" aria-hidden />
+            <span className="w-px shrink-0 lg:hidden" aria-hidden />
           </div>
         </section>
 
@@ -360,7 +360,7 @@ function Home() {
         {sponsored.length > 0 && (
           <section className="section-zone section-zone--pink relative space-y-3">
             <SectionHead title="Sponsrade events" dot="var(--section-pink)" tone="pink" />
-            <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-2 lg:px-6">
               {sponsored.slice(0, 2).map((e) => (
                 <SponsoredCard key={e.id} event={e} />
               ))}
@@ -371,7 +371,7 @@ function Home() {
         {/* Sektion 3 – Dina organiserade event */}
         <section className="section-zone section-zone--coral relative space-y-3">
           <SectionHead title="Dina organiserade event" to="/arrangor" dot="#E57657" tone="coral" />
-          <div className="space-y-2 px-4">
+          <div className="space-y-2 px-4 lg:px-6">
             {organized.length > 0 ? (
               organized.map((e) => <OrganizedRow key={e.id} event={e} />)
             ) : loggedIn ? (
@@ -397,7 +397,7 @@ function Home() {
             tone="orange"
             badge={invitedCount > 0 ? `${invitedCount} nya` : undefined}
           />
-          <div className="space-y-2 px-4">
+          <div className="space-y-2 px-4 lg:px-6">
             {activePlans.length > 0 ? (
               activePlans.map((p) => (
                 <PlanInviteRow

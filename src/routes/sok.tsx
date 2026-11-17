@@ -26,12 +26,12 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/sok")({
   head: () => ({
     meta: [
-      { title: "Sök – Händer" },
+      { title: "Sök – Tagalong" },
       {
         name: "description",
         content: "Sök efter event, aktiviteter, platser, adresser, kategorier och personer.",
       },
-      { property: "og:title", content: "Sök – Händer" },
+      { property: "og:title", content: "Sök – Tagalong" },
       { property: "og:description", content: "Hitta exakt det du är sugen på ikväll." },
     ],
   }),

@@ -108,7 +108,7 @@ export function PublicPlan({ plan }: { plan: Plan }) {
 
       <header className="space-y-2 px-4 py-4">
         <p className="text-xs font-bold uppercase tracking-wide text-primary">
-          Vad Händer? - Inbjudan
+          Tagalong – inbjudan
         </p>
         <h1 className="font-display text-2xl font-bold leading-tight">{plan.title}</h1>
         {displayNote ? <p className="text-sm text-muted-foreground">{displayNote}</p> : null}
