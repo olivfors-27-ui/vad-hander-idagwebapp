@@ -68,8 +68,18 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
         "cache-control": "public, max-age=120",
       });
     }
+    const partial = pageLimit < MAX_PAGES;
     const body = json(
-      { events, count: events.length, day, generatedAt: new Date().toISOString(), source: "visit-stockholm" },
+      {
+        events,
+        count: events.length,
+        day,
+        generatedAt: new Date().toISOString(),
+        source: "visit-stockholm",
+        // Klienten fyller på resterande sidor när servern inte hann hämta allt.
+        partial,
+        pagesFetched: pageLimit,
+      },
       200,
       { "cache-control": `public, max-age=${CACHE_TTL_SECONDS}` },
     );

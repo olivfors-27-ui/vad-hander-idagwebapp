@@ -151,14 +151,8 @@ const fetchJson = async <T,>(url: string, signal?: AbortSignal) => {
 
 const fetchVisitStockholmPage = (page: number, signal?: AbortSignal) => fetchJson<VisitStockholmResponse>(`${VISIT_STOCKHOLM_URL}?page=${page}`, signal);
 
-async function fetchVisitStockholmSource(signal?: AbortSignal, maxPages = MAX_PAGES): Promise<EventItem[]> {
-  const firstPage = await fetchVisitStockholmPage(1, signal);
-  const pageCount = Math.min(Math.max(firstPage.total_pages ?? 1, 1), maxPages);
-  const pages: VisitStockholmResponse[] = [firstPage];
-  for (let start = 2; start <= pageCount; start += 6) {
-    pages.push(...await Promise.all(Array.from({ length: Math.min(6, pageCount - start + 1) }, (_, index) => fetchVisitStockholmPage(start + index, signal))));
-  }
-  return pages.flatMap((page) => page.results ?? []).flatMap((event) => {
+const mapVisitStockholmPage = (page: VisitStockholmResponse): EventItem[] =>
+  (page.results ?? []).flatMap((event) => {
     if (!event.id || !event.location || typeof event.location.latitude !== "number" || typeof event.location.longitude !== "number") return [];
     const slot = firstFutureSchedule(event);
     const candidate = slot?.date || event.start_date || "";
@@ -181,6 +175,45 @@ async function fetchVisitStockholmSource(signal?: AbortSignal, maxPages = MAX_PA
     });
     return normalized ? [normalized] : [];
   });
+
+/** Hämtar sidorna from..to (inklusive), sex åt gången. */
+async function fetchVisitStockholmPages(
+  from: number,
+  to: number,
+  signal?: AbortSignal,
+): Promise<EventItem[]> {
+  const pages: VisitStockholmResponse[] = [];
+  for (let start = from; start <= to; start += 6) {
+    pages.push(...await Promise.all(
+      Array.from({ length: Math.min(6, to - start + 1) }, (_, index) =>
+        fetchVisitStockholmPage(start + index, signal),
+      ),
+    ));
+  }
+  return pages.flatMap(mapVisitStockholmPage);
+}
+
+async function fetchVisitStockholmSource(signal?: AbortSignal, maxPages = MAX_PAGES): Promise<EventItem[]> {
+  const firstPage = await fetchVisitStockholmPage(1, signal);
+  const pageCount = Math.min(Math.max(firstPage.total_pages ?? 1, 1), maxPages);
+  const events = mapVisitStockholmPage(firstPage);
+  if (pageCount > 1) events.push(...await fetchVisitStockholmPages(2, pageCount, signal));
+  return events;
+}
+
+/**
+ * Fyller på resten när servern bara hunnit hämta en del av sidorna (Freebuff
+ * Sites tillåter 20 subrequests per anrop). Läser total_pages ur första svaret.
+ */
+export async function fetchVisitStockholmEventsFromPage(
+  startPage: number,
+  signal?: AbortSignal,
+): Promise<EventItem[]> {
+  const first = await fetchVisitStockholmPage(startPage, signal);
+  const last = Math.max(first.total_pages ?? startPage, startPage);
+  const events = mapVisitStockholmPage(first);
+  if (last > startPage) events.push(...await fetchVisitStockholmPages(startPage + 1, last, signal));
+  return events;
 }
 
 const graphValue = (node: JsonLdNode | undefined, key: string) => textFor(node?.[key]);
@@ -264,6 +297,16 @@ async function fetchVisitSwedenEvents(signal?: AbortSignal): Promise<EventItem[]
   return events;
 }
 
+const dedupeEvents = (events: EventItem[]): EventItem[] => {
+  const seen = new Set<string>();
+  return events.filter((event) => {
+    const key = `${event.name.toLowerCase()}|${event.date}|${event.place.toLowerCase()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 export async function fetchVisitStockholmEvents(signal?: AbortSignal, options?: FetchEventsOptions): Promise<EventItem[]> {
   const maxPages = options?.maxPages;
   const results = await Promise.allSettled([
@@ -271,13 +314,7 @@ export async function fetchVisitStockholmEvents(signal?: AbortSignal, options?: 
     fetchVisitSwedenEvents(signal),
   ]);
   const all = results.flatMap((result) => result.status === "fulfilled" ? result.value : []);
-  const seen = new Set<string>();
-  return all.filter((event) => {
-    const key = `${event.name.toLowerCase()}|${event.date}|${event.place.toLowerCase()}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  return dedupeEvents(all);
 }
 
 /**
@@ -333,10 +370,21 @@ export async function fetchEventsWithCache(signal?: AbortSignal): Promise<EventI
   try {
     const response = await fetch("/api/events", { signal: signal ?? null });
     if (response.ok) {
-      const payload = (await response.json()) as { events?: EventItem[] };
+      const payload = (await response.json()) as {
+        events?: EventItem[];
+        partial?: boolean;
+        pagesFetched?: number;
+      };
       if (Array.isArray(payload.events) && payload.events.length > 0) {
-        writeBrowserDayCache(payload.events);
-        return withSources(payload.events);
+        let events = payload.events;
+        if (payload.partial) {
+          // Servern hann bara hämta en del av sidorna (Sites subrequest-tak).
+          // Fyll på resten direkt från API:t i stället för att visa en ofullständig lista.
+          const rest = await fetchVisitStockholmEventsFromPage((payload.pagesFetched ?? 0) + 1, signal);
+          events = dedupeEvents([...events, ...rest]);
+        }
+        writeBrowserDayCache(events);
+        return withSources(events);
       }
     }
   } catch {

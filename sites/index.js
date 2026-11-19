@@ -1147,37 +1147,44 @@ var fetchJson = async (url, signal) => {
   return response.json();
 };
 var fetchVisitStockholmPage = (page, signal) => fetchJson(`${VISIT_STOCKHOLM_URL}?page=${page}`, signal);
+var mapVisitStockholmPage = (page) => (page.results ?? []).flatMap((event) => {
+  if (!event.id || !event.location || typeof event.location.latitude !== "number" || typeof event.location.longitude !== "number")
+    return [];
+  const slot = firstFutureSchedule(event);
+  const candidate = slot?.date || event.start_date || "";
+  const date = validDate(candidate) ? candidate : "";
+  const normalized = toEvent({
+    id: `visit-${event.id}`,
+    title: textFor(event.title),
+    description: stripHtml(textFor(event.description)),
+    address: event.address || event.city || "Stockholm",
+    venue: event.venue_name || event.address || event.city || "Stockholm",
+    date,
+    start: slot?.start_time || event.start_time,
+    end: slot?.end_time || event.end_time,
+    lat: event.location.latitude,
+    lng: event.location.longitude,
+    url: event.external_website_url || undefined,
+    price: parsePrice(event.price) ?? parsePrice(event.price_info) ?? parsePrice(event.cost) ?? priceFromText(stripHtml(textFor(event.description))),
+    image: firstImage(event.image) || firstImage(event.images),
+    organizerId: "visit-stockholm"
+  });
+  return normalized ? [normalized] : [];
+});
+async function fetchVisitStockholmPages(from, to, signal) {
+  const pages = [];
+  for (let start = from;start <= to; start += 6) {
+    pages.push(...await Promise.all(Array.from({ length: Math.min(6, to - start + 1) }, (_, index) => fetchVisitStockholmPage(start + index, signal))));
+  }
+  return pages.flatMap(mapVisitStockholmPage);
+}
 async function fetchVisitStockholmSource(signal, maxPages = MAX_PAGES) {
   const firstPage = await fetchVisitStockholmPage(1, signal);
   const pageCount = Math.min(Math.max(firstPage.total_pages ?? 1, 1), maxPages);
-  const pages = [firstPage];
-  for (let start = 2;start <= pageCount; start += 6) {
-    pages.push(...await Promise.all(Array.from({ length: Math.min(6, pageCount - start + 1) }, (_, index) => fetchVisitStockholmPage(start + index, signal))));
-  }
-  return pages.flatMap((page) => page.results ?? []).flatMap((event) => {
-    if (!event.id || !event.location || typeof event.location.latitude !== "number" || typeof event.location.longitude !== "number")
-      return [];
-    const slot = firstFutureSchedule(event);
-    const candidate = slot?.date || event.start_date || "";
-    const date = validDate(candidate) ? candidate : "";
-    const normalized = toEvent({
-      id: `visit-${event.id}`,
-      title: textFor(event.title),
-      description: stripHtml(textFor(event.description)),
-      address: event.address || event.city || "Stockholm",
-      venue: event.venue_name || event.address || event.city || "Stockholm",
-      date,
-      start: slot?.start_time || event.start_time,
-      end: slot?.end_time || event.end_time,
-      lat: event.location.latitude,
-      lng: event.location.longitude,
-      url: event.external_website_url || undefined,
-      price: parsePrice(event.price) ?? parsePrice(event.price_info) ?? parsePrice(event.cost) ?? priceFromText(stripHtml(textFor(event.description))),
-      image: firstImage(event.image) || firstImage(event.images),
-      organizerId: "visit-stockholm"
-    });
-    return normalized ? [normalized] : [];
-  });
+  const events = mapVisitStockholmPage(firstPage);
+  if (pageCount > 1)
+    events.push(...await fetchVisitStockholmPages(2, pageCount, signal));
+  return events;
 }
 var graphValue = (node, key) => textFor(node?.[key]);
 var refId = (value) => {
@@ -1256,6 +1263,16 @@ async function fetchVisitSwedenEvents(signal) {
   }
   return events;
 }
+var dedupeEvents = (events) => {
+  const seen = new Set;
+  return events.filter((event) => {
+    const key = `${event.name.toLowerCase()}|${event.date}|${event.place.toLowerCase()}`;
+    if (seen.has(key))
+      return false;
+    seen.add(key);
+    return true;
+  });
+};
 async function fetchVisitStockholmEvents(signal, options) {
   const maxPages = options?.maxPages;
   const results = await Promise.allSettled([
@@ -1263,14 +1280,7 @@ async function fetchVisitStockholmEvents(signal, options) {
     fetchVisitSwedenEvents(signal)
   ]);
   const all = results.flatMap((result) => result.status === "fulfilled" ? result.value : []);
-  const seen = new Set;
-  return all.filter((event) => {
-    const key = `${event.name.toLowerCase()}|${event.date}|${event.place.toLowerCase()}`;
-    if (seen.has(key))
-      return false;
-    seen.add(key);
-    return true;
-  });
+  return dedupeEvents(all);
 }
 
 // functions/api/events.ts
@@ -1308,7 +1318,16 @@ var onRequestGet2 = async ({ request, env }) => {
         "cache-control": "public, max-age=120"
       });
     }
-    const body = json2({ events, count: events.length, day, generatedAt: new Date().toISOString(), source: "visit-stockholm" }, 200, { "cache-control": `public, max-age=${CACHE_TTL_SECONDS2}` });
+    const partial = pageLimit < MAX_PAGES2;
+    const body = json2({
+      events,
+      count: events.length,
+      day,
+      generatedAt: new Date().toISOString(),
+      source: "visit-stockholm",
+      partial,
+      pagesFetched: pageLimit
+    }, 200, { "cache-control": `public, max-age=${CACHE_TTL_SECONDS2}` });
     const cacheResponse = body.clone();
     cache.put(cacheRequest, cacheResponse).catch(() => {
       return;
