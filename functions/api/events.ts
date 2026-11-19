@@ -12,9 +12,12 @@
 // Samma hämtnings- och mappningslogik som klienten använder – full trohet mot
 // hur pris, kategorier, tider och bilder tolkas. Körs här i Cloudflaras runtime.
 import { fetchVisitStockholmEvents } from "../../src/lib/visitstockholm";
+import { edgeCache } from "./cache";
 
 interface Env {
-  // reserverad för framtida API-nycklar
+  // Freebuff Sites tillåter bara 20 subrequests per anrop, så workern sätter
+  // den här till ett lägre värde än standarden nedan.
+  EVENTS_MAX_PAGES?: string;
 }
 
 const CACHE_TTL_SECONDS = 60 * 60 * 24; // 24 h
@@ -32,7 +35,12 @@ function json(data: unknown, status = 200, extraHeaders: Record<string, string> 
   });
 }
 
-export const onRequestGet: PagesFunction<Env> = async ({ request }) => {
+export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
+  const requestedPages = Number(env?.EVENTS_MAX_PAGES);
+  const pageLimit =
+    Number.isFinite(requestedPages) && requestedPages > 0
+      ? Math.min(requestedPages, MAX_PAGES)
+      : MAX_PAGES;
   const day = new Date().toISOString().slice(0, 10);
   // Cache-nyckel: den inkommande URL:en + dagens datum. Nyckeln byts vid midnatt,
   // så cachen förnyas automatiskt – och CACHE_STAMP ogiltigförklarar vid kodändring.
@@ -40,15 +48,19 @@ export const onRequestGet: PagesFunction<Env> = async ({ request }) => {
   cacheKey.searchParams.set("day", day);
   cacheKey.searchParams.set("v", CACHE_STAMP);
   const cacheRequest = new Request(cacheKey.toString(), { method: "GET" });
-  const cache = caches.default;
+  const cache = await edgeCache();
 
   const cached = await cache.match(cacheRequest);
   if (cached) {
-    return new Response(cached.body, { status: cached.status, headers: { ...cached.headers, "x-hander-cache": "hit" } });
+    const headers = new Headers(cached.headers);
+    headers.set("x-hander-cache", "hit");
+    return new Response(cached.body, { status: cached.status, headers });
   }
 
   try {
-    const events = await fetchVisitStockholmEvents(AbortSignal.timeout(UPSTREAM_TIMEOUT_MS), { maxPages: MAX_PAGES });
+    const events = await fetchVisitStockholmEvents(AbortSignal.timeout(UPSTREAM_TIMEOUT_MS), {
+      maxPages: pageLimit,
+    });
     if (events.length === 0) {
       // Cache:a ett kortvarigt tomt svar så att en tillfälligt felande källa
       // inte utlöser en storm av anrop från alla besökare samtidigt.
@@ -64,7 +76,9 @@ export const onRequestGet: PagesFunction<Env> = async ({ request }) => {
     const cacheResponse = body.clone();
     // fire-and-forget cache-skrivning; svaret till användaren väntar inte på det
     void cache.put(cacheRequest, cacheResponse).catch(() => undefined);
-    return new Response(body.body, { status: 200, headers: { ...body.headers, "x-hander-cache": "miss" } });
+    const headers = new Headers(body.headers);
+    headers.set("x-hander-cache", "miss");
+    return new Response(body.body, { status: 200, headers });
   } catch (error) {
     const reason = error instanceof Error ? error.message : "okänt fel";
     return json({ events: [], error: `kunde inte hämta events: ${reason}` }, 503, {

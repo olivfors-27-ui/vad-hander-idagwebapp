@@ -5,6 +5,8 @@
 // Endast bild-URL returneras – webbläsaren laddar bilden direkt från
 // arrangörens server, så inget kopieras eller lagras permanent hos oss.
 
+import { edgeCache } from "./cache";
+
 interface Env {
   // reserverad för framtida API-nycklar
 }
@@ -135,7 +137,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   }
 
   const cacheKey = new Request(`https://event-image-cache.hander.internal/?url=${encodeURIComponent(parsedTarget.toString())}`, { method: "GET" });
-  const cache = caches.default;
+  const cache = await edgeCache();
   const cached = await cache.match(cacheKey);
   if (cached) return cached;
 
