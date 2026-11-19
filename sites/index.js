@@ -216,20 +216,6 @@ var onRequestGet = async ({ request, env }) => {
   }
 };
 
-// src/lib/hander-data.ts
-var pad = (n) => String(n).padStart(2, "0");
-var toISODate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-var base = new Date;
-base.setHours(12, 0, 0, 0);
-var dayOffset = (n) => {
-  const d = new Date(base);
-  d.setDate(d.getDate() + n);
-  return toISODate(d);
-};
-var TODAY = dayOffset(0);
-var TOMORROW = dayOffset(1);
-var MAP_CENTER = { lat: 59.3293, lng: 18.0686 };
-
 // src/lib/event-source.ts
 var RAW = [
   ["John Scott’s Kungsgatan", "https://www.johnscotts.se", "sport"],
@@ -972,6 +958,20 @@ var curatedCategoryFor = (event) => {
   const match = findCurated(event);
   return match?.exact ? match.venue.category : undefined;
 };
+
+// src/lib/hander-data.ts
+var pad = (n) => String(n).padStart(2, "0");
+var toISODate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+var base = new Date;
+base.setHours(12, 0, 0, 0);
+var dayOffset = (n) => {
+  const d = new Date(base);
+  d.setDate(d.getDate() + n);
+  return toISODate(d);
+};
+var TODAY = dayOffset(0);
+var TOMORROW = dayOffset(1);
+var MAP_CENTER = { lat: 59.3293, lng: 18.0686 };
 
 // src/lib/event-category.ts
 var LETTERS = "a-zåäö0-9";

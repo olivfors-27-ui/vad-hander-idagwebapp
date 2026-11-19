@@ -58,11 +58,15 @@ export function MapLegend() {
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
       <span className="flex items-center gap-1">
         <span className="h-3 w-3 rounded-full border-2 border-white bg-[#E45048] shadow-sm" />
-        Event
+        Fast plats
       </span>
       <span className="flex items-center gap-1">
-        <span className="h-3 w-3 rounded-full border-2 border-white bg-[#0F766E] shadow-sm" />
-        Plats
+        <span className="h-3 w-3 rounded-full border-2 border-white bg-[#465BC4] shadow-sm" />
+        Temporärt event
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="h-3 w-3 rounded-full border-2 border-white bg-[#15803D] shadow-sm" />
+        Plats med event
       </span>
       <span>Tryck på en grupp för att zooma in</span>
     </div>

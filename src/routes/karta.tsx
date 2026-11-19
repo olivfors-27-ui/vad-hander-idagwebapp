@@ -7,7 +7,7 @@ import { FilterButton, FilterSheet, QuickFilters, SortBar } from "@/components/h
 import { MapCanvas } from "@/components/hander/MapCanvas";
 import { ShareSheet } from "@/components/hander/ShareSheet";
 import { SourceTabs } from "@/components/hander/SourceTabs";
-import { matchesSourceTab, type SourceTab } from "@/lib/event-source";
+import type { SourceTab } from "@/lib/event-source";
 import {
   CATEGORY_GRADIENT,
   PLACE_TYPES,
@@ -53,11 +53,16 @@ function MapPage() {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [overlayHeight, setOverlayHeight] = useState(112);
 
+  // Fasta platser är permanenta ställen; event är alltid tillfälliga. Därför
+  // visar Fasta-fliken inga event alls, och Event-fliken inga platser.
+  const showPlaces = source !== "event";
+  const visiblePlaces = useMemo(
+    () => (showPlaces ? store.places : []),
+    [showPlaces, store.places],
+  );
   const all = useMemo(
     () =>
-      [...store.publicEvents, ...store.myPrivateEvents].filter((event) =>
-        matchesSourceTab(event, source),
-      ),
+      source === "fasta" ? [] : [...store.publicEvents, ...store.myPrivateEvents],
     [store.publicEvents, store.myPrivateEvents, source],
   );
   const events = useMemo(() => sortEvents(filterEvents(all, filters), sort), [all, filters, sort]);
@@ -82,7 +87,9 @@ function MapPage() {
       subtitle={
         store.apiLoading
           ? "Läser in event från Visit Stockholm…"
-          : `${events.length} event nära dig`
+          : source === "fasta"
+            ? `${visiblePlaces.length} fasta platser nära dig`
+            : `${events.length} event nära dig`
       }
     >
       {/* Verktygsraden hör bara till listvyn – i kartvyn ligger filtren som overlay
@@ -136,10 +143,10 @@ function MapPage() {
           <div className="absolute inset-0">
             <MapCanvas
               events={events}
-              places={store.places}
+              places={visiblePlaces}
               zoomable
               searchable
-              showPlaces
+              showPlaces={showPlaces}
               selectedId={selected?.id ?? selectedPlace?.id ?? null}
               searchTop={overlayHeight + 8}
               bottomInset={96}
@@ -183,7 +190,9 @@ function MapPage() {
             style={{ bottom: "calc(92px + env(safe-area-inset-bottom))" }}
           >
             <span className="rounded-full bg-white/85 px-2.5 py-1 text-[10px] font-semibold text-foreground/60 shadow-sm backdrop-blur">
-              {events.length} träffar · {source === "event" ? "temporära" : source === "fasta" ? "fasta" : "alla"} event
+              {source === "fasta"
+                ? `${visiblePlaces.length} fasta platser`
+                : `${events.length} träffar · ${source === "event" ? "temporära event" : "alla event"}`}
             </span>
           </div>
 
@@ -197,11 +206,49 @@ function MapPage() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">Lista</p>
-                <p className="mt-0.5 text-sm font-semibold">{events.length} event att välja mellan</p>
+                <p className="mt-0.5 text-sm font-semibold">
+                  {source === "fasta"
+                    ? `${visiblePlaces.length} ställen att gå till när som helst`
+                    : `${events.length} event att välja mellan`}
+                </p>
               </div>
               <List className="h-5 w-5 text-primary" aria-hidden />
             </div>
           </div>
+          {source === "fasta" ? (
+            <>
+              {visiblePlaces.map((place) => {
+                const meta = PLACE_TYPES[place.type];
+                return (
+                  <button
+                    key={place.id}
+                    type="button"
+                    onClick={() => setSelectedPlace(place)}
+                    className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-3 text-left shadow-[var(--shadow-card)]"
+                  >
+                    <span
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#E45048] text-base text-white"
+                      aria-hidden
+                    >
+                      {meta?.emoji ?? "📍"}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-bold">{place.name}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {meta?.label ?? "Plats"} · {place.address}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+              {visiblePlaces.length === 0 && (
+                <p className="py-10 text-center text-sm text-muted-foreground">
+                  Inga fasta platser med koordinater än.
+                </p>
+              )}
+            </>
+          ) : (
+            <>
           <SortBar sort={sort} setSort={setSort} />
           {Object.entries(
             events.reduce<Record<string, EventItem[]>>((acc, e) => {
@@ -223,6 +270,8 @@ function MapPage() {
             <p className="py-10 text-center text-sm text-muted-foreground">
               Inga event matchar dina filter.
             </p>
+          )}
+            </>
           )}
         </div>
       )}

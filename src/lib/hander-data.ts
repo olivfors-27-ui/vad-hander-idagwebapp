@@ -1,5 +1,7 @@
 // Mock data för Händer-prototypen. All data är fiktiv.
 
+import { CURATED_PLACES } from "./curated-places";
+
 export type CategoryId =
   | "musik"
   | "fest"
@@ -242,8 +244,11 @@ export const INITIAL_FOLLOWING: string[] = [];
 /** Ingen demodata: events skapas av riktiga användare eller hämtas från riktiga källor. */
 export const EVENTS: EventItem[] = [];
 
-/** Inga demoplatser. Platser läggs till via förslag med riktig adress. */
-export const PLACES: Place[] = [];
+/**
+ * Fasta platser: den kuraterade listan, geokodad till riktiga koordinater.
+ * Användarförslag läggs till ovanpå i storen.
+ */
+export const PLACES: Place[] = CURATED_PLACES;
 
 /** Startvy för kartan (Stockholm) tills användarens position är känd. */
 export const MAP_CENTER = { lat: 59.3293, lng: 18.0686 };

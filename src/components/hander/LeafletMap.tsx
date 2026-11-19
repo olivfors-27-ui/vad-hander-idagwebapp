@@ -62,6 +62,19 @@ const withTemporaryRing = (shadow: string, temporary: boolean) =>
 
 const PIN_SHADOW = "0 2px 8px #17202a88";
 
+/** Färgerna som skiljer fasta platser från temporära event. */
+const FAST_COLOR = "#E45048";
+const TEMPORARY_COLOR = "#465BC4";
+const BOTH_COLOR = "#15803D";
+
+/** Jämför platsnamn mellan listan och API:ts platsfält. */
+const normalizePlaceName = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/["“”]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
 type EventPinOptions = {
   category: EventItem["category"];
   color: string;
@@ -123,9 +136,14 @@ function MapLayers({
     const markers = events.flatMap((event) => {
       const geo = geoOf(event);
       if (!geo) return [];
-      const color =
-        event.visibility === "private" ? "#64748b" : (CATEGORY_COLOR[event.category] ?? "#E45048");
       const temporary = isTemporaryEvent(event);
+      // Temporära event är blå; appens egna event behåller sin kategori.
+      const color =
+        event.visibility === "private"
+          ? "#64748b"
+          : temporary
+            ? TEMPORARY_COLOR
+            : (CATEGORY_COLOR[event.category] ?? FAST_COLOR);
       const marker = L.marker([geo.lat, geo.lng], {
         icon: eventPin({
           category: event.category,
@@ -445,11 +463,18 @@ export function LeafletMap({
     ? savedView
     : { lat: fallbackCenter.lat, lng: fallbackCenter.lng, zoom: initialZoom };
   const center: LatLngExpression = [view.lat, view.lng];
+  const eventPlaces = useMemo(
+    () => new Set(events.map((event) => normalizePlaceName(event.place))),
+    [events],
+  );
   const placeItems = showPlaces
     ? places.flatMap((place) => {
         const geo = geoOf(place);
         const type = PLACE_TYPES[place.type];
-        return geo && type ? [{ place, geo, type }] : [];
+        if (!geo || !type) return [];
+        // Grön när platsen också har event, annars röd (fast plats).
+        const color = eventPlaces.has(normalizePlaceName(place.name)) ? BOTH_COLOR : FAST_COLOR;
+        return [{ place, geo, type, color }];
       })
     : [];
 
@@ -482,11 +507,11 @@ export function LeafletMap({
           maxZoom={19}
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
-        {placeItems.map(({ place, geo, type }) => (
+        {placeItems.map(({ place, geo, color }) => (
           <Marker
             key={place.id}
             position={[geo.lat, geo.lng]}
-            icon={placePin(type.color)}
+            icon={placePin(color)}
             title={place.name}
             alt={place.name}
             eventHandlers={{ click: () => onSelectPlace?.(place) }}
