@@ -22,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { isInSweden } from "@/lib/geocode";
+import { isTemporaryEvent } from "@/lib/event-source";
 import { CATEGORY_COLOR, PLACE_TYPES, geoOf, type EventItem, type Place } from "@/lib/hander-data";
 import { isHappeningNow, useHander } from "@/lib/hander-store";
 import { DEFAULT_MAP_VIEW, readMapView, saveMapView } from "@/lib/map-view";
@@ -52,21 +53,36 @@ const escapeHtml = (value: string) =>
     };
     return entities[character] ?? character;
   });
-const eventPin = (
-  category: EventItem["category"],
-  color: string,
-  live: boolean,
-  selected: boolean,
-) => {
+/**
+ * Grå markering för temporära API-event. Färgen kommer från CSS-variabeln som
+ * flödeskorten också använder, så karta och flöde aldrig kan glida isär.
+ */
+const withTemporaryRing = (shadow: string, temporary: boolean) =>
+  temporary ? `${shadow},0 0 0 3px var(--hander-api-ring)` : shadow;
+
+const PIN_SHADOW = "0 2px 8px #17202a88";
+
+type EventPinOptions = {
+  category: EventItem["category"];
+  color: string;
+  live: boolean;
+  selected: boolean;
+  temporary: boolean;
+};
+
+const eventPin = ({ category, color, live, selected, temporary }: EventPinOptions) => {
   const Icon = CATEGORY_ICON[category] ?? Sparkles;
   const iconHtml = renderToStaticMarkup(<Icon size={17} strokeWidth={2.4} aria-hidden="true" />);
+  const label = temporary ? `${category}, temporärt event` : category;
+  const classes = cn("hander-pin-dot", selected && "is-selected", temporary && "is-temporary");
   return divIcon({
     className: "hander-leaflet-pin",
-    html: `<span class="hander-pin-dot${selected ? " is-selected" : ""}" role="img" aria-label="${escapeHtml(category)}" style="position:relative;display:grid;width:38px;height:38px;place-items:center;border:3px solid #fff;border-radius:50% 50% 50% 8px;background:${color};color:#fff;box-shadow:0 2px 8px #17202a88;transform:rotate(-45deg);--pin-icon-size:17px;${selected ? "outline:3px solid #394fc4;outline-offset:2px;" : ""}"><span aria-hidden="true" style="display:grid;place-items:center;transform:rotate(45deg)">${iconHtml}</span>${live ? '<i aria-hidden="true" style="position:absolute;top:-3px;right:-3px;width:10px;height:10px;border:2px solid #fff;border-radius:50%;background:#22c55e"></i>' : ""}</span>`,
+    html: `<span class="${classes}" role="img" aria-label="${escapeHtml(label)}" style="position:relative;display:grid;width:38px;height:38px;place-items:center;border:3px solid #fff;border-radius:50% 50% 50% 8px;background:${color};color:#fff;box-shadow:${withTemporaryRing(PIN_SHADOW, temporary)};transform:rotate(-45deg);--pin-icon-size:17px;${selected ? "outline:3px solid #394fc4;outline-offset:2px;" : ""}"><span aria-hidden="true" style="display:grid;place-items:center;transform:rotate(45deg)">${iconHtml}</span>${live ? '<i aria-hidden="true" style="position:absolute;top:-3px;right:-3px;width:10px;height:10px;border:2px solid #fff;border-radius:50%;background:#22c55e"></i>' : ""}</span>`,
     iconSize: [42, 48],
     iconAnchor: [21, 46],
   });
 };
+
 const placePin = (color: string) =>
   divIcon({
     className: "hander-leaflet-place",
@@ -74,11 +90,13 @@ const placePin = (color: string) =>
     iconSize: [30, 30],
     iconAnchor: [15, 15],
   });
-const clusterIcon = (cluster: { getChildCount: () => number }) => {
+
+const clusterIcon = (cluster: L.MarkerCluster) => {
   const count = cluster.getChildCount();
   const size = count > 99 ? 48 : 42;
+  // Klusterbollen är blå och räknar event – den bär ingen egen markering.
   return divIcon({
-    html: `<span class="hander-cluster-label" style="display:grid;width:100%;height:100%;place-items:center;border:3px solid #fff;border-radius:50%;background:#394fc4;color:#fff;font-size:13px;font-weight:800;box-shadow:0 2px 8px #17202a88">${count}</span>`,
+    html: `<span class="hander-cluster-label" role="img" aria-label="${count} event" style="display:grid;width:100%;height:100%;place-items:center;border:3px solid #fff;border-radius:50%;background:#394fc4;color:#fff;font-size:13px;font-weight:800;box-shadow:${PIN_SHADOW}">${count}</span>`,
     className: "hander-leaflet-cluster",
     iconSize: point(size, size),
   });
@@ -107,8 +125,15 @@ function MapLayers({
       if (!geo) return [];
       const color =
         event.visibility === "private" ? "#64748b" : (CATEGORY_COLOR[event.category] ?? "#E45048");
+      const temporary = isTemporaryEvent(event);
       const marker = L.marker([geo.lat, geo.lng], {
-        icon: eventPin(event.category, color, isHappeningNow(event), selectedId === event.id),
+        icon: eventPin({
+          category: event.category,
+          color,
+          live: isHappeningNow(event),
+          selected: selectedId === event.id,
+          temporary,
+        }),
         title: event.name,
         alt: event.name,
         keyboard: true,

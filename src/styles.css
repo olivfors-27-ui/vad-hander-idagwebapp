@@ -111,6 +111,9 @@
   --section-blue: #465bc4;
   --map: #ffffff;
   --map-road: #fffdf9;
+  /* Enda källan för markeringen av temporära API-event. Flödeskort,
+     kartnålar och klusterbollar läser samma variabel. */
+  --hander-api-ring: #8f877e;
   --map-water: #d7ddf5;
   --map-park: #e2f0d8;
   --chart-1: #e57657;
@@ -1442,4 +1445,1321 @@
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.02em;
+}
+
+/* ---------------------------------------------------------------- desktop
+   Mobilen (<1024px) rörs inte: allt här nedanför aktiveras först när
+   DesktopShell renderas, och den renderas bara på ≥1024px. */
+
+.hander-desktop {
+  min-height: 100svh;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.hander-desktop :focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.hander-desktop-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 50;
+  display: flex;
+  width: 72px;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 8px calc(12px + env(safe-area-inset-bottom));
+  background: #fffdf9;
+  border-right: 1px solid var(--border);
+  transition: width 200ms ease;
+}
+
+.hander-sidebar-top {
+  padding: 4px 0 10px;
+}
+
+.hander-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 6px;
+  border-radius: 14px;
+  color: var(--foreground);
+}
+
+.hander-logo-mark {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #e57657, #e45048);
+  color: #fffdf9;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.hander-sidebar-nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.hander-sidebar-item {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 600;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.hander-sidebar-item:hover {
+  background: var(--accent);
+}
+
+.hander-sidebar-item.is-active {
+  background: var(--accent);
+  color: #2a2421;
+  font-weight: 800;
+}
+
+.hander-sidebar-icon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  place-items: center;
+}
+
+.hander-sidebar-item.is-create .hander-sidebar-icon {
+  border-radius: 10px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.hander-sidebar-avatar {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--accent);
+  font-size: 17px;
+}
+
+.hander-sidebar-badge {
+  position: absolute;
+  top: 5px;
+  left: 30px;
+  display: flex;
+  min-width: 17px;
+  height: 17px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 2px solid #fffdf9;
+  background: var(--destructive);
+  padding: 0 4px;
+  color: #fffdf9;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.hander-nav-label {
+  display: none;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hander-sidebar-bottom {
+  position: relative;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.hander-more-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 50;
+  width: 220px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--popover);
+  box-shadow: var(--shadow-float);
+}
+
+.hander-more-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.hander-more-item:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.hander-desktop-body {
+  display: flex;
+  min-height: 100svh;
+  margin-left: 72px;
+  justify-content: center;
+  gap: 32px;
+  padding: 0 24px;
+  transition: margin-left 200ms ease;
+}
+
+.hander-desktop-main {
+  position: relative;
+  width: 100%;
+  max-width: 1100px;
+  min-height: 100svh;
+  padding: 28px 0 64px;
+}
+
+.hander-desktop[data-layout="feed"] .hander-desktop-main {
+  max-width: 630px;
+}
+
+.hander-desktop[data-layout="wide"] .hander-desktop-main {
+  max-width: 975px;
+}
+
+.hander-desktop-main--modal {
+  max-width: 760px;
+  padding-top: 40px;
+}
+
+.hander-desktop-main--map {
+  max-width: none;
+  height: 100svh;
+  overflow: hidden;
+  padding: 0;
+}
+
+.hander-desktop-heading {
+  padding-bottom: 20px;
+}
+
+.hander-desktop-rail {
+  display: none;
+  position: sticky;
+  top: 0;
+  width: 320px;
+  max-height: 100svh;
+  flex-shrink: 0;
+  align-self: flex-start;
+  overflow-y: auto;
+  padding: 30px 0 40px;
+}
+
+.hander-rail-card {
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--card);
+  padding: 14px;
+  box-shadow: var(--shadow-card);
+}
+
+/* Paneler (sök och notiser) */
+
+.hander-panel-backdrop {
+  position: fixed;
+  inset: 0 0 0 72px;
+  z-index: 45;
+  background: rgb(42 36 33 / 0.34);
+  animation: hander-fade-in 180ms ease-out;
+}
+
+.hander-panel {
+  position: fixed;
+  inset: 0 auto 0 72px;
+  z-index: 60;
+  display: flex;
+  width: min(400px, calc(100vw - 72px));
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: #fffdf9;
+  animation: hander-panel-in 200ms ease-out;
+}
+
+.hander-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 16px 12px;
+}
+
+.hander-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 16px 24px;
+}
+
+.hander-panel-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 14px;
+  padding: 10px;
+  transition: background-color 150ms ease;
+}
+
+.hander-panel-row:hover {
+  background: var(--muted);
+}
+
+.hander-search-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--muted);
+  padding: 11px 14px;
+}
+
+/* Hemflödet */
+
+.hander-home-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+}
+
+.hander-home-create {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  background: var(--primary);
+  padding: 9px 16px;
+  color: var(--primary-foreground);
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: var(--shadow-pin);
+  transition:
+    transform 150ms ease,
+    background-color 150ms ease;
+}
+
+.hander-home-create:hover {
+  background: var(--accent-foreground);
+}
+
+.hander-bubbles {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 4px 2px 16px;
+  scrollbar-width: none;
+}
+
+.hander-bubbles::-webkit-scrollbar {
+  display: none;
+}
+
+.hander-bubble {
+  display: flex;
+  width: 78px;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.hander-bubble-ring {
+  display: block;
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  padding: 3px;
+  transition: transform 150ms ease;
+}
+
+.hander-bubble:hover .hander-bubble-ring {
+  transform: scale(1.04);
+}
+
+.hander-bubble.is-active .hander-bubble-ring {
+  background: var(--foreground) !important;
+}
+
+.hander-bubble-inner {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  overflow: hidden;
+  border: 3px solid var(--background);
+  border-radius: 999px;
+  background: var(--background);
+  font-size: 26px;
+}
+
+.hander-bubble-label {
+  max-width: 78px;
+  overflow: hidden;
+  color: var(--foreground);
+  font-size: 11px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hander-bubble.is-active .hander-bubble-label {
+  font-weight: 800;
+}
+
+.hander-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.hander-feed-card {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+}
+
+.hander-feed-state {
+  border: 1px dashed var(--border);
+  border-radius: 24px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.hander-load-more {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  padding: 13px;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 800;
+  transition: background-color 150ms ease;
+}
+
+.hander-load-more:hover {
+  background: var(--accent);
+}
+
+.hander-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  background: var(--muted);
+  padding: 8px 12px;
+  color: var(--secondary-foreground);
+  font-size: 12px;
+  font-weight: 700;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.hander-action:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.hander-action.is-on {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+@keyframes hander-panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes hander-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (min-width: 1264px) {
+  .hander-desktop-sidebar {
+    width: 244px;
+    padding-inline: 14px;
+  }
+
+  .hander-desktop[data-panel="true"] .hander-desktop-sidebar {
+    width: 72px;
+    padding-inline: 8px;
+  }
+
+  .hander-desktop[data-panel="false"] .hander-nav-label {
+    display: block;
+  }
+
+  .hander-desktop-body {
+    margin-left: 244px;
+  }
+
+  .hander-desktop[data-panel="true"] .hander-desktop-body {
+    margin-left: 72px;
+  }
+
+  .hander-desktop-rail {
+    display: block;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hander-panel,
+  .hander-panel-backdrop,
+  .hander-sidebar-item,
+  .hander-desktop-body,
+  .hander-desktop-sidebar,
+  .hander-bubble-ring,
+  .hander-home-create,
+  .hander-action {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Utforska */
+
+.hander-explore-search {
+  display: flex;
+  max-width: 520px;
+  align-items: center;
+  gap: 10px;
+  margin: 8px auto 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--muted);
+  padding: 12px 18px;
+}
+
+.hander-explore-tab {
+  position: relative;
+  padding: 10px 0;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.hander-explore-tab.is-active {
+  color: var(--foreground);
+  font-weight: 800;
+}
+
+.hander-explore-tab.is-active::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: var(--foreground);
+  content: "";
+}
+
+.hander-explore-grid {
+  columns: 4;
+  column-gap: 12px;
+}
+
+.hander-explore-tile {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  margin-bottom: 12px;
+  overflow: hidden;
+  break-inside: avoid;
+  border-radius: 14px;
+  background: var(--muted);
+}
+
+.hander-explore-tile.is-tall {
+  aspect-ratio: 3 / 4;
+}
+
+.hander-explore-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 10px;
+  background: linear-gradient(to top, rgb(0 0 0 / 0.72), transparent 55%);
+  color: #fff;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.hander-explore-tile:hover .hander-explore-overlay,
+.hander-explore-tile:focus-visible .hander-explore-overlay {
+  opacity: 1;
+}
+
+.hander-explore-badges {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+/* Profil */
+
+.hander-profile-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 32px;
+  padding-bottom: 22px;
+}
+
+.hander-profile-avatar {
+  display: grid;
+  width: 120px;
+  height: 120px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--accent);
+  font-size: 56px;
+}
+
+.hander-profile-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 12px;
+  background: var(--muted);
+  padding: 9px 14px;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 700;
+  transition: background-color 150ms ease;
+}
+
+.hander-profile-button:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.hander-profile-button.is-active {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.hander-profile-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 12px;
+  background: var(--primary);
+  padding: 9px 16px;
+  color: var(--primary-foreground);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.hander-profile-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  border-top: 1px solid var(--border);
+}
+
+.hander-profile-tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 0;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hander-profile-tab.is-active {
+  color: var(--foreground);
+}
+
+.hander-profile-tab.is-active::after {
+  position: absolute;
+  top: -1px;
+  right: 0;
+  left: 0;
+  height: 2px;
+  background: var(--foreground);
+  content: "";
+}
+
+.hander-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.hander-profile-tile {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--muted);
+}
+
+.hander-profile-tile-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 10px;
+  background: linear-gradient(to top, rgb(0 0 0 / 0.72), transparent 55%);
+  color: #fff;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.hander-profile-tile:hover .hander-profile-tile-overlay,
+.hander-profile-tile:focus-visible .hander-profile-tile-overlay {
+  opacity: 1;
+}
+
+/* Inställningar */
+
+.hander-settings {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 36px;
+  padding-top: 4px;
+}
+
+.hander-settings-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hander-settings-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  transition: background-color 150ms ease;
+}
+
+.hander-settings-item:hover {
+  background: var(--muted);
+}
+
+.hander-settings-item.is-active {
+  background: var(--accent);
+  color: #2a2421;
+  font-weight: 800;
+}
+
+.hander-settings-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card);
+  padding: 14px 16px;
+}
+
+.hander-settings-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--border);
+  transition: background-color 150ms ease;
+}
+
+.hander-settings-switch span {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--background);
+  transition: left 150ms ease;
+}
+
+.hander-settings-switch.is-on {
+  background: var(--primary);
+}
+
+.hander-settings-switch.is-on span {
+  left: 22px;
+}
+
+@media (max-width: 1023px) {
+  .hander-settings {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .hander-settings-menu {
+    flex-direction: row;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .hander-settings-item {
+    flex-shrink: 0;
+  }
+}
+
+/* Eventdetaljer på desktop: bild till vänster, information till höger */
+
+.hander-desktop-main--event {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  align-items: start;
+  gap: 24px;
+  max-width: 1100px;
+  padding-top: 24px;
+}
+
+.hander-desktop-main--event > .event-page:first-of-type {
+  position: sticky;
+  top: 24px;
+  grid-row: 1 / span 2;
+  grid-column: 1;
+  height: calc(100svh - 48px);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 28px;
+}
+
+.hander-desktop-main--event > .event-page:first-of-type > div:first-child {
+  height: 100%;
+}
+
+.hander-desktop-main--event > .event-page:nth-of-type(2) {
+  grid-row: 1;
+  grid-column: 2;
+  padding: 0 4px 24px;
+}
+
+.hander-desktop-main--event .event-actions-dock {
+  position: static;
+  grid-row: 2;
+  grid-column: 2;
+  max-width: none;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+}
+
+.hander-desktop-main--map .map-list-view {
+  padding-top: 28px;
+}
+
+/* På desktop ska appen fylla fönstret – inte sitta i telefonramens body-padding. */
+@media (min-width: 1024px) {
+  body {
+    padding: 0;
+    background: var(--background);
+  }
+
+  .hander-desktop[data-layout="wide"] .hander-desktop-main--map,
+  .hander-desktop[data-layout="page"] .hander-desktop-main--map {
+    max-width: none;
+  }
+}
+
+/* Skapa event som modal på desktop */
+
+.hander-modal-backdrop {
+  position: fixed;
+  inset: 0 0 0 72px;
+  z-index: 5;
+  background: rgb(42 36 33 / 0.34);
+}
+
+.hander-modal-card {
+  position: relative;
+  z-index: 10;
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  background: var(--card);
+  padding: 22px;
+  box-shadow: var(--shadow-float);
+}
+
+.hander-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  display: flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.hander-modal-close:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+/* Eventsidans varma kortpalett gäller även desktopversionen. */
+.hander-desktop-main--event .event-page .bg-secondary\/70 {
+  border: 1px solid rgba(74, 45, 36, 0.14);
+  background: #ffffff;
+  box-shadow: 0 2px 10px -6px rgba(34, 34, 59, 0.2);
+}
+
+.hander-desktop-main--event .event-page .bg-secondary\/70 p {
+  color: #2a2421;
+}
+
+.hander-desktop-main--event .event-page .bg-secondary\/70 p:first-child {
+  color: #b08a6e;
+}
+
+.hander-desktop-main--event .event-page .bg-secondary\/70 .text-muted-foreground {
+  color: #8c7a6b;
+}
+
+.hander-desktop-main--event .event-page .bg-accent\/50 {
+  border: 1px dashed rgba(228, 80, 72, 0.4);
+  background: #ffffff;
+}
+
+.hander-desktop-main--event .event-page .bg-accent\/50 .text-muted-foreground {
+  color: #8c7a6b;
+}
+
+/* ------------------------------------------------------- desktop atmosfär
+   Samma varma identitet som mobilen, men med djup: mjuka gradientlager bakom
+   innehållet, en handritad squiggle under rubriken och en orkestrerad
+   inladdning i stället för spridda småeffekter. Allt är skopat till desktop. */
+
+.hander-desktop {
+  background-color: #fdfbf8;
+  background-image:
+    radial-gradient(56rem 34rem at 8% -10%, rgba(229, 118, 87, 0.14), transparent 60%),
+    radial-gradient(44rem 30rem at 92% 2%, rgba(98, 123, 216, 0.1), transparent 62%),
+    radial-gradient(50rem 34rem at 62% 108%, rgba(234, 178, 79, 0.13), transparent 64%);
+  background-attachment: fixed;
+}
+
+.hander-desktop-sidebar {
+  background: linear-gradient(180deg, #fffdf9 0%, #fbf5ee 100%);
+}
+
+/* Rubriken får en egen liten squiggle – samma handskrivna språk som sektionerna. */
+.hander-home-head h1 {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 9px;
+}
+.hander-home-head h1::after {
+  position: absolute;
+  right: 2px;
+  bottom: 0;
+  left: 1px;
+  height: 9px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 32' preserveAspectRatio='none'%3E%3Cpath d='M6 18 C 34 6 62 6 90 18 C 118 30 146 30 174 18 C 202 6 230 6 258 18 C 286 30 314 30 342 18 C 366 8 392 8 414 16' fill='none' stroke='%23E57657' stroke-width='7' stroke-linecap='round'/%3E%3C/svg%3E")
+    no-repeat left center / 100% 9px;
+  content: "";
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+@keyframes hander-desk-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hander-desk-pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Ett samlat sidinträde: rubrik, snabbfilter, flöde – i den ordningen. */
+.hander-home-head,
+.hander-desktop-heading,
+.hander-explore-search,
+.hander-profile-head {
+  animation: hander-desk-rise 520ms cubic-bezier(0.22, 0.7, 0.28, 1) backwards;
+}
+
+.hander-bubble {
+  animation: hander-desk-pop 460ms cubic-bezier(0.22, 0.8, 0.3, 1.12) backwards;
+}
+.hander-bubble:nth-child(1) {
+  animation-delay: 60ms;
+}
+.hander-bubble:nth-child(2) {
+  animation-delay: 110ms;
+}
+.hander-bubble:nth-child(3) {
+  animation-delay: 160ms;
+}
+.hander-bubble:nth-child(4) {
+  animation-delay: 210ms;
+}
+.hander-bubble:nth-child(n + 5) {
+  animation-delay: 260ms;
+}
+
+.hander-feed > * {
+  animation: hander-desk-rise 560ms cubic-bezier(0.22, 0.7, 0.28, 1) backwards;
+  animation-delay: 150ms;
+}
+.hander-feed > :nth-child(2) {
+  animation-delay: 225ms;
+}
+.hander-feed > :nth-child(3) {
+  animation-delay: 300ms;
+}
+.hander-feed > :nth-child(4) {
+  animation-delay: 375ms;
+}
+.hander-feed > :nth-child(n + 5) {
+  animation-delay: 450ms;
+}
+
+.hander-desktop-rail > section,
+.hander-desktop-rail > footer {
+  animation: hander-desk-rise 560ms cubic-bezier(0.22, 0.7, 0.28, 1) backwards;
+}
+.hander-desktop-rail > :nth-child(1) {
+  animation-delay: 90ms;
+}
+.hander-desktop-rail > :nth-child(2) {
+  animation-delay: 170ms;
+}
+.hander-desktop-rail > :nth-child(3) {
+  animation-delay: 250ms;
+}
+.hander-desktop-rail > :nth-child(n + 4) {
+  animation-delay: 330ms;
+}
+
+/* Korten lyfter mjukt och bilden andas – bara där pekaren kan hovra. */
+@media (hover: hover) and (pointer: fine) {
+  .hander-feed-card {
+    transition:
+      transform 320ms cubic-bezier(0.22, 0.7, 0.28, 1),
+      box-shadow 320ms ease,
+      border-color 320ms ease;
+  }
+
+  .hander-feed-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(229, 118, 87, 0.4);
+    box-shadow: 0 22px 46px -26px rgba(42, 36, 33, 0.45);
+  }
+
+  .hander-feed-card img {
+    transition: transform 700ms cubic-bezier(0.22, 0.7, 0.28, 1);
+  }
+
+  .hander-feed-card:hover img {
+    transform: scale(1.04);
+  }
+
+  .hander-rail-card {
+    transition:
+      border-color 240ms ease,
+      box-shadow 240ms ease;
+  }
+
+  .hander-rail-card:hover {
+    border-color: rgba(229, 118, 87, 0.32);
+    box-shadow: 0 16px 34px -22px rgba(42, 36, 33, 0.3);
+  }
+
+  .hander-home-create:hover {
+    transform: translateY(-1px);
+  }
+}
+
+.hander-home-create:active,
+.hander-action:active,
+.hander-load-more:active {
+  transform: translateY(1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hander-home-head,
+  .hander-desktop-heading,
+  .hander-explore-search,
+  .hander-profile-head,
+  .hander-bubble,
+  .hander-feed > *,
+  .hander-explore-grid > *,
+  .hander-profile-grid > *,
+  .hander-desktop-rail > section,
+  .hander-desktop-rail > footer {
+    animation: none;
+  }
+
+  .hander-feed-card,
+  .hander-feed-card img,
+  .hander-explore-tile,
+  .hander-explore-tile img,
+  .hander-explore-overlay,
+  .hander-explore-overlay > span,
+  .hander-profile-tile img,
+  .hander-profile-tile-overlay,
+  .hander-profile-tile-overlay > span,
+  .hander-rail-card {
+    transition: none;
+  }
+}
+
+/* ------------------------------------------ desktop atmosfär: utforska & profil
+   Samma varma yta som flödet, men lugnare: de här sidorna är innehållstunga,
+   så rörelsen hålls till inträdet och till det som pekaren rör vid. */
+
+/* Sökfältet får en varm ring i stället för att bara byta ram. */
+.hander-explore-search {
+  transition:
+    border-color 220ms ease,
+    box-shadow 220ms ease,
+    background-color 220ms ease;
+}
+
+.hander-explore-search:focus-within {
+  border-color: rgba(229, 118, 87, 0.55);
+  background: #fffdf9;
+  box-shadow:
+    0 0 0 4px rgba(229, 118, 87, 0.1),
+    0 10px 24px -18px rgba(228, 80, 72, 0.6);
+}
+
+.hander-explore-search:focus-within svg {
+  color: var(--primary);
+}
+
+/* Flikarnas markering blir en handritad linje i stället för en platt regel. */
+.hander-explore-tab.is-active::after,
+.hander-profile-tab.is-active::after {
+  height: 6px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 190 24' preserveAspectRatio='none'%3E%3Cpath d='M3 12 C 19 4 35 4 51 12 C 67 20 83 20 99 12 C 115 4 131 4 147 12 C 159 18 174 18 187 12' fill='none' stroke='%23E57657' stroke-width='8' stroke-linecap='round'/%3E%3C/svg%3E")
+    no-repeat center / 100% 6px;
+  border-radius: 0;
+}
+
+.hander-explore-tab.is-active::after {
+  bottom: -3px;
+}
+
+.hander-profile-tab.is-active::after {
+  top: -3px;
+}
+
+/* Avatar/monogram får en varm glöd och en tunn ring, inte en platt cirkel. */
+.hander-profile-avatar {
+  background: radial-gradient(120% 120% at 30% 18%, #fffaf4 0%, #fbe7d8 58%, #f6d7c4 100%);
+  box-shadow:
+    0 0 0 6px #fff,
+    0 0 0 8px rgba(229, 118, 87, 0.26),
+    0 20px 36px -24px rgba(176, 86, 58, 0.55);
+  line-height: 1;
+}
+
+.hander-profile-head dd {
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+}
+
+.hander-profile-head dt {
+  font-size: 12px;
+}
+
+/* Bilderna får samma långsamma andning som i flödet. */
+@media (hover: hover) and (pointer: fine) {
+  .hander-explore-tile {
+    transition:
+      transform 320ms cubic-bezier(0.22, 0.7, 0.28, 1),
+      box-shadow 320ms ease;
+  }
+
+  .hander-explore-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 40px -26px rgba(42, 36, 33, 0.55);
+  }
+
+  .hander-explore-tile img,
+  .hander-profile-tile img {
+    transition: transform 800ms cubic-bezier(0.22, 0.7, 0.28, 1);
+  }
+
+  .hander-explore-tile:hover img,
+  .hander-profile-tile:hover img {
+    transform: scale(1.05);
+  }
+}
+
+.hander-explore-overlay,
+.hander-profile-tile-overlay {
+  transition: opacity 240ms ease;
+}
+
+.hander-explore-overlay > span,
+.hander-profile-tile-overlay > span {
+  transform: translateY(4px);
+  transition: transform 260ms cubic-bezier(0.22, 0.7, 0.28, 1);
+}
+
+.hander-explore-tile:hover .hander-explore-overlay > span,
+.hander-explore-tile:focus-visible .hander-explore-overlay > span,
+.hander-profile-tile:hover .hander-profile-tile-overlay > span,
+.hander-profile-tile:focus-visible .hander-profile-tile-overlay > span {
+  transform: none;
+}
+
+/* Rutnäten kommer in i samma takt som flödet, men stannar vid en kort svans. */
+.hander-explore-grid > *,
+.hander-profile-grid > * {
+  animation: hander-desk-rise 520ms cubic-bezier(0.22, 0.7, 0.28, 1) backwards;
+  animation-delay: 60ms;
+}
+.hander-explore-grid > :nth-child(5n + 2),
+.hander-profile-grid > :nth-child(3n + 2) {
+  animation-delay: 110ms;
+}
+.hander-explore-grid > :nth-child(5n + 3),
+.hander-profile-grid > :nth-child(3n + 3) {
+  animation-delay: 160ms;
+}
+.hander-explore-grid > :nth-child(5n + 4) {
+  animation-delay: 210ms;
+}
+.hander-explore-grid > :nth-child(5n + 5) {
+  animation-delay: 250ms;
+}
+
+.hander-explore-tile:active,
+.hander-profile-tile:active {
+  transform: translateY(1px);
+}
+
+/* ------------------------------------------------- källa: events / temporära
+   Gråmarkeringen av temporära API-event sitter bara på kartnålarna. Kluster
+   och listkort bär ingen ring. */
+
+@media (max-width: 1023px) {
+  :root {
+    --hander-api-ring: #6f665c;
+  }
+}
+
+.hander-source-tabs {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  margin-top: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.hander-source-tab {
+  position: relative;
+  padding: 10px 0;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.hander-source-tab.is-active {
+  color: var(--foreground);
+  font-weight: 800;
+}
+
+.hander-source-tab.is-active::after {
+  position: absolute;
+  right: 0;
+  bottom: -3px;
+  left: 0;
+  height: 6px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 190 24' preserveAspectRatio='none'%3E%3Cpath d='M3 12 C 19 4 35 4 51 12 C 67 20 83 20 99 12 C 115 4 131 4 147 12 C 159 18 174 18 187 12' fill='none' stroke='%23E57657' stroke-width='8' stroke-linecap='round'/%3E%3C/svg%3E")
+    no-repeat center / 100% 6px;
+  content: "";
+}
+
+.hander-source-tab:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid rgba(229, 118, 87, 0.5);
+  outline-offset: 3px;
 }

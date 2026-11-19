@@ -2,11 +2,21 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Clock, Lock, MapPin, Sparkles, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/hander/AppShell";
+import { DesktopHome } from "@/components/hander/DesktopHome";
 import { EventCover, priceLabel, SponsoredBadge } from "@/components/hander/EventBits";
-import { CATEGORY_GRADIENT, ME, USERS, categoryById, type EventItem } from "@/lib/hander-data";
+import {
+  CATEGORY_GRADIENT,
+  ME,
+  USERS,
+  categoryById,
+  userById,
+  type EventItem,
+} from "@/lib/hander-data";
 import type { Plan } from "@/lib/hander-plans";
 import { useIsLoggedIn } from "@/lib/auth-guard";
 import { formatDay, isEventVisible, useHander } from "@/lib/hander-store";
+import { isTemporaryEvent } from "@/lib/event-source";
+import { useDesktop } from "@/lib/use-desktop";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -115,16 +125,25 @@ function SectionHead({
 /** Stort, mörk-gradient-kort för populära aktiviteter. */
 function PopularCard({ event }: { event: EventItem }) {
   const c = categoryById(event.category);
+  const organizer = userById(event.organizerId, event.organizerName);
+  const temporary = isTemporaryEvent(event);
   return (
     <Link
       to="/event/$id"
       params={{ id: event.id }}
-      aria-label={`Visa ${event.name}`}
+      aria-label={`Visa ${event.name}${temporary ? " – temporärt event från Visit Stockholm" : ""}`}
       className="popular-event-card relative block w-60 shrink-0 overflow-hidden rounded-3xl border-[7px] border-[#E45048] bg-[#FFFFFF] shadow-[var(--shadow-card)] transition-transform active:scale-[0.98]"
     >
       <EventCover event={event} className="h-44" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
-      <span className="absolute left-3 top-3 rounded-full bg-background/90 px-2.5 py-1 text-[10px] font-bold text-foreground">
+      <span className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-background/90 py-1 pl-1.5 pr-3 text-[10px] font-bold text-foreground">
+        <span
+          className="flex h-[30px] w-[30px] items-center justify-center rounded-full border-2 border-background text-[15px]"
+          style={{ background: organizer.color }}
+          aria-hidden
+        >
+          {organizer.avatar}
+        </span>
         {c.emoji} {c.label}
       </span>
       <div className="absolute inset-x-3 bottom-3 text-background">
@@ -295,6 +314,16 @@ function Home() {
     [events, me],
   );
 
+  // Desktop (≥1024px) har eget flöde. Mobilvyn nedan är oförändrad.
+  const desktop = useDesktop();
+  if (desktop) {
+    return (
+      <AppShell title="Vad Händer Idag?">
+        <DesktopHome />
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell title="Vad Händer Idag?" subtitle="Hitta skoj i Stockholm idag">
       <div className="relative space-y-7 pb-4 pt-5">
@@ -355,18 +384,6 @@ function Home() {
             <span className="w-px shrink-0" aria-hidden />
           </div>
         </section>
-
-        {/* Sektion 2 – Sponsrat (förhandsvisning) */}
-        {sponsored.length > 0 && (
-          <section className="section-zone section-zone--pink relative space-y-3">
-            <SectionHead title="Sponsrade events" dot="var(--section-pink)" tone="pink" />
-            <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-2">
-              {sponsored.slice(0, 2).map((e) => (
-                <SponsoredCard key={e.id} event={e} />
-              ))}
-            </div>
-          </section>
-        )}
 
         {/* Sektion 3 – Dina organiserade event */}
         <section className="section-zone section-zone--coral relative space-y-3">

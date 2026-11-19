@@ -1,7 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Bell, Bookmark, CalendarPlus, Home, Map, Plus, Search, User, Users } from "lucide-react";
 import { type ReactNode, useCallback, useEffect, useRef } from "react";
+import { DesktopShell } from "@/components/hander/DesktopShell";
 import { useHander } from "@/lib/hander-store";
+import { useDesktop } from "@/lib/use-desktop";
 import { cn } from "@/lib/utils";
 
 let savedMapScrollTop = 0;
@@ -141,6 +143,7 @@ export function AppShell({
   subtitle?: string | undefined;
   bare?: boolean;
 }) {
+  const desktop = useDesktop();
   const mainRef = useRef<HTMLElement | null>(null);
 
   // Ref-callbacken måste vara stabil. En inline-arrow får ny identitet vid VARJE
@@ -166,6 +169,15 @@ export function AppShell({
     node.scrollTop = 0;
     return undefined;
   }, [title]);
+
+  // Desktop (≥1024px) får eget skal. Mobilmarkupen nedan är oförändrad.
+  if (desktop) {
+    return (
+      <DesktopShell title={title} subtitle={subtitle}>
+        {children}
+      </DesktopShell>
+    );
+  }
 
   return (
     <div className="relative mx-auto flex h-svh min-h-0 w-full max-w-md flex-col bg-background hander-phone">

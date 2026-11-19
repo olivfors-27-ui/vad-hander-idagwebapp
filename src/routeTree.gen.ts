@@ -14,6 +14,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ArrangorRouteImport } from './routes/arrangor'
 import { Route as FoljerRouteImport } from './routes/foljer'
 import { Route as ForeslaPlatsRouteImport } from './routes/foresla-plats'
+import { Route as InstallningarRouteImport } from './routes/installningar'
 import { Route as KartaRouteImport } from './routes/karta'
 import { Route as LoggainRouteImport } from './routes/loggain'
 import { Route as NotiserRouteImport } from './routes/notiser'
@@ -58,6 +59,11 @@ const FoljerRoute = FoljerRouteImport.update({
 const ForeslaPlatsRoute = ForeslaPlatsRouteImport.update({
   id: '/foresla-plats',
   path: '/foresla-plats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InstallningarRoute = InstallningarRouteImport.update({
+  id: '/installningar',
+  path: '/installningar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KartaRoute = KartaRouteImport.update({
@@ -167,6 +173,7 @@ export interface FileRoutesByFullPath {
   '/arrangor': typeof ArrangorRoute
   '/foljer': typeof FoljerRoute
   '/foresla-plats': typeof ForeslaPlatsRoute
+  '/installningar': typeof InstallningarRoute
   '/karta': typeof KartaRoute
   '/loggain': typeof LoggainRoute
   '/notiser': typeof NotiserRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/arrangor': typeof ArrangorRoute
   '/foljer': typeof FoljerRoute
   '/foresla-plats': typeof ForeslaPlatsRoute
+  '/installningar': typeof InstallningarRoute
   '/karta': typeof KartaRoute
   '/loggain': typeof LoggainRoute
   '/notiser': typeof NotiserRoute
@@ -222,6 +230,7 @@ export interface FileRoutesById {
   '/arrangor': typeof ArrangorRoute
   '/foljer': typeof FoljerRoute
   '/foresla-plats': typeof ForeslaPlatsRoute
+  '/installningar': typeof InstallningarRoute
   '/karta': typeof KartaRoute
   '/loggain': typeof LoggainRoute
   '/notiser': typeof NotiserRoute
@@ -251,6 +260,7 @@ export interface FileRouteTypes {
     | '/arrangor'
     | '/foljer'
     | '/foresla-plats'
+    | '/installningar'
     | '/karta'
     | '/loggain'
     | '/notiser'
@@ -278,6 +288,7 @@ export interface FileRouteTypes {
     | '/arrangor'
     | '/foljer'
     | '/foresla-plats'
+    | '/installningar'
     | '/karta'
     | '/loggain'
     | '/notiser'
@@ -305,6 +316,7 @@ export interface FileRouteTypes {
     | '/arrangor'
     | '/foljer'
     | '/foresla-plats'
+    | '/installningar'
     | '/karta'
     | '/loggain'
     | '/notiser'
@@ -333,6 +345,7 @@ export interface RootRouteChildren {
   ArrangorRoute: typeof ArrangorRoute
   FoljerRoute: typeof FoljerRoute
   ForeslaPlatsRoute: typeof ForeslaPlatsRoute
+  InstallningarRoute: typeof InstallningarRoute
   KartaRoute: typeof KartaRoute
   LoggainRoute: typeof LoggainRoute
   NotiserRoute: typeof NotiserRoute
@@ -389,6 +402,13 @@ declare module '@tanstack/react-router' {
       path: '/foresla-plats'
       fullPath: '/foresla-plats'
       preLoaderRoute: typeof ForeslaPlatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/installningar': {
+      id: '/installningar'
+      path: '/installningar'
+      fullPath: '/installningar'
+      preLoaderRoute: typeof InstallningarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/karta': {
@@ -551,6 +571,7 @@ const rootRouteChildren: RootRouteChildren = {
   ArrangorRoute: ArrangorRoute,
   FoljerRoute: FoljerRoute,
   ForeslaPlatsRoute: ForeslaPlatsRoute,
+  InstallningarRoute: InstallningarRoute,
   KartaRoute: KartaRoute,
   LoggainRoute: LoggainRoute,
   NotiserRoute: NotiserRoute,

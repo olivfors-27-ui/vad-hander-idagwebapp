@@ -40,6 +40,16 @@ export function ShareSheet({
     if (!open) setCopied(false);
   }, [open]);
 
+  // Esc stänger delningsbladet, precis som krysset.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
   if (!open) return null;
 
   const copy = () => {

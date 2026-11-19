@@ -2,11 +2,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { BarChart3, Bell, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/hander/AppShell";
+import { DesktopProfile } from "@/components/hander/DesktopProfile";
 import { Avatar, EventRow } from "@/components/hander/EventBits";
 import { ME, userById, type User } from "@/lib/hander-data";
 import { hasEnded, useHander } from "@/lib/hander-store";
 import { fetchProfilesByIds, type Profile } from "@/lib/profiles";
 import { signOut } from "@/lib/auth";
+import { useDesktop } from "@/lib/use-desktop";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/profil")({
@@ -23,6 +25,7 @@ export const Route = createFileRoute("/profil")({
 
 function ProfilePage() {
   const store = useHander();
+  const desktop = useDesktop();
   const me = userById(ME);
   const [tab, setTab] = useState<"kommande" | "mina">("kommande");
   const [followingPeople, setFollowingPeople] = useState<Profile[]>([]);
@@ -52,6 +55,15 @@ function ProfilePage() {
   // Inloggade ser sina riktiga event (organizerId = användar-id); fallback till
   // ME fångar demo-event skapade före kontosystemet.
   const mine = store.myEvents.filter((e) => e.organizerId === meId || e.organizerId === ME);
+  // Desktop (≥1024px): egen profil­layout. Mobilvyn nedan är oförändrad.
+  if (desktop) {
+    return (
+      <AppShell title="Profil">
+        <DesktopProfile />
+      </AppShell>
+    );
+  }
+
   const followingUsers: User[] = followingPeople.map((person) => ({
     id: person.id,
     name: person.name,

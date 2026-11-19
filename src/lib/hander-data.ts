@@ -118,7 +118,14 @@ export type EventItem = {
   image?: string | undefined;
   /** Extern källa, exempelvis Visit Stockholms arrangörslänk. */
   sourceUrl?: string | undefined;
+  /**
+   * Källa stämplad vid inläsning: appens eget event, externt API-event eller
+   * kuraterat API-event. Sätts av withFeedSource så renderingen slipper räkna.
+   */
+  feedSource?: "app" | "api" | "curated" | undefined;
   organizerId: string;
+  /** När eventet publicerades, om källan har en tidsstämpel. */
+  createdAt?: string | undefined;
   /**
    * Arrangörens visningsnamn från det inloggade kontot som skapade eventet.
    * Visas som "inbjudare"/arrangör – fylls alltid i vid skapande så att

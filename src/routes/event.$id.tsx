@@ -55,6 +55,10 @@ function EventPage() {
   const [shareOpen, setShareOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const event = store.events.find((e) => e.id === id);
+  const closeEvent = () => {
+    if (router.history.canGoBack()) router.history.back();
+    else void router.navigate({ to: "/" });
+  };
   // Arrangörens riktiga profil. Eventet sparar organizerName, men äldre event
   // och inbjudningar kan sakna det – då hämtas namnet från profiles (publikt
   // läsbar enligt RLS) i stället för att falla tillbaka på "Okänd användare".
@@ -67,6 +71,18 @@ function EventPage() {
     if (!eventId) return;
     void recordEventView(eventId);
   }, [eventId]);
+
+  // Esc stänger eventvyn, på samma sätt som krysset.
+  useEffect(() => {
+    const onKey = (keyboard: KeyboardEvent) => {
+      if (keyboard.key === "Escape") {
+        if (router.history.canGoBack()) router.history.back();
+        else void router.navigate({ to: "/" });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [router]);
 
   if (!event) {
     return (
@@ -127,10 +143,7 @@ function EventPage() {
         <EventCover event={event} className="h-56" big />
         <button
           type="button"
-          onClick={() => {
-            if (router.history.canGoBack()) router.history.back();
-            else void router.navigate({ to: "/" });
-          }}
+          onClick={closeEvent}
           className="absolute left-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-background/90 shadow-[var(--shadow-card)]"
           aria-label="Stäng event"
         >

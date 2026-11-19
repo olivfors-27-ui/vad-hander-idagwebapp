@@ -6,6 +6,8 @@ import { AvatarStack, CategoryChip, EventRow, priceLabel } from "@/components/ha
 import { FilterButton, FilterSheet, QuickFilters, SortBar } from "@/components/hander/FilterSheet";
 import { MapCanvas } from "@/components/hander/MapCanvas";
 import { ShareSheet } from "@/components/hander/ShareSheet";
+import { SourceTabs } from "@/components/hander/SourceTabs";
+import { matchesSourceTab, type SourceTab } from "@/lib/event-source";
 import {
   CATEGORY_GRADIENT,
   PLACE_TYPES,
@@ -42,6 +44,7 @@ function MapPage() {
   const store = useHander();
   const navigate = useNavigate();
   const [filters, setFilters] = useState<Filters>(defaultFilters);
+  const [source, setSource] = useState<SourceTab>("bada");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [view, setView] = useState<"karta" | "lista">("karta");
   const [sort, setSort] = useState<SortMode>("relevans");
@@ -51,8 +54,11 @@ function MapPage() {
   const [overlayHeight, setOverlayHeight] = useState(112);
 
   const all = useMemo(
-    () => [...store.publicEvents, ...store.myPrivateEvents],
-    [store.publicEvents, store.myPrivateEvents],
+    () =>
+      [...store.publicEvents, ...store.myPrivateEvents].filter((event) =>
+        matchesSourceTab(event, source),
+      ),
+    [store.publicEvents, store.myPrivateEvents, source],
   );
   const events = useMemo(() => sortEvents(filterEvents(all, filters), sort), [all, filters, sort]);
 
@@ -116,6 +122,7 @@ function MapPage() {
             <FilterButton filters={filters} onOpen={() => setSheetOpen(true)} />
           </div>
           <QuickFilters filters={filters} setFilters={setFilters} />
+          <SourceTabs variant="mobile" className="mt-1" value={source} onChange={setSource} />
         </div>
       )}
 
@@ -166,6 +173,7 @@ function MapPage() {
                 </button>
               </div>
               <QuickFilters filters={filters} setFilters={setFilters} />
+              <SourceTabs variant="mobile" className="mt-1" value={source} onChange={setSource} />
             </div>
           </div>
 
@@ -175,7 +183,7 @@ function MapPage() {
             style={{ bottom: "calc(92px + env(safe-area-inset-bottom))" }}
           >
             <span className="rounded-full bg-white/85 px-2.5 py-1 text-[10px] font-semibold text-foreground/60 shadow-sm backdrop-blur">
-              {events.length} träffar · Eventdata från Visit Stockholm
+              {events.length} träffar · {source === "event" ? "temporära" : source === "fasta" ? "fasta" : "alla"} event
             </span>
           </div>
 

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { MapPin, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/hander/AppShell";
+import { DesktopExplore } from "@/components/hander/DesktopExplore";
 import { EventRow } from "@/components/hander/EventBits";
 import { FilterButton, FilterSheet, QuickFilters, SortBar } from "@/components/hander/FilterSheet";
 import {
@@ -21,6 +22,7 @@ import {
   type SortMode,
 } from "@/lib/hander-store";
 import { searchProfiles, type Profile } from "@/lib/profiles";
+import { useDesktop } from "@/lib/use-desktop";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/sok")({
@@ -35,12 +37,17 @@ export const Route = createFileRoute("/sok")({
       { property: "og:description", content: "Hitta exakt det du är sugen på ikväll." },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>): { q?: string } => {
+    const term = typeof search["q"] === "string" ? search["q"].trim() : "";
+    return term ? { q: term } : {};
+  },
   component: SearchPage,
 });
 
 function SearchPage() {
   const store = useHander();
-  const [q, setQ] = useState("");
+  const { q: initialQuery } = Route.useSearch();
+  const [q, setQ] = useState(initialQuery ?? "");
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [sort, setSort] = useState<SortMode>("relevans");
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -124,6 +131,16 @@ function SearchPage() {
 
   const nothing =
     query && !events.length && !places.length && !activities.length && !users.length && !cats.length;
+
+  // Desktop (≥1024px): Utforska-vyn med sökfält, flikar och rutnät.
+  const desktop = useDesktop();
+  if (desktop) {
+    return (
+      <AppShell title="Sök">
+        <DesktopExplore initialQuery={initialQuery ?? ""} />
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell title="Sök" subtitle="Hitta något att göra!">

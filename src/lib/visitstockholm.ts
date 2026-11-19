@@ -1,4 +1,6 @@
 import { MAP_CENTER, type CategoryId, type EventItem } from "./hander-data";
+import { curatedCategoryFor, isApiEvent, isCuratedEvent, withFeedSource } from "./event-source";
+import { categoryForEvent, resolveCategory } from "./event-category";
 
 const VISIT_STOCKHOLM_URL = "https://api.visitstockholm.com/api/public-v1/events/";
 const VISIT_SWEDEN_URL = "https://data.visitsweden.com/store/search";
@@ -93,23 +95,6 @@ const distanceKm = (lat: number, lng: number) => {
   return Math.round(6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
 };
 
-const categoryFromText = (value: string): CategoryId => {
-  const text = value.toLowerCase();
-  if (/music|musik|konsert|jazz|opera|dj|live/.test(text)) return "musik";
-  if (/club|klubb|party|fest|festival|mingel|disco/.test(text)) return "fest";
-  if (/sport|race|lopp|run|basket|fotboll|yoga|träning|wellbeing/.test(text)) return "sport";
-  if (/food|drink|mat|middag|lunch|öl|vin|restaurant|café|cafe/.test(text)) return "mat";
-  if (/student|campus|university|universitet|föreläsning|seminar/.test(text)) return "student";
-  if (/market|mässa|shopping|loppis|fair|marknad/.test(text)) return "shopping";
-  if (/outdoor|utomhus|vandring|natur|kajak|skärgård|park/.test(text)) return "utomhus";
-  return "kultur";
-};
-
-const categoryFor = (event: VisitStockholmEvent): CategoryId => {
-  const categories = (event.categories ?? []).flatMap((category) => [category.slug, category.title, ...(category.subcategories ?? []).flatMap((sub) => [sub.slug, sub.title])]);
-  return categoryFromText(`${categories.join(" ")} ${textFor(event.title)}`);
-};
-
 const firstFutureSchedule = (event: VisitStockholmEvent) => {
   const today = new Date().toISOString().slice(0, 10);
   return (event.schedule?.dates ?? []).filter((slot) => validDate(slot.date) && (slot.date as string) >= today).sort((a, b) => String(a.date).localeCompare(String(b.date)))[0];
@@ -122,11 +107,19 @@ const toEvent = ({ id, title, description, address, venue, date, start, end, lat
 }): EventItem | null => {
   const distance = distanceKm(lat, lng);
   if (!date || distance > MAX_DISTANCE_KM) return null;
-  const category = categoryFromText(`${title} ${description} ${venue}`);
   const startTime = start && /^\d{1,2}:\d{2}/.test(start) ? start.slice(0, 5) : "12:00";
+  const name = title || "Event i Stockholm";
+  // Titel först, beskrivning bara som reserv. Listan fyller i när API-texten
+  // inte kommit längre än till "kultur".
+  const category = resolveCategory(
+    categoryForEvent({ name, place: venue, description }),
+    curatedCategoryFor({ name, sourceUrl: url }),
+  );
   return {
     id,
-    name: title || "Event i Stockholm",
+    name,
+    // Källan stämplas här, en gång, i stället för i varje kortrendering.
+    feedSource: isCuratedEvent({ name, place: venue, sourceUrl: url }) ? "curated" : "api",
     category,
     date: dateOnly(date),
     start: startTime,
@@ -317,16 +310,33 @@ function writeBrowserDayCache(events: EventItem[]): void {
   }
 }
 
+/**
+ * Stämplar källan och räknar om kategorin med samma regler som vid hämtning.
+ * Det gäller även poster som redan ligger i dags-cachen, så rättningarna slår
+ * igenom direkt i stället för först nästa gång cachen fylls på.
+ */
+const withSources = (events: EventItem[]): EventItem[] =>
+  events.map((event) => {
+    const stamped = withFeedSource(event);
+    if (!isApiEvent(stamped)) return stamped;
+    const category = resolveCategory(
+      categoryForEvent(stamped),
+      curatedCategoryFor(stamped),
+    );
+    return category === stamped.category ? stamped : { ...stamped, category };
+  });
+
 export async function fetchEventsWithCache(signal?: AbortSignal): Promise<EventItem[]> {
+  // Äldre cache-poster saknar stämpel; de får den när de läses in.
   const fromBrowser = readBrowserDayCache();
-  if (fromBrowser) return fromBrowser;
+  if (fromBrowser) return withSources(fromBrowser);
   try {
     const response = await fetch("/api/events", { signal: signal ?? null });
     if (response.ok) {
       const payload = (await response.json()) as { events?: EventItem[] };
       if (Array.isArray(payload.events) && payload.events.length > 0) {
         writeBrowserDayCache(payload.events);
-        return payload.events;
+        return withSources(payload.events);
       }
     }
   } catch {
@@ -334,7 +344,7 @@ export async function fetchEventsWithCache(signal?: AbortSignal): Promise<EventI
   }
   const direct = await fetchVisitStockholmEvents(signal);
   if (direct.length > 0) writeBrowserDayCache(direct);
-  return direct;
+  return withSources(direct);
 }
 
 export const VISIT_STOCKHOLM_API_URL = VISIT_STOCKHOLM_URL;

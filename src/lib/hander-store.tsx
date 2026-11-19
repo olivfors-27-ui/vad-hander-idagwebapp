@@ -27,7 +27,7 @@ import {
   baseStats,
 } from "./hander-data";
 import { uid, type Plan, type PlanReply } from "./hander-plans";
-import { isEventVisible } from "./event-time";
+import { isEventVisible, isWithinLookahead } from "./event-time";
 import { distanceKm } from "./geocode";
 
 // Synlighetsregeln bor i event-time.ts (datalagret behöver den också).
@@ -724,10 +724,16 @@ function useStoreValue() {
   // Publika ytor (karta, listor, sök) visar bara event som inte är avslutade.
   // Databasen filtrerar redan de egna eventen; här fångas även event från
   // Visit Stockholm med samma regel.
+  // Publika ytor visar bara event inom en månad framåt – API:et innehåller
+  // mässor och turnéer flera år bort som inte hör hemma i flödet eller kartan.
   const publicEvents = useMemo(
     () =>
       allEvents.filter(
-        (e) => e.visibility === "public" && e.status === "approved" && isEventVisible(e),
+        (e) =>
+          e.visibility === "public" &&
+          e.status === "approved" &&
+          isEventVisible(e) &&
+          isWithinLookahead(e.date),
       ),
     [allEvents],
   );

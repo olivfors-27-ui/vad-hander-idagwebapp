@@ -58,6 +58,23 @@ export function eventVisibleUntil(e: Pick<EventItem, "date" | "start" | "end">):
   return endMs + 3 * 60 * 60 * 1000;
 }
 
+/** Hur långt framåt i tiden appen visar event. */
+export const MAX_LOOKAHEAD_DAYS = 31;
+
+/** Sista datum som får visas, som YYYY-MM-DD, räknat från dagens datum. */
+export function latestVisibleDate(now = new Date()): string {
+  const limit = new Date(now.getTime());
+  limit.setDate(limit.getDate() + MAX_LOOKAHEAD_DAYS);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${limit.getFullYear()}-${pad(limit.getMonth() + 1)}-${pad(limit.getDate())}`;
+}
+
+/** Är eventets datum inom visningsfönstret (max en månad framåt)? */
+export function isWithinLookahead(date: string, now = new Date()): boolean {
+  if (!date) return false;
+  return date <= latestVisibleDate(now);
+}
+
 /** Ska eventet synas i appen just nu? */
 export function isEventVisible(
   e: Pick<EventItem, "date" | "start" | "end">,
