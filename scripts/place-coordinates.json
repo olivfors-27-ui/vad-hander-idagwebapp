@@ -84,6 +84,11 @@
   "lng": 18.1001001,
   "label": "Beckholmen"
  },
+ "Beckmans Designhögskola": {
+  "lat": 59.3372452,
+  "lng": 18.0757496,
+  "label": "Brahegatan 10, Brahegatan, Östermalm, Norra innerstadens stadsdelsområde, Stockholm, Stockholms kommun, Stockholms län, 114 37, Sverige"
+ },
  "Bellevueparken": {
   "lat": 59.3529688,
   "lng": 18.0498632,
@@ -94,10 +99,20 @@
   "lng": 18.0871954,
   "label": "Bergenströms rekvisita"
  },
+ "Bergianska japanska damm": {
+  "lat": 59.3686361,
+  "lng": 18.046152,
+  "label": "Bergianska trädgården, Norra Djurgården, Norra innerstadens stadsdelsområde, Stockholm, Stockholms kommun, Stockholms län, Sverige"
+ },
  "Bergianska trädgården": {
   "lat": 59.36861,
   "lng": 18.04479,
   "label": "tidigare geokodad"
+ },
+ "Bergrummet Tidö Collection": {
+  "lat": 59.3258985,
+  "lng": 18.073352,
+  "label": "6, Slottsbacken, Gamla stan, Södermalms stadsdelsområde, Stockholm, Stockholms kommun, Stockholms län, 111 30, Sverige"
  },
  "Berns": {
   "lat": 59.33228,
@@ -138,6 +153,11 @@
   "lat": 59.3402881,
   "lng": 18.0350905,
   "label": "Birka Bowling"
+ },
+ "Birka Vikingastaden": {
+  "lat": 59.3327282,
+  "lng": 17.5449413,
+  "label": "Birka – Ekerö"
  },
  "Bishops Arms": {
   "lat": 59.36113,
@@ -659,6 +679,11 @@
   "lng": 18.0422828,
   "label": "Hagaparken"
  },
+ "Hallwylska museet": {
+  "lat": 59.3332518,
+  "lng": 18.0743998,
+  "label": "Hallwylska palatset, 4, Hamngatan, Norrmalm, Norra innerstadens stadsdelsområde, Stockholm, Stockholms kommun, Stockholms län, 111 47, Sverige"
+ },
  "Hallwylska palatsets innergård": {
   "lat": 59.3332771,
   "lng": 18.0745279,
@@ -724,6 +749,11 @@
   "lng": 18.0201217,
   "label": "Hornsbergs Strand"
  },
+ "Hornstulls marknad": {
+  "lat": 59.3144212,
+  "lng": 18.0328135,
+  "label": "Hornstulls Strand, Hornstull, Södermalm, Södermalms stadsdelsområde, Stockholm, Stockholms kommun, Stockholms län, 117 38, Sverige"
+ },
  "Hosoi": {
   "lat": 59.29228,
   "lng": 18.07869,
@@ -733,6 +763,11 @@
   "lat": 59.3335478,
   "lng": 18.0316536,
   "label": "Second Hand"
+ },
+ "Humlegården & Linnéstatyn": {
+  "lat": 59.3388541,
+  "lng": 18.0724843,
+  "label": "Humlegården, Östermalm, Norra innerstadens stadsdelsområde, Stockholm, Stockholms kommun, Stockholms län, Sverige"
  },
  "Hundudden": {
   "lat": 59.3289828,
@@ -753,6 +788,11 @@
   "lat": 59.2562848,
   "lng": 18.0506706,
   "label": "Högdalstoppen"
+ },
+ "Hötorgets loppis": {
+  "lat": 59.3358309,
+  "lng": 18.0632652,
+  "label": "Hötorget, Sveavägen, Norrmalm, Norra innerstadens stadsdelsområde, Stockholm, Stockholms kommun, Stockholms län, 111 35, Sverige"
  },
  "Hötorgshallen": {
   "lat": 59.3342773,
@@ -934,6 +974,11 @@
   "lng": 17.87859,
   "label": "Kina slott"
  },
+ "Kinesiska paviljongen i Hagaparken": {
+  "lat": 59.3630284,
+  "lng": 18.0345872,
+  "label": "Hagaparken, Haga, Solna, Solna kommun, Stockholms län, Sverige"
+ },
  "Klubben / Klubbensborg": {
   "lat": 59.3073358,
   "lng": 17.9608333,
@@ -1069,6 +1114,11 @@
   "lng": 18.1365162,
   "label": "Kvarnholmen"
  },
+ "Kyrkhamn & Lövsta": {
+  "lat": 59.3876826,
+  "lng": 17.7805241,
+  "label": "Lövstabadet – Stockholms kommun"
+ },
  "La Neta": {
   "lat": 59.3336366,
   "lng": 18.0703176,
@@ -1169,6 +1219,11 @@
   "lng": 18.101091,
   "label": "Masthamnen, Södermalm, Södermalms stadsdelsområde, Stockholm, Stockholms kommun, Stockholms län, Sverige"
  },
+ "Magasin III": {
+  "lat": 59.34095,
+  "lng": 18.11659,
+  "label": "Standout Coffee, 28, Frihamnsgatan, Frihamnen, Ladugårdsgärdet, Norra innerstadens stadsdelsområde, Stockholm, Stockholms kommun, Stockholms län, 115 56, Sverige"
+ },
  "Magelungen": {
   "lat": 59.2349723,
   "lng": 18.0891555,
@@ -1188,6 +1243,11 @@
   "lat": 59.3325288,
   "lng": 17.9830495,
   "label": "Joe & The Juice, 18, Gustavslundsvägen, Alvik, Bromma stadsdelsområde, Stockholm, Stockholms kommun, Stockholms län, 167 51, Sverige"
+ },
+ "Mariefred & Gripsholms slott": {
+  "lat": 59.2560129,
+  "lng": 17.2199862,
+  "label": "Gripsholms slott – Mariefred"
  },
  "Maximteatern": {
   "lat": 59.7571207,
@@ -1344,6 +1404,11 @@
   "lng": 18.0705149,
   "label": "Nymble"
  },
+ "Nystekt Strömming": {
+  "lat": 59.3201649,
+  "lng": 18.0703448,
+  "label": "Södermalmstorg, Södermalm, Södermalms stadsdelsområde, Stockholm, Stockholms kommun, Stockholms län, 118 46, Sverige"
+ },
  "O'Learys Tolv": {
   "lat": 59.29179,
   "lng": 18.08365,
@@ -1403,6 +1468,11 @@
   "lat": 59.25462,
   "lng": 18.07407,
   "label": "tidigare geokodad"
+ },
+ "Paradiset i Hanveden": {
+  "lat": 59.325022,
+  "lng": 18.0835643,
+  "label": "Paradiset – Stockholm"
  },
  "Paradox Museum": {
   "lat": 59.3344251,
@@ -1539,6 +1609,11 @@
   "lng": 18.11553,
   "label": "tidigare geokodad"
  },
+ "Runstenen i Prästgatan": {
+  "lat": 59.3245001,
+  "lng": 18.0702853,
+  "label": "Prästgatan, Gamla stan, Södermalms stadsdelsområde, Stockholm, Stockholms kommun, Stockholms län, 111 29, Sverige"
+ },
  "Rålambshovsparken Skatepark": {
   "lat": 59.3286774,
   "lng": 18.0245261,
@@ -1629,6 +1704,11 @@
   "lng": 18.16643,
   "label": "tidigare geokodad"
  },
+ "Skeppsholmens vrakkyrkogård": {
+  "lat": 59.3253564,
+  "lng": 18.0850038,
+  "label": "Skeppsholmen, Norra innerstadens stadsdelsområde, Stockholm, Stockholms kommun, Stockholms län, 111 49, Sverige"
+ },
  "Skinnarviksberget": {
   "lat": 59.31959,
   "lng": 18.05706,
@@ -1703,6 +1783,11 @@
   "lat": 59.343912,
   "lng": 18.0767494,
   "label": "Stadion"
+ },
+ "Stadsbibliotekets Rotunda": {
+  "lat": 59.3434409,
+  "lng": 18.0551499,
+  "label": "73, Sveavägen, Sibirien, Vasastaden, Norra innerstadens stadsdelsområde, Stockholm, Stockholms kommun, Stockholms län, 113 50, Sverige"
  },
  "Stadshustornet": {
   "lat": 59.3274455,
@@ -1798,6 +1883,11 @@
   "lat": 59.325,
   "lng": 18.07055556,
   "label": "Stortorgets julmarknad"
+ },
+ "Strandvägens kajpromenad": {
+  "lat": 59.3318289,
+  "lng": 18.0804416,
+  "label": "Strandvägen, Östermalm, Norra innerstadens stadsdelsområde, Stockholm, Stockholms kommun, Stockholms län, 114 51, Sverige"
  },
  "Strawberry Arena": {
   "lat": 59.37227,
@@ -1924,6 +2014,11 @@
   "lng": 18.0526453,
   "label": "Tribunalen, Hornsgatan, Zinkensdamm, Södermalm, Södermalms stadsdelsområde, Stockholm, Stockholms kommun, Stockholms län, 118 23, Sverige"
  },
+ "Teatern i Ringen": {
+  "lat": 59.332513,
+  "lng": 18.0733328,
+  "label": "China Teatern – Stockholm"
+ },
  "Tegnérlunden": {
   "lat": 59.3381704,
   "lng": 18.0558227,
@@ -1989,6 +2084,11 @@
   "lng": 18.25006,
   "label": "tidigare geokodad"
  },
+ "Tyska kyrkans klockspel": {
+  "lat": 59.3239454,
+  "lng": 18.0724116,
+  "label": "16, Svartmangatan, Gamla stan, Södermalms stadsdelsområde, Stockholm, Stockholms kommun, Stockholms län, 111 31, Sverige"
+ },
  "Tössebageriet": {
   "lat": 59.2284276,
   "lng": 18.1990991,
@@ -2018,6 +2118,11 @@
   "lat": 59.4721,
   "lng": 17.23181,
   "label": "tidigare geokodad"
+ },
+ "Vaktparaden vid Stockholms slott": {
+  "lat": 59.3269277,
+  "lng": 18.0701645,
+  "label": "Stockholms slott, 1, Slottsbacken, Gamla stan, Södermalms stadsdelsområde, Stockholm, Stockholms kommun, Stockholms län, 111 31, Sverige"
  },
  "Valhallabageriet": {
   "lat": 59.3459644,
@@ -2074,6 +2179,11 @@
   "lng": 18.41892,
   "label": "tidigare geokodad"
  },
+ "Vinterviken Skulpturpark": {
+  "lat": 59.3108067,
+  "lng": 17.9842999,
+  "label": "Vinterviken, Aspudden, Hägersten-Älvsjö stadsdelsområde, Stockholm, Stockholms kommun, Stockholms län, Sverige"
+ },
  "Vrak – Museum of Wrecks": {
   "lat": 59.326336,
   "lng": 18.0950794,
@@ -2093,6 +2203,11 @@
   "lat": 59.32944,
   "lng": 18.0748,
   "label": "tidigare geokodad"
+ },
+ "Weld": {
+  "lat": 59.3416604,
+  "lng": 18.0520461,
+  "label": "7, Norrtullsgatan, Sabbatsberg, Vasastaden, Norra innerstadens stadsdelsområde, Stockholm, Stockholms kommun, Stockholms län, 113 29, Sverige"
  },
  "Wetterling Gallery": {
   "lat": 59.3314546,
@@ -2118,6 +2233,11 @@
   "lat": 59.31568,
   "lng": 18.05016,
   "label": "tidigare geokodad"
+ },
+ "Zita Folkets Bio": {
+  "lat": 59.338393,
+  "lng": 18.0683078,
+  "label": "Bongo Kök & Bar, 37, Birger Jarlsgatan, Norrmalm, Norra innerstadens stadsdelsområde, Stockholm, Stockholms kommun, Stockholms län, 113 58, Sverige"
  },
  "Åkeshovs slott": {
   "lat": 59.3409957,

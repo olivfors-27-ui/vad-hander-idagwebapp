@@ -243,7 +243,7 @@ function MapPage() {
               })}
               {visiblePlaces.length === 0 && (
                 <p className="py-10 text-center text-sm text-muted-foreground">
-                  Inga fasta platser med koordinater än.
+                  Inga fasta platser än.
                 </p>
               )}
             </>

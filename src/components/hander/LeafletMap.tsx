@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { createPortal } from "react-dom";
 import { renderToStaticMarkup } from "react-dom/server";
-import { CircleMarker, MapContainer, Marker, TileLayer, useMap } from "react-leaflet";
+import { CircleMarker, MapContainer, TileLayer, useMap } from "react-leaflet";
 import "leaflet.markercluster";
 import {
   BookOpen,
@@ -104,12 +104,21 @@ const placePin = (color: string) =>
     iconAnchor: [15, 15],
   });
 
+/** Vad en markering föreställer – så att klustret kan färgas efter innehåll. */
+const markerKind = new WeakMap<L.Marker, "fast" | "event">();
+
 const clusterIcon = (cluster: L.MarkerCluster) => {
   const count = cluster.getChildCount();
-  const size = count > 99 ? 48 : 42;
-  // Klusterbollen är blå och räknar event – den bär ingen egen markering.
+  const fast = cluster.getAllChildMarkers().filter((marker) => markerKind.get(marker) === "fast").length;
+  const events = count - fast;
+  // Samma färgspråk som nålarna: rött för enbart fasta platser, blått för
+  // enbart event och grönt när gruppen blandar dem.
+  const color = events === 0 ? FAST_COLOR : fast === 0 ? TEMPORARY_COLOR : BOTH_COLOR;
+  const label =
+    events === 0 ? `${count} fasta platser` : fast === 0 ? `${count} event` : `${count} träffar`;
+  const size = count > 99 ? 52 : 44;
   return divIcon({
-    html: `<span class="hander-cluster-label" role="img" aria-label="${count} event" style="display:grid;width:100%;height:100%;place-items:center;border:3px solid #fff;border-radius:50%;background:#394fc4;color:#fff;font-size:13px;font-weight:800;box-shadow:${PIN_SHADOW}">${count}</span>`,
+    html: `<span class="hander-cluster-label" role="img" aria-label="${label}" style="display:grid;width:100%;height:100%;place-items:center;border:3px solid #fff;border-radius:50%;background:${color};color:#fff;font-size:13px;font-weight:800;box-shadow:${PIN_SHADOW}">${count}</span>`,
     className: "hander-leaflet-cluster",
     iconSize: point(size, size),
   });
@@ -117,12 +126,16 @@ const clusterIcon = (cluster: L.MarkerCluster) => {
 
 function MapLayers({
   events,
+  places,
   selectedId,
   onSelectEvent,
+  onSelectPlace,
 }: {
   events: EventItem[];
+  places: { place: Place; geo: GeoPoint; color: string }[];
   selectedId: string | null | undefined;
   onSelectEvent: (event: EventItem) => void;
+  onSelectPlace?: ((place: Place) => void) | undefined;
 }) {
   const map = useMap();
   useEffect(() => {
@@ -156,16 +169,30 @@ function MapLayers({
         alt: event.name,
         keyboard: true,
       });
+      markerKind.set(marker, "event");
       marker.on("click", () => onSelectEvent(event));
       return [marker];
     });
-    cluster.addLayers(markers);
+    // De fasta platserna ligger i samma klustergrupp som eventen – annars låg
+    // hundratals punkter ovanpå varandra i city utan möjlighet att zooma isär.
+    const placeMarkers = places.map(({ place, geo, color }) => {
+      const marker = L.marker([geo.lat, geo.lng], {
+        icon: placePin(color),
+        title: place.name,
+        alt: place.name,
+        keyboard: true,
+      });
+      markerKind.set(marker, "fast");
+      marker.on("click", () => onSelectPlace?.(place));
+      return marker;
+    });
+    cluster.addLayers([...markers, ...placeMarkers]);
     map.addLayer(cluster);
     return () => {
       map.removeLayer(cluster);
       cluster.clearLayers();
     };
-  }, [events, map, onSelectEvent, selectedId]);
+  }, [events, map, onSelectEvent, onSelectPlace, places, selectedId]);
   return null;
 }
 
@@ -467,16 +494,20 @@ export function LeafletMap({
     () => new Set(events.map((event) => normalizePlaceName(event.place))),
     [events],
   );
-  const placeItems = showPlaces
-    ? places.flatMap((place) => {
-        const geo = geoOf(place);
-        const type = PLACE_TYPES[place.type];
-        if (!geo || !type) return [];
-        // Grön när platsen också har event, annars röd (fast plats).
-        const color = eventPlaces.has(normalizePlaceName(place.name)) ? BOTH_COLOR : FAST_COLOR;
-        return [{ place, geo, type, color }];
-      })
-    : [];
+  const placeItems = useMemo(
+    () =>
+      showPlaces
+        ? places.flatMap((place) => {
+            const geo = geoOf(place);
+            const type = PLACE_TYPES[place.type];
+            if (!geo || !type) return [];
+            // Grön när platsen också har event, annars röd (fast plats).
+            const color = eventPlaces.has(normalizePlaceName(place.name)) ? BOTH_COLOR : FAST_COLOR;
+            return [{ place, geo, type, color }];
+          })
+        : [],
+    [eventPlaces, places, showPlaces],
+  );
 
   return (
     // isolate + z-0 håller Leaflets egna z-index (panes 400, kontroller 500)
@@ -501,22 +532,18 @@ export function LeafletMap({
         className="h-full w-full"
         preferCanvas
       >
-        <MapLayers events={events} selectedId={selectedId} onSelectEvent={onSelectEvent} />
+        <MapLayers
+          events={events}
+          places={placeItems}
+          selectedId={selectedId}
+          onSelectEvent={onSelectEvent}
+          onSelectPlace={onSelectPlace}
+        />
         <TileLayer
           url={TILE_URL}
           maxZoom={19}
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
-        {placeItems.map(({ place, geo, color }) => (
-          <Marker
-            key={place.id}
-            position={[geo.lat, geo.lng]}
-            icon={placePin(color)}
-            title={place.name}
-            alt={place.name}
-            eventHandlers={{ click: () => onSelectPlace?.(place) }}
-          />
-        ))}
         {userLocation && (
           <>
             {/* Mjuk halo runt punkten så den syns även över täta kluster. */}

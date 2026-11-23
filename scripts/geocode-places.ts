@@ -5,8 +5,9 @@
  *
  *   bun run geocode:places
  *
- * Först en batchad Overpass-fråga (många namn per anrop), sedan Photon och
- * Nominatim för de namn som saknas. Alla svar måste ligga i Stor-Stockholm.
+ * Först en batchad Overpass-fråga (många namn per anrop), sedan det lokala
+ * OSM-indexet, de handskrivna adresserna i place-overrides.json och till sist
+ * Photon och Nominatim. Alla svar måste ligga i Stor-Stockholm.
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import {
@@ -274,100 +275,6 @@ const matchWithIndex = (names: string[], index: OsmPlace[]): Record<string, Coor
   return results;
 };
 
-/** Samma strikta namnkontroll som verify-skriptet: bara träffar som liknar namnet. */
-const nameMatches = (wantedName: string, candidateName: string) => {
-  const wanted = compact(wantedName);
-  const candidate = compact(candidateName.replace(/\s*\(.*?\)\s*$/, ""));
-  if (!wanted || !candidate) return false;
-  if (wanted === candidate) return true;
-  const lengthDiff = Math.abs(wanted.length - candidate.length);
-  if (lengthDiff <= 6 && (wanted.startsWith(candidate) || candidate.startsWith(wanted)))
-    return true;
-  if (
-    Math.min(wanted.length, candidate.length) >= 6 &&
-    Math.max(wanted.length, candidate.length) / Math.min(wanted.length, candidate.length) <= 1.8 &&
-    (wanted.includes(candidate) || candidate.includes(wanted))
-  )
-    return true;
-  if (wanted.length >= 8 && editDistance(wanted, candidate) <= 2) return true;
-  return false;
-};
-
-const WIKI = "https://sv.wikipedia.org/w/api.php";
-
-const wikiJson = async <T>(params: Record<string, string>): Promise<T | undefined> => {
-  try {
-    const response = await fetch(
-      `${WIKI}?${new URLSearchParams({ ...params, format: "json", formatversion: "2" })}`,
-      { headers: { "user-agent": USER_AGENT }, signal: AbortSignal.timeout(15_000) },
-    );
-    if (!response.ok) return undefined;
-    return (await response.json()) as T;
-  } catch {
-    return undefined;
-  }
-};
-
-type WikiPage = { title: string; coordinates?: { lat: number; lon: number }[] };
-
-/**
- * Wikipedias artiklar har koordinater för museer, teatrar, parker och bad.
- * Bra komplement när OSM saknar platsen under sitt eget namn.
- */
-/**
- * Namn att söka på: hela namnet och de delar som står före "&", "i", "på" osv.
- * "Humlegården & Linnéstatyn" ska kunna hitta artikeln om Humlegården.
- */
-const nameVariants = (name: string): string[] => {
-  const variants = new Set<string>([name]);
-  for (const part of name.split(/\s+(?:&|och|i|på|vid|under|med)\s+/i)) {
-    const trimmed = part.trim();
-    if (trimmed.length >= 5 && trimmed !== name) variants.add(trimmed);
-  }
-  // Genitiv i första ordet: "Spårvägsmuseets" -> "Spårvägsmuseet".
-  const firstWord = name.split(/\s+/)[0] ?? "";
-  if (firstWord.length >= 8 && /[^s]s$/.test(firstWord)) variants.add(firstWord.slice(0, -1));
-  return [...variants];
-};
-
-const lookupWikipedia = async (
-  query: string,
-  wantedName: string,
-): Promise<CoordinateHit | undefined> => {
-  const search = await wikiJson<{ query?: { search?: { title: string }[] } }>({
-    action: "query",
-    list: "search",
-    srsearch: query,
-    srlimit: "4",
-  });
-  const titles = (search?.query?.search ?? [])
-    .map((hit) => hit.title)
-    .filter((title) => nameMatches(wantedName, title) || nameMatches(query, title));
-  if (titles.length === 0) return undefined;
-
-  const data = await wikiJson<{ query?: { pages?: WikiPage[] } }>({
-    action: "query",
-    prop: "coordinates",
-    titles: titles.join("|"),
-    colimit: "max",
-  });
-  for (const page of data?.query?.pages ?? []) {
-    const coordinate = page.coordinates?.[0];
-    if (!coordinate || !inBounds(coordinate.lat, coordinate.lon)) continue;
-    return { lat: coordinate.lat, lng: coordinate.lon, label: page.title };
-  }
-  return undefined;
-};
-
-const geocodeWikipedia = async (name: string): Promise<CoordinateHit | undefined> => {
-  for (const variant of nameVariants(name)) {
-    const hit = await lookupWikipedia(variant, name);
-    await sleep(200);
-    if (hit) return hit;
-  }
-  return undefined;
-};
-
 const geocodePhoton = async (name: string): Promise<CoordinateHit | undefined> => {
   const url = `${PHOTON}?${new URLSearchParams({
     q: `${name}, Stockholm`,
@@ -413,16 +320,6 @@ const geocodeNominatim = async (name: string): Promise<CoordinateHit | undefined
   return { lat, lng, label: hit.display_name };
 };
 
-// SKIP_RELAXED=1 hoppar över den lösare overpass-omgången (t.ex. när den
-// redan kört och bara Nominatim återstår).
-const SKIP_RELAXED = process.env.SKIP_RELAXED === "1";
-// NO_NOMINATIM=1 hoppar över Nominatim-fallbacken. Den rate-limitar hårt och
-// varje misslyckat försök kostar 45 sekunder i retries.
-const NO_NOMINATIM = process.env.NO_NOMINATIM === "1";
-// SKIP_PHOTON=1 hoppar över Photon, som periodvis svarar 000 och då kostar en
-// minut per namn i retries.
-const SKIP_PHOTON = process.env.SKIP_PHOTON === "1";
-
 /** Slår upp en gatuadress (används för de platser OSM inte har namngett). */
 const geocodeNominatimAddress = async (address: string): Promise<CoordinateHit | undefined> => {
   const url = `${NOMINATIM}?${new URLSearchParams({
@@ -455,12 +352,8 @@ if (Object.keys(cache).length === 0) {
 let pending = CURATED_VENUES.filter((venue) => !cache[venue.name]).map((venue) => venue.name);
 console.log(`${Object.keys(cache).length} klara, ${pending.length} kvar att geokoda`);
 
-// SKIP_OVERPASS=1 hoppar över den exakta Overpass-omgången, t.ex. när bara
-// Wikipedia och de övriga källorna behöver köras igen.
-const SKIP_OVERPASS = process.env.SKIP_OVERPASS === "1";
-
 // 1) Overpass i batchar.
-for (let index = 0; SKIP_OVERPASS ? false : index < pending.length; index += BATCH_SIZE) {
+for (let index = 0; index < pending.length; index += BATCH_SIZE) {
   const batch = pending.slice(index, index + BATCH_SIZE);
   const hits = await geocodeBatch(batch);
   for (const [name, hit] of Object.entries(hits)) cache[name] = hit;
@@ -473,7 +366,7 @@ for (let index = 0; SKIP_OVERPASS ? false : index < pending.length; index += BAT
 // 2) Overpass igen, nu på utmärkande ord.
 pending = CURATED_VENUES.filter((venue) => !cache[venue.name]).map((venue) => venue.name);
 console.log(`${pending.length} kvar efter exakt overpass-sökning`);
-for (let index = 0; SKIP_RELAXED ? false : index < pending.length; index += 10) {
+for (let index = 0; index < pending.length; index += 10) {
   const batch = pending.slice(index, index + 10);
   const hits = await geocodeRelaxed(batch);
   for (const [name, hit] of Object.entries(hits)) cache[name] = hit;
@@ -492,23 +385,6 @@ if (pending.length > 0) {
   writeCache(cache);
   writeCoordinateModule(cache);
   console.log(`osm-index: ${Object.keys(hits).length} av ${pending.length} matchade`);
-}
-
-// 3b) Wikipedia för de platser OSM inte har under sitt namn.
-pending = CURATED_VENUES.filter((venue) => !cache[venue.name]).map((venue) => venue.name);
-if (pending.length > 0) {
-  let wikiAdded = 0;
-  for (const name of pending) {
-    const hit = await geocodeWikipedia(name);
-    if (hit) {
-      cache[name] = hit;
-      wikiAdded += 1;
-      writeCache(cache);
-    }
-    await sleep(200);
-  }
-  writeCoordinateModule(cache);
-  console.log(`wikipedia: ${wikiAdded} av ${pending.length} matchade`);
 }
 
 // 4) Adresser för platser som inte finns i OSM under sitt namn.
@@ -559,8 +435,8 @@ console.log(`photon: ${photonAlive ? "svarar" : "nere"}, nominatim: ${nominatimA
 const missed: string[] = [];
 for (const name of pending) {
   const hit =
-    (photonAlive && !SKIP_PHOTON ? await geocodePhoton(name) : undefined) ??
-    (nominatimAlive && !NO_NOMINATIM ? await geocodeNominatim(name) : undefined);
+    (photonAlive ? await geocodePhoton(name) : undefined) ??
+    (nominatimAlive ? await geocodeNominatim(name) : undefined);
   if (hit) {
     cache[name] = hit;
     writeCache(cache);

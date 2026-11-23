@@ -26,24 +26,21 @@ const slug = (name: string): string =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-export const CURATED_PLACES: Place[] = CURATED_VENUES.flatMap((venue) => {
+export const CURATED_PLACES: Place[] = CURATED_VENUES.map((venue) => {
   const coords = CURATED_COORDINATES[venue.name];
-  if (!coords) return [];
   const type = TYPE_BY_CATEGORY[venue.category ?? "ovrigt"] ?? "gomd";
-  return [
-    {
-      id: `fast-${slug(venue.name)}`,
-      name: venue.name,
-      type,
-      description: "",
-      address: "Stockholm",
-      lat: coords[0],
-      lng: coords[1],
-      distance: 0,
-      // Fasta platser är öppna att gå till – ingen bokad tid.
-      open: "Alla tider",
-      ...(venue.url ? { link: venue.url, contact: venue.url } : {}),
-      status: "approved" as const,
-    },
-  ];
+  return {
+    id: `fast-${slug(venue.name)}`,
+    name: venue.name,
+    type,
+    description: "",
+    address: "Stockholm",
+    // Saknas koordinater får platsen ingen nål, men den finns kvar i listvyn.
+    ...(coords ? { lat: coords[0], lng: coords[1] } : {}),
+    distance: 0,
+    // Fasta platser är öppna att gå till – ingen bokad tid.
+    open: "Alla tider",
+    ...(venue.url ? { link: venue.url, contact: venue.url } : {}),
+    status: "approved" as const,
+  };
 });
