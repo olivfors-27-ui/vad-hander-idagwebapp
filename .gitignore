@@ -37,3 +37,6 @@ supabase/.temp/
 *.njsproj
 *.sln
 *.sw?
+
+# Lokalt OSM-index för geokodning
+scripts/.osm-index.json
