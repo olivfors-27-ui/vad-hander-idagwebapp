@@ -116,9 +116,9 @@ const clusterIcon = (cluster: L.MarkerCluster) => {
   const color = events === 0 ? FAST_COLOR : fast === 0 ? TEMPORARY_COLOR : BOTH_COLOR;
   const label =
     events === 0 ? `${count} fasta platser` : fast === 0 ? `${count} event` : `${count} träffar`;
-  const size = count > 99 ? 52 : 44;
+  const size = count > 99 ? 60 : 50;
   return divIcon({
-    html: `<span class="hander-cluster-label" role="img" aria-label="${label}" style="display:grid;width:100%;height:100%;place-items:center;border:3px solid #fff;border-radius:50%;background:${color};color:#fff;font-size:13px;font-weight:800;box-shadow:${PIN_SHADOW}">${count}</span>`,
+    html: `<span class="hander-cluster-label" role="img" aria-label="${label}" style="display:grid;width:100%;height:100%;place-items:center;border:3px solid #fff;border-radius:50%;background:${color};color:#fff;font-size:14px;font-weight:800;box-shadow:${PIN_SHADOW}">${count}</span>`,
     className: "hander-leaflet-cluster",
     iconSize: point(size, size),
   });
@@ -143,7 +143,8 @@ function MapLayers({
       chunkedLoading: true,
       showCoverageOnHover: false,
       spiderfyOnMaxZoom: true,
-      maxClusterRadius: 70,
+      // Större radie = färre och större bollar, lättare att träffa vid översikt.
+      maxClusterRadius: 90,
       iconCreateFunction: clusterIcon,
     });
     const markers = events.flatMap((event) => {

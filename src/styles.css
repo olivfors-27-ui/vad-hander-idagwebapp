@@ -1430,10 +1430,35 @@
 }
 /* På desktop finns ingen bottennavigation att ta hänsyn till och inget att dra i,
    så bladet får plats med hela innehållet direkt och bilden kortas ned. */
+/* Desktop: bladet fyller hela skärmen som på mobilen, med innehållet i en
+   centrerad kolumn. Ingår ingen dragbar del – det finns ingen gest att göra. */
 @media (min-width: 1024px) {
   .sheet-panel {
-    max-height: min(78vh, 680px) !important;
-    max-width: 30rem;
+    inset: 0 !important;
+    width: 100%;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0;
+    padding-bottom: 0 !important;
+    border: 0;
+    border-radius: 0;
+  }
+  .sheet-panel .map-sheet-card,
+  .sheet-panel .map-sheet-actions,
+  .sheet-panel > div:first-child {
+    max-width: 40rem;
+    margin-inline: auto;
+  }
+  /* Stängknappen ska sitta vid kortets kant, inte vid fönsterkanten. */
+  .sheet-panel > div:first-child {
+    background: transparent;
+    border-radius: 0;
+  }
+  .map-sheet-card .map-sheet-cover {
+    height: 200px;
+  }
+  .sheet-panel .map-sheet-actions {
+    margin-top: 8px;
   }
 }
 

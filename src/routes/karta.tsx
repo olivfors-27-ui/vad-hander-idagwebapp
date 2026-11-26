@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Bookmark, CalendarHeart, List, MapPin, Share2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AppShell } from "@/components/hander/AppShell";
 import { AvatarStack, CategoryChip, EventRow, priceLabel } from "@/components/hander/EventBits";
 import { FilterButton, FilterSheet, QuickFilters, SortBar } from "@/components/hander/FilterSheet";
@@ -25,6 +26,7 @@ import {
   type SortMode,
 } from "@/lib/hander-store";
 import { useIsLoggedIn } from "@/lib/auth-guard";
+import { useDesktop } from "@/lib/use-desktop";
 import { cn } from "@/lib/utils";
 import { appUrl } from "@/lib/app-url";
 
@@ -291,6 +293,8 @@ function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () =
   const [expanded, setExpanded] = useState(false);
   const [dragging, setDragging] = useState(false);
   const startY = useRef(0);
+  // På desktop fyller bladet hela skärmen och då finns inget att dra i.
+  const desktop = useDesktop();
 
   const beginDrag = (event: React.PointerEvent) => {
     startY.current = event.clientY;
@@ -307,7 +311,7 @@ function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () =
     event.currentTarget.releasePointerCapture(event.pointerId);
   };
 
-  return (
+  const sheet = (
     <>
       <div
         className={cn(
@@ -327,12 +331,15 @@ function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () =
         )}
       >
         <div
-          className="sticky top-0 z-10 flex cursor-grab touch-none items-center justify-between rounded-t-3xl bg-card/95 px-4 pb-1 pt-3 backdrop-blur active:cursor-grabbing"
-          onPointerDown={beginDrag}
-          onPointerUp={endDrag}
-          onPointerCancel={() => setDragging(false)}
+          className={cn(
+            "sticky top-0 z-10 flex items-center justify-between rounded-t-3xl bg-card/95 px-4 pb-1 pt-3 backdrop-blur",
+            desktop ? "cursor-default" : "cursor-grab touch-none active:cursor-grabbing",
+          )}
+          onPointerDown={desktop ? undefined : beginDrag}
+          onPointerUp={desktop ? undefined : endDrag}
+          onPointerCancel={desktop ? undefined : () => setDragging(false)}
         >
-          <span className="mx-auto h-1.5 w-10 rounded-full bg-border" />
+          {!desktop && <span className="mx-auto h-1.5 w-10 rounded-full bg-border" />}
           <button
             type="button"
             onClick={onClose}
@@ -346,6 +353,10 @@ function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () =
       </div>
     </>
   );
+
+  // På desktop ska bladet ligga över hela fönstret, även sidomenyn – därför
+  // portas det till body. I mobilen ligger det kvar i telefonramen.
+  return desktop && typeof document !== "undefined" ? createPortal(sheet, document.body) : sheet;
 }
 
 function ActionRow({
