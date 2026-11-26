@@ -110,14 +110,26 @@ const placePin = (color: string) =>
 
 /** Vad en markering föreställer – så att klustret kan färgas efter innehåll. */
 const markerKind = new WeakMap<L.Marker, "fast" | "event">();
+/** Nålens färg, så att en klunga av fasta platser får samma färg som nålarna. */
+const markerColor = new WeakMap<L.Marker, string>();
 
 const clusterIcon = (cluster: L.MarkerCluster) => {
   const count = cluster.getChildCount();
-  const fast = cluster.getAllChildMarkers().filter((marker) => markerKind.get(marker) === "fast").length;
+  const children = cluster.getAllChildMarkers();
+  const fastMarkers = children.filter((marker) => markerKind.get(marker) === "fast");
+  const fast = fastMarkers.length;
   const events = count - fast;
-  // Samma färgspråk som nålarna: rött för enbart fasta platser, blått för
-  // enbart event och grönt när gruppen blandar dem.
-  const color = events === 0 ? FAST_COLOR : fast === 0 ? TEMPORARY_COLOR : BOTH_COLOR;
+  // Samma färgspråk som nålarna: platsernas egen typfärg när gruppen bara
+  // innehåller en typ, annars rött för enbart fasta platser, blått för enbart
+  // event och grönt när gruppen blandar dem.
+  const fastColors = new Set(fastMarkers.map((marker) => markerColor.get(marker)));
+  const singleFastColor = fastColors.size === 1 ? [...fastColors][0] : undefined;
+  const color =
+    events === 0
+      ? (singleFastColor ?? FAST_COLOR)
+      : fast === 0
+        ? TEMPORARY_COLOR
+        : BOTH_COLOR;
   const label =
     events === 0 ? `${count} fasta platser` : fast === 0 ? `${count} event` : `${count} träffar`;
   const size = count > 99 ? 60 : 50;
@@ -188,6 +200,7 @@ function MapLayers({
         keyboard: true,
       });
       markerKind.set(marker, "fast");
+      markerColor.set(marker, color);
       marker.on("click", () => onSelectPlace?.(place));
       return marker;
     });
@@ -512,8 +525,9 @@ export function LeafletMap({
             const geo = geoOf(place);
             const type = PLACE_TYPES[place.type];
             if (!geo || !type) return [];
-            // Grön när platsen också har event, annars röd (fast plats).
-            const color = eventPlaces.has(normalizePlaceName(place.name)) ? BOTH_COLOR : FAST_COLOR;
+            // Grön när platsen också har event, annars sin egen typfärg – samma
+            // färg som platsen har i listan och i sitt blad.
+            const color = eventPlaces.has(normalizePlaceName(place.name)) ? BOTH_COLOR : type.color;
             return [{ place, geo, type, color }];
           })
         : [],
