@@ -569,6 +569,19 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
               <p className="ml-6 text-xs text-muted-foreground">
                 {place.address} · {place.distance} km bort
               </p>
+              {place.lat !== undefined && place.lng !== undefined && (
+                <div className="mt-3 h-32 overflow-hidden rounded-xl">
+                  {/* Minikartan centreras på platsens egen koordinat i stället
+                      för att återanvända den sparade kartvyn. */}
+                  <MapCanvas
+                    events={[]}
+                    places={[place]}
+                    focus={{ lat: place.lat, lng: place.lng }}
+                    initialZoom={15}
+                    onSelectEvent={() => {}}
+                  />
+                </div>
+              )}
             </div>
 
             {place.description && (

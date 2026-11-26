@@ -194,8 +194,8 @@
 /* Fast plats: kartnål med spetsen nedåt, i samma stil som eventnålarna. */
 .hander-place-pin {
   display: block;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border: 3px solid white;
   border-radius: 50% 50% 50% 4px;
   background: var(--pin-color);
@@ -207,8 +207,8 @@
   position: absolute;
   inset: 0;
   margin: auto;
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: #fff;
 }

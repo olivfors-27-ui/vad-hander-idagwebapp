@@ -14,6 +14,8 @@ type LeafletMapProps = {
   zoomable?: boolean;
   searchable?: boolean;
   initialZoom?: number;
+  /** Tvingad mittpunkt – används av minikartan i platsbladet. */
+  focus?: GeoPoint | null | undefined;
   /** Avstånd från kartans överkant till sökfältet (filterraden ligger ovanpå). */
   searchTop?: number;
   /** Extra utrymme nedtill för kontroller och credits. */

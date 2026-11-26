@@ -104,8 +104,8 @@ const placePin = (color: string) =>
   divIcon({
     className: "hander-leaflet-place",
     html: `<span class="hander-place-pin" style="background:${color}"></span>`,
-    iconSize: [34, 41],
-    iconAnchor: [17, 41],
+    iconSize: [38, 46],
+    iconAnchor: [19, 46],
   });
 
 /** Vad en markering föreställer – så att klustret kan färgas efter innehåll. */
@@ -466,6 +466,7 @@ export function LeafletMap({
   initialZoom,
   searchTop,
   bottomInset,
+  focus,
   className,
 }: {
   events: EventItem[];
@@ -477,6 +478,11 @@ export function LeafletMap({
   zoomable: boolean;
   searchable: boolean;
   initialZoom: number;
+  /**
+   * Tvingad mittpunkt (t.ex. minikartan i ett platsblad). Sätts den här vyn
+   * används den i stället för användarens sparade kartvy, och vyn sparas inte.
+   */
+  focus?: GeoPoint | null | undefined;
   /** Avstånd från kartans överkant till sökfältet – håller undan för filterraden. */
   searchTop: number;
   /** Extra utrymme nedtill (t.ex. bakom en flytande tabbar) för kontroller/credits. */
@@ -491,10 +497,10 @@ export function LeafletMap({
   const savedView = useMemo(() => readMapView(), []);
   const firstEventGeo = events.length === 1 ? geoOf(events[0]!) : null;
   const fallbackCenter = firstEventGeo ?? DEFAULT_MAP_VIEW;
-  const view = savedView
-    ? savedView
-    : { lat: fallbackCenter.lat, lng: fallbackCenter.lng, zoom: initialZoom };
-  const center: LatLngExpression = [view.lat, view.lng];
+  const view = focus
+    ? { lat: focus.lat, lng: focus.lng, zoom: initialZoom }
+    : (savedView ?? { lat: fallbackCenter.lat, lng: fallbackCenter.lng, zoom: initialZoom });
+  const mapCenter: LatLngExpression = [view.lat, view.lng];
   const eventPlaces = useMemo(
     () => new Set(events.map((event) => normalizePlaceName(event.place))),
     [events],
@@ -523,7 +529,7 @@ export function LeafletMap({
       style={{ "--map-controls-bottom": `${28 + bottomInset}px` } as React.CSSProperties}
     >
       <MapContainer
-        center={center}
+        center={mapCenter}
         zoom={view.zoom}
         minZoom={10}
         maxZoom={19}
@@ -578,9 +584,11 @@ export function LeafletMap({
             />
           </>
         )}
-        <MapControls center={DEFAULT_MAP_VIEW} />
+        {/* Minikartan är bara en förhandsvisning av platsen – inga kontroller där. */}
+        {!focus && <MapControls center={DEFAULT_MAP_VIEW} />}
         <InvalidateMapSize />
-        <MapViewMemory />
+        {/* En minikarta med tvingad mittpunkt ska aldrig skriva över den sparade vyn. */}
+        {!focus && <MapViewMemory />}
         <MapBridge onReady={setMap} />
       </MapContainer>
       {searchable && map && <MapSearch map={map} top={searchTop} />}
