@@ -224,11 +224,29 @@
   border-radius: 14px;
   overflow: hidden;
 }
+.place-sheet-media-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 .place-sheet-media::after {
   content: "";
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg, rgba(0, 0, 0, 0) 45%, rgba(20, 16, 25, 0.55) 100%);
+}
+/* Saknar platsen foto får färgytan en stor, diskret symbol för sin typ. */
+.place-sheet-media-emoji {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 84px;
+  line-height: 1;
+  opacity: 0.28;
+  filter: grayscale(0.15);
 }
 .place-sheet-media-label {
   position: absolute;

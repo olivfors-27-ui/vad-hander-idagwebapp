@@ -1,4 +1,5 @@
 import { CURATED_COORDINATES } from "./curated-coordinates";
+import { CURATED_IMAGES } from "./curated-images";
 import { CURATED_VENUES } from "./event-source";
 import type { Place, PlaceType } from "./hander-data";
 
@@ -41,6 +42,8 @@ export const CURATED_PLACES: Place[] = CURATED_VENUES.map((venue) => {
     // Fasta platser är öppna att gå till – ingen bokad tid.
     open: "Alla tider",
     ...(venue.url ? { link: venue.url, contact: venue.url } : {}),
+    // Bilden är hämtad från platsens egen sajt; saknas den ritas en färgyta.
+    ...(CURATED_IMAGES[venue.name] ? { image: CURATED_IMAGES[venue.name] } : {}),
     status: "approved" as const,
   };
 });

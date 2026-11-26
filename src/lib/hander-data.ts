@@ -189,6 +189,8 @@ export type Place = {
   /** Telefon, mejl eller webbadress */
   contact?: string | undefined;
   link?: string | undefined;
+  /** Förhandsbild från platsens egen sajt, om någon hittats. */
+  image?: string | undefined;
   /** Status för användarförslag: godkända platser visas på kartan */
   status?: EventStatus | undefined;
   suggestedBy?: string | undefined;

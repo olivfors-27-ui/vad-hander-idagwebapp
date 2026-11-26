@@ -9,6 +9,7 @@
     "build:dev": "vite build --mode development",
     "build:sites": "bun build sites/worker.ts --target browser --format esm --outfile sites/index.js",
     "geocode:places": "bun scripts/geocode-places.ts",
+    "images:places": "bun scripts/fetch-place-images.ts",
     "build:places": "bun scripts/build-place-coordinates.ts",
     "verify:places": "bun scripts/verify-place-coordinates.ts",
     "preview": "vite preview",

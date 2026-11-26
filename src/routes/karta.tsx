@@ -385,7 +385,7 @@ function ActionRow({
   // UI-guard: "Planera med kompisar" kräver inloggning.
   const loggedIn = useIsLoggedIn();
   return (
-    <div className="map-sheet-actions sticky bottom-0 z-10 mt-4 space-y-2 bg-card/95 pb-2 pt-2 backdrop-blur">
+    <div className="map-sheet-actions sticky bottom-0 z-10 mt-4 space-y-2 pb-2 pt-2">
       {loggedIn && (
         <Link
           to="/skapa"
@@ -534,6 +534,23 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
             className="place-sheet-media"
             style={{ background: `linear-gradient(135deg, ${meta.color}, ${meta.color}99)` }}
           >
+            {/* Bilden ligger över färgytan, så en trasig bild bara visar gradienten. */}
+            {place.image && (
+              <img
+                src={place.image}
+                alt={place.name}
+                loading="lazy"
+                className="place-sheet-media-img"
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                }}
+              />
+            )}
+            {!place.image && (
+              <span className="place-sheet-media-emoji" aria-hidden>
+                {meta.emoji}
+              </span>
+            )}
             <span className="place-sheet-media-label">
               {meta.emoji} {meta.label}
             </span>
@@ -594,7 +611,7 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
                 href={place.link}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex text-xs font-bold text-primary underline underline-offset-2"
+                className="inline-flex rounded-full border border-primary/35 px-3 py-1.5 text-xs font-bold text-primary"
               >
                 Läs mer
               </a>
