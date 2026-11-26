@@ -289,7 +289,16 @@ function MapPage() {
 }
 
 /** Gemensamt bottenblad – ligger alltid ovanför kartkontroller och navigation. */
-function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+function Sheet({
+  children,
+  onClose,
+  split = false,
+}: {
+  children: React.ReactNode;
+  onClose: () => void;
+  /** Tvåkolumnslayout på desktop (platsbladet) i stället för ett smalt kort. */
+  split?: boolean;
+}) {
   const [expanded, setExpanded] = useState(false);
   const [dragging, setDragging] = useState(false);
   const startY = useRef(0);
@@ -328,6 +337,7 @@ function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () =
           "sheet-panel fixed inset-x-0 bottom-0 z-[710] mx-auto w-full max-w-md overflow-y-auto overscroll-contain pb-[calc(env(safe-area-inset-bottom)+16px)]",
           expanded ? "max-h-[82vh]" : "max-h-[44vh]",
           dragging ? "transition-none" : "transition-[max-height] duration-200",
+          split && "sheet-panel--split",
         )}
       >
         <div
@@ -516,22 +526,30 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
 
   return (
     <>
-      <Sheet onClose={onClose}>
-        <div className="map-sheet-card map-sheet-card--blue">
+      <Sheet onClose={onClose} split>
+        {/* Samma uppdelning som eventpanelen: bilden till vänster och all info i
+            en egen kolumn till höger. På mobil staplas de. */}
+        <div className="place-sheet">
           <div
-            className="map-sheet-cover"
+            className="place-sheet-media"
             style={{ background: `linear-gradient(135deg, ${meta.color}, ${meta.color}99)` }}
           >
-            <span>{meta.label}</span>
-          </div>
-          {/* Samma uppbyggnad som EventSheet: titel, typchip, två faktakort,
-              adresskort och beskrivning – så ett platsblad känns som ett eventblad. */}
-          <div className="space-y-4 p-4">
-            <h3 className="font-display text-2xl font-bold leading-tight">{place.name}</h3>
-            <span className="map-sheet-tag inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide">
-              <span aria-hidden>{meta.emoji}</span>
-              {meta.label}
+            <span className="place-sheet-media-label">
+              {meta.emoji} {meta.label}
             </span>
+          </div>
+
+          <div className="place-sheet-body space-y-5">
+            <div>
+              <h3 className="font-display text-2xl font-bold leading-tight">{place.name}</h3>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="map-sheet-tag inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide">
+                  <span aria-hidden>{meta.emoji}</span>
+                  {meta.label}
+                </span>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-2xl bg-secondary/70 p-3">
                 <p className="text-[11px] font-bold uppercase text-muted-foreground">Öppettider</p>
@@ -540,56 +558,57 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
               <div className="rounded-2xl bg-secondary/70 p-3">
                 <p className="text-[11px] font-bold uppercase text-muted-foreground">Avstånd</p>
                 <p className="text-sm font-bold text-primary">{place.distance} km</p>
-                <p className="text-xs text-muted-foreground">från city</p>
+                <p className="text-xs text-muted-foreground">{place.price ?? "från city"}</p>
               </div>
             </div>
+
             <div className="rounded-2xl border border-border p-3">
               <p className="flex items-center gap-2 text-sm font-bold">
-                <MapPin className="h-4 w-4 shrink-0 text-primary" /> {place.address}
+                <MapPin className="h-4 w-4 shrink-0 text-primary" /> {place.name}
               </p>
               <p className="ml-6 text-xs text-muted-foreground">
-                {place.distance} km bort{place.price ? ` · ${place.price}` : ""}
+                {place.address} · {place.distance} km bort
               </p>
             </div>
+
             {place.description && (
               <p className="text-sm leading-relaxed text-foreground/90">{place.description}</p>
             )}
+
             {/* Länken ligger ofta både i contact och link – visa den bara en gång. */}
             {place.link ? (
-              <div className="text-xs">
-                <a
-                  href={place.link}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-bold text-primary underline"
-                >
-                  {place.link.replace(/^https?:\/\//, "")}
-                </a>
-              </div>
-            ) : place.contact ? (
-              <p className="text-xs break-words text-muted-foreground">{place.contact}</p>
-            ) : null}
-          </div>
-        </div>
-
-        <ActionRow
-          saved={store.savedPlaces.includes(place.id)}
-          onSave={() => store.toggleSavedPlace(place.id)}
-          onShare={() => setShare(true)}
-          planSearch={{ place: place.id }}
-          moreTo={
-            place.link ? (
               <a
                 href={place.link}
                 target="_blank"
                 rel="noreferrer"
-                className="map-sheet-ghost flex-1 rounded-2xl px-4 py-3 text-center text-xs font-bold"
+                className="inline-flex text-xs font-bold text-primary underline underline-offset-2"
               >
-                Visa mer
+                Läs mer
               </a>
-            ) : null
-          }
-        />
+            ) : place.contact ? (
+              <p className="text-xs break-words text-muted-foreground">{place.contact}</p>
+            ) : null}
+
+            <ActionRow
+              saved={store.savedPlaces.includes(place.id)}
+              onSave={() => store.toggleSavedPlace(place.id)}
+              onShare={() => setShare(true)}
+              planSearch={{ place: place.id }}
+              moreTo={
+                place.link ? (
+                  <a
+                    href={place.link}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="map-sheet-ghost flex-1 rounded-2xl px-4 py-3 text-center text-xs font-bold"
+                  >
+                    Visa mer
+                  </a>
+                ) : null
+              }
+            />
+          </div>
+        </div>
       </Sheet>
       <ShareSheet
         open={share}

@@ -104,8 +104,8 @@ const placePin = (color: string) =>
   divIcon({
     className: "hander-leaflet-place",
     html: `<span class="hander-place-pin" style="background:${color}"></span>`,
-    iconSize: [28, 34],
-    iconAnchor: [14, 34],
+    iconSize: [34, 41],
+    iconAnchor: [17, 41],
   });
 
 /** Vad en markering föreställer – så att klustret kan färgas efter innehåll. */

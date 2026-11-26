@@ -191,11 +191,11 @@
   border-radius: 50%;
   background: #22c55e;
 }
-/* Fast plats: kartnål med spetsen nedåt, i samma stil som eventnålarna men mindre. */
+/* Fast plats: kartnål med spetsen nedåt, i samma stil som eventnålarna. */
 .hander-place-pin {
   display: block;
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   border: 3px solid white;
   border-radius: 50% 50% 50% 4px;
   background: var(--pin-color);
@@ -207,10 +207,38 @@
   position: absolute;
   inset: 0;
   margin: auto;
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: #fff;
+}
+
+/* Platsbladet: samma uppdelning som eventpanelen – bild vänster, info höger. */
+.place-sheet {
+  display: grid;
+  gap: 14px;
+}
+.place-sheet-media {
+  position: relative;
+  height: 160px;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.place-sheet-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 45%, rgba(20, 16, 25, 0.55) 100%);
+}
+.place-sheet-media-label {
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  z-index: 1;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 .hander-cluster-label {
   display: grid;
@@ -1440,10 +1468,8 @@
   color: #fffdf9;
   box-shadow: 0 8px 20px -6px rgba(228, 80, 72, 0.42);
 }
-/* På desktop finns ingen bottennavigation att ta hänsyn till och inget att dra i,
-   så bladet får plats med hela innehållet direkt och bilden kortas ned. */
-/* Desktop: bladet fyller hela skärmen som på mobilen, med innehållet i en
-   centrerad kolumn. Ingår ingen dragbar del – det finns ingen gest att göra. */
+/* Desktop: bladet fyller hela skärmen som på mobilen, med lätt genomskinlig vit
+   yta så att kartan anas bakom. Ingen dragbar del – det finns ingen gest. */
 @media (min-width: 1024px) {
   .sheet-panel {
     inset: 0 !important;
@@ -1454,23 +1480,59 @@
     padding-bottom: 0 !important;
     border: 0;
     border-radius: 0;
+    background: rgba(255, 253, 249, 0.82);
+    backdrop-filter: blur(10px);
   }
   .sheet-panel .map-sheet-card,
-  .sheet-panel .map-sheet-actions,
-  .sheet-panel > div:first-child {
+  .sheet-panel .map-sheet-actions {
     max-width: 40rem;
     margin-inline: auto;
   }
-  /* Stängknappen ska sitta vid kortets kant, inte vid fönsterkanten. */
   .sheet-panel > div:first-child {
+    max-width: 40rem;
+    margin-inline: auto;
     background: transparent;
     border-radius: 0;
+  }
+  /* Platsbladet är bredare: då sitter krysset över bilden till vänster, som på
+     eventsidan, i stället för ute vid fönsterkanten. */
+  .sheet-panel--split > div:first-child {
+    max-width: 78rem;
+    justify-content: flex-start;
+  }
+  .sheet-panel--split > div:first-child > button {
+    right: auto;
+    left: 12px;
   }
   .map-sheet-card .map-sheet-cover {
     height: 200px;
   }
   .sheet-panel .map-sheet-actions {
     margin-top: 8px;
+  }
+  /* Platsbladet: bild vänster, info höger – samma uppdelning som eventpanelen. */
+  .sheet-panel--split .place-sheet {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 2rem;
+    align-items: stretch;
+    max-width: 78rem;
+    margin-inline: auto;
+    height: calc(100vh - 4.5rem);
+  }
+  .place-sheet-media {
+    height: 100%;
+    min-height: 22rem;
+    border-radius: 20px;
+  }
+  .place-sheet-body {
+    min-width: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+    padding-bottom: 8px;
+  }
+  .place-sheet-body .map-sheet-actions {
+    max-width: none;
   }
 }
 
