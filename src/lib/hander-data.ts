@@ -52,7 +52,10 @@ export type PlaceType =
   | "keramik"
   | "bad"
   | "utsikt"
-  | "gomd";
+  | "gomd"
+  | "museum"
+  | "park"
+  | "sevardhet";
 
 export const PLACE_TYPES: Record<PlaceType, { label: string; emoji: string; color: string }> = {
   cafe: { label: "Café", emoji: "☕️", color: "#B45309" },
@@ -71,6 +74,9 @@ export const PLACE_TYPES: Record<PlaceType, { label: string; emoji: string; colo
   bad: { label: "Badplats", emoji: "🏊", color: "#0284C7" },
   utsikt: { label: "Utsiktsplats", emoji: "🌅", color: "#C2410C" },
   gomd: { label: "Gömd pärla", emoji: "💎", color: "#0891B2" },
+  museum: { label: "Museum", emoji: "🏛", color: "#9A3412" },
+  park: { label: "Park", emoji: "🌳", color: "#3F6212" },
+  sevardhet: { label: "Sevärdhet", emoji: "📍", color: "#B45309" },
 };
 
 /** Permanenta upptäckter – det som inte är vanliga caféer/restauranger. */
@@ -160,6 +166,12 @@ export type EventItem = {
   /** Antal deltagare (kommer + kanske) på ett privat event. */
   guestCount?: number | undefined;
 };
+
+export const STOCKHOLM_API_ORGANIZER = "visit-stockholm";
+
+/** True för event som kommer från Stockholms stads event-API. */
+export const isStockholmApiEvent = (event: Pick<EventItem, "organizerId">) =>
+  event.organizerId === STOCKHOLM_API_ORGANIZER;
 
 export type Place = {
   id: string;

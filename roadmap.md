@@ -1,4 +1,4 @@
-# Roadmap – Händer
+# Roadmap – Tagalong
 
 ## Klart
 - Mjuk (eased) zoom på kartan: wheel, pinch och +/- animeras mot ett målvärde.

@@ -68,6 +68,10 @@ export function MapLegend() {
         <span className="h-3 w-3 rounded-full border-2 border-white bg-[#15803D] shadow-sm" />
         Plats med event
       </span>
+      <span className="flex items-center gap-1">
+        <span className="h-3 w-3 rounded-full bg-[#E45048] shadow-[0_0_0_2px_#cbd5e1]" />
+        Stockholm API
+      </span>
       <span>Tryck på en grupp för att zooma in</span>
     </div>
   );

@@ -1,6 +1,6 @@
 /**
  * Geokodning via OpenStreetMap Nominatim: adress → latitud/longitud.
- * Inga API-nycklar krävs. Alla pins i Händer bygger på riktiga koordinater.
+ * Inga API-nycklar krävs. Alla pins i Tagalong bygger på riktiga koordinater.
  */
 
 export type GeoHit = {

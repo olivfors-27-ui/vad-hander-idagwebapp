@@ -12,16 +12,16 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/foresla-plats")({
   head: () => ({
     meta: [
-      { title: "Föreslå en plats – Händer" },
+      { title: "Föreslå en plats – Tagalong" },
       {
         name: "description",
         content:
           "Tipsa om karaoke, klättring, escape rooms eller en gömd pärla. Förslaget granskas innan det syns på kartan.",
       },
-      { property: "og:title", content: "Föreslå en plats – Händer" },
+      { property: "og:title", content: "Föreslå en plats – Tagalong" },
       {
         property: "og:description",
-        content: "Tipsa om en aktivitet som saknas på Händers karta.",
+        content: "Tipsa om en aktivitet som saknas på Tagalongs karta.",
       },
     ],
   }),

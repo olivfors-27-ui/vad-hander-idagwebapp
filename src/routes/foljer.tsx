@@ -7,9 +7,9 @@ import { isEventVisible, useHander } from "@/lib/hander-store";
 export const Route = createFileRoute("/foljer")({
   head: () => ({
     meta: [
-      { title: "Följer – Händer" },
+      { title: "Följer – Tagalong" },
       { name: "description", content: "Se vad dina vänner och arrangörer du följer gör." },
-      { property: "og:title", content: "Följer – Händer" },
+      { property: "og:title", content: "Följer – Tagalong" },
       { property: "og:description", content: "Socialt flöde med events från folk du följer." },
     ],
   }),

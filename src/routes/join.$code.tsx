@@ -16,9 +16,9 @@ import { truncateDescription } from "@/lib/text";
 export const Route = createFileRoute("/join/$code")({
   head: () => ({
     meta: [
-      { title: "Du är inbjuden – Händer" },
+      { title: "Du är inbjuden – Tagalong" },
       { name: "description", content: "Svara på en inbjudan till ett privat event." },
-      { property: "og:title", content: "Du är inbjuden – Händer" },
+      { property: "og:title", content: "Du är inbjuden – Tagalong" },
       { property: "og:description", content: "Någon har bjudit in dig till ett privat event." },
     ],
   }),

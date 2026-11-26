@@ -28,12 +28,12 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/arrangor")({
   head: () => ({
     meta: [
-      { title: "Arrangörspanel – Händer" },
+      { title: "Arrangörspanel – Tagalong" },
       {
         name: "description",
-        content: "Hantera dina event, se intresserade och följ statistik som arrangör på Händer.",
+        content: "Hantera dina event, se intresserade och följ statistik som arrangör på Tagalong.",
       },
-      { property: "og:title", content: "Arrangörspanel – Händer" },
+      { property: "og:title", content: "Arrangörspanel – Tagalong" },
       {
         property: "og:description",
         content: "Skapa och redigera event, se visningar, klick, sparningar och planer.",

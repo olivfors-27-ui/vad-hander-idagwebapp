@@ -23,13 +23,14 @@ import {
   EventCover,
   priceLabel,
   SponsoredBadge,
+  StockholmApiBadge,
 } from "@/components/hander/EventBits";
 import { MapCanvas } from "@/components/hander/MapCanvas";
 import { useGoCreate } from "@/lib/auth-guard";
 import { useProfile } from "@/lib/auth";
 import { describeDbError } from "@/lib/db-error";
 import { recordEventView } from "@/lib/event-views";
-import { CATEGORY_GRADIENT, ME, userById } from "@/lib/hander-data";
+import { CATEGORY_GRADIENT, ME, isStockholmApiEvent, userById } from "@/lib/hander-data";
 import { formatDay, useHander } from "@/lib/hander-store";
 import { truncateDescription } from "@/lib/text";
 import { cn } from "@/lib/utils";
@@ -37,9 +38,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/event/$id")({
   head: () => ({
     meta: [
-      { title: "Event – Händer" },
+      { title: "Event – Tagalong" },
       { name: "description", content: "Detaljer, tid, plats och vilka som ska dit." },
-      { property: "og:title", content: "Event – Händer" },
+      { property: "og:title", content: "Event – Tagalong" },
       { property: "og:description", content: "Se vad som händer och vilka som är intresserade." },
     ],
   }),
@@ -211,6 +212,7 @@ function EventPage() {
           <p className="ml-6 text-xs text-muted-foreground">
             {event.address} · {event.distance} km bort
           </p>
+          {isStockholmApiEvent(event) && <StockholmApiBadge className="ml-6 mt-2" />}
           <div className="mt-3 h-32 overflow-hidden rounded-xl">
             <MapCanvas events={[event]} places={[]} showPlaces={false} onSelectEvent={() => {}} />
           </div>
@@ -403,7 +405,7 @@ function EventPage() {
           emoji: "📍",
           gradient: CATEGORY_GRADIENT[event.category],
           meta: `${formatDay(event.date)} ${event.start} · ${event.place}`,
-          cta: "Tryck för att se eventet i Händer.",
+          cta: "Tryck för att se eventet i Tagalong.",
           url: absoluteUrl(`/event/${event.id}`),
           displayUrl: absoluteUrl(`/event/${event.id}`),
           shareText: `Kolla in ${event.name} – ${formatDay(event.date)} ${event.start} på ${event.place}!`,

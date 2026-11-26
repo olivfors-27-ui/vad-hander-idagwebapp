@@ -25,12 +25,12 @@ export const Route = createFileRoute("/plan/$id")({
     search["ny"] === true || search["ny"] === "true" ? { ny: true } : {},
   head: () => ({
     meta: [
-      { title: "Din plan – Händer" },
+      { title: "Din plan – Tagalong" },
       {
         name: "description",
         content: "Samla förslag, dela länken med kompisgänget och bestäm vad ni ska göra.",
       },
-      { property: "og:title", content: "Din plan – Händer" },
+      { property: "og:title", content: "Din plan – Tagalong" },
       { property: "og:description", content: "Kompisarna svarar via länk – ni bestämmer ihop." },
     ],
   }),

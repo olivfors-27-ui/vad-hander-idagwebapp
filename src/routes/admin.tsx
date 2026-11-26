@@ -12,10 +12,10 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "Moderering – Händer" },
+      { title: "Moderering – Tagalong" },
       { name: "description", content: "Granska, godkänn eller avvisa användarskapade event." },
-      { property: "og:title", content: "Moderering – Händer" },
-      { property: "og:description", content: "Admin-vy för publika event på Händer." },
+      { property: "og:title", content: "Moderering – Tagalong" },
+      { property: "og:description", content: "Admin-vy för publika event på Tagalong." },
     ],
   }),
   component: AdminPage,

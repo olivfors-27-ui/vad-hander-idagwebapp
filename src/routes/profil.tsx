@@ -14,10 +14,10 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/profil")({
   head: () => ({
     meta: [
-      { title: "Min profil – Händer" },
+      { title: "Min profil – Tagalong" },
       { name: "description", content: "Dina event, sparade favoriter och personer du följer." },
-      { property: "og:title", content: "Min profil – Händer" },
-      { property: "og:description", content: "Håll koll på dina event och vänner på Händer." },
+      { property: "og:title", content: "Min profil – Tagalong" },
+      { property: "og:description", content: "Håll koll på dina event och vänner på Tagalong." },
     ],
   }),
   component: ProfilePage,

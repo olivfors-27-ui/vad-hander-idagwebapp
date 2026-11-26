@@ -16,7 +16,7 @@ const STEPS = [
   {
     emoji: "✅",
     title: "Bestäm – och kör",
-    text: "Alla svarar utan konto. Händer visar vad som funkar bäst för gänget.",
+    text: "Alla svarar utan konto. Tagalong visar vad som funkar bäst för gänget.",
   },
 ];
 
@@ -47,7 +47,7 @@ export function IntroSheet() {
       className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 p-4 backdrop-blur-sm sm:items-center"
       role="dialog"
       aria-modal="true"
-      aria-label="Välkommen till Händer"
+      aria-label="Välkommen till Tagalong"
     >
       <div className="w-full max-w-sm rounded-3xl border border-border bg-card p-6 shadow-[var(--shadow-pin)]">
         <p className="text-center text-3xl" aria-hidden>
@@ -57,7 +57,7 @@ export function IntroSheet() {
           Vad ska ni göra?
         </h2>
         <p className="mt-1 text-center text-sm text-muted-foreground">
-          Händer hjälper ditt kompisgäng att hitta något roligt – och bestämma det utan hundra meddelanden.
+          Tagalong hjälper ditt kompisgäng att hitta något roligt – och bestämma det utan hundra meddelanden.
         </p>
         <ol className="mt-5 space-y-3">
           {STEPS.map((s, i) => (

@@ -17,13 +17,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/vanner")({
   head: () => ({
     meta: [
-      { title: "Vänner – Händer" },
+      { title: "Vänner – Tagalong" },
       {
         name: "description",
         content:
-          "Sök upp personer via användarnamn, följ dem och bjud in gänget till ett event på Händer.",
+          "Sök upp personer via användarnamn, följ dem och bjud in gänget till ett event på Tagalong.",
       },
-      { property: "og:title", content: "Vänner – Händer" },
+      { property: "og:title", content: "Vänner – Tagalong" },
       { property: "og:description", content: "Hitta personer, följ dem och planera något tillsammans." },
     ],
   }),

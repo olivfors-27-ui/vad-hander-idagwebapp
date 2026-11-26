@@ -34,6 +34,7 @@ import { distanceKm } from "./geocode";
 export { eventVisibleUntil, isEventVisible } from "./event-time";
 import { useUserLocation } from "./user-location";
 import { fetchEventsWithCache } from "./visitstockholm";
+import { fetchPlacesWithCache } from "./visitstockholm-places";
 import { watchAccount, type Account } from "./auth";
 import {
   fetchPrivateEventGuests,
@@ -116,6 +117,7 @@ function useStoreValue() {
   const [apiEvents, setApiEvents] = useState<EventItem[]>([]);
   const [apiLoading, setApiLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [apiPlaces, setApiPlaces] = useState<Place[]>([]);
   // Publika event skapade i appen – hämtas från Supabase. RLS ger godkända
   // event till alla, egna till ägaren och allt till moderatorer.
   // cloudEvents är bara de som fortfarande ska synas publikt (databasvyn
@@ -170,6 +172,19 @@ function useStoreValue() {
     return () => controller.abort();
   }, []);
 
+  // Fasta platser (Visit Stockholms objekt-API) laddas en gång per dag med
+  // dags-cache i webbläsaren. Misslyckas hämtningen behålls det kuraterade
+  // grundutbudet i PLACES, så kartans Platser-läge aldrig blir tomt utan skäl.
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchPlacesWithCache(controller.signal)
+      .then((places) => setApiPlaces(places))
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setApiPlaces([]);
+      });
+    return () => controller.abort();
+  }, []);
   // Planer bor i molnet så att delade länkar fungerar på andra enheter.
   const refreshPlans = useCallback(async () => {
     try {
@@ -766,13 +781,21 @@ function useStoreValue() {
   );
 
   /** Alla permanenta platser som får visas publikt (mockdata + godkända förslag). */
-  const places = useMemo(
-    () =>
-      [...PLACES, ...state.placeSuggestions.filter((p) => p.status === "approved")].map(
-        withDistance,
-      ),
-    [state.placeSuggestions, withDistance],
-  );
+  /** Fasta platser: kuraterat grundutbud, API-platser och godkända förslag. */
+  const places = useMemo(() => {
+    const seen = new Set<string>();
+    return [
+      ...PLACES,
+      ...apiPlaces,
+      ...state.placeSuggestions.filter((p) => p.status === "approved"),
+    ]
+      .filter((place) => {
+        if (seen.has(place.id)) return false;
+        seen.add(place.id);
+        return true;
+      })
+      .map(withDistance);
+  }, [apiPlaces, state.placeSuggestions, withDistance]);
 
   const pendingPlaces = useMemo(
     () => state.placeSuggestions.filter((p) => p.status === "pending"),

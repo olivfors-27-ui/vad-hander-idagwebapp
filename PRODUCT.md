@@ -1,12 +1,12 @@
-# Händer – produktstruktur och riktning
+# Tagalong – produktstruktur och riktning
 
 ## Kärna
 
-Händer hjälper unga människor och kompisgäng att svara på frågan:
+Tagalong hjälper unga människor och kompisgäng att svara på frågan:
 
 > **"Vad ska vi göra?"**
 
-Händer är inte en traditionell eventkalender. Det är en kombination av:
+Tagalong är inte en traditionell eventkalender. Det är en kombination av:
 
 - En modern social app
 - Ett verktyg för att upptäcka saker att göra
@@ -16,14 +16,14 @@ Händer är inte en traditionell eventkalender. Det är en kombination av:
 ## Kärnflödet
 
 ```text
-Öppna Händer
+Öppna Tagalong
   → Upptäck något
   → "Det där vill vi göra!"
   → Planera med kompisar
   → Skapa en plan
   → Dela länk i gruppchatten
   → Alla svarar (utan konto)
-  → Händer visar vad som fungerar bäst
+  → Tagalong visar vad som fungerar bäst
   → Planen bestäms
   → Vi kör!
 ```
@@ -51,13 +51,13 @@ Modern, ungdomlig, social, energisk, lekfull men stilren. Aldrig corporate.
 | `/skapa-plan` | Skapa plan på <30 sek, få delbar länk |
 | `/plan/:id` | Skaparens översikt: svar, bästa alternativ, bestäm |
 | `/p/:code`, `/plan/:code` | Mottagaren: förstå på <5 sek, svara utan konto |
-| `/overraska` | "Vi vet inte vad" – låt Händer välja åt gänget |
+| `/overraska` | "Vi vet inte vad" – låt Tagalong välja åt gänget |
 | `/sparat`, `/profil` | Stödfunktioner |
 
 ## Mål för upplevelsen
 
 - En användare hittar något roligt, skapar en plan och skickar den till kompisgänget på **< 30 sekunder**.
-- En kompis som aldrig använt Händer öppnar länken och förstår vad den ska göra på **< 5 sekunder**.
+- En kompis som aldrig använt Tagalong öppnar länken och förstår vad den ska göra på **< 5 sekunder**.
 
 ## Kommande utveckling (riktning)
 

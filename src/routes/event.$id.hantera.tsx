@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/event/$id/hantera")({
   head: () => ({
     meta: [
-      { title: "Hantera event – Händer" },
+      { title: "Hantera event – Tagalong" },
       { name: "description", content: "Översikt, redigering och gäster för ditt event." },
     ],
   }),

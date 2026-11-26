@@ -1,4 +1,4 @@
-# Händer – Va Händer Idag?
+# Tagalong – Va Tagalong Idag?
 
 Social karta för events, fester och platser i Stockholm. Byggd med TanStack Start,
 React, Tailwind CSS 4 och Vite. Pakethanterare: Bun (`bun.lock`).

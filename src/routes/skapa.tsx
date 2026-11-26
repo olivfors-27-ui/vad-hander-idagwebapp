@@ -22,9 +22,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/skapa")({
   head: () => ({
     meta: [
-      { title: "Skapa event – Händer" },
-      { name: "description", content: "Skapa ett publikt eller privat event på Händer." },
-      { property: "og:title", content: "Skapa event – Händer" },
+      { title: "Skapa event – Tagalong" },
+      { name: "description", content: "Skapa ett publikt eller privat event på Tagalong." },
+      { property: "og:title", content: "Skapa event – Tagalong" },
       { property: "og:description", content: "Publikt event granskas innan det syns på kartan." },
     ],
   }),
