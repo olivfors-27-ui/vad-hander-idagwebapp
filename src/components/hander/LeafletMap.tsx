@@ -96,12 +96,16 @@ const eventPin = ({ category, color, live, selected, temporary }: EventPinOption
   });
 };
 
+/**
+ * Fast plats: en kartnål i stället för en prick – spetsen sitter på platsen och
+ * formen skiljer dem från eventens större nålar och klustrens cirklar.
+ */
 const placePin = (color: string) =>
   divIcon({
     className: "hander-leaflet-place",
-    html: `<span class="hander-place-dot" style="display:block;width:25px;height:25px;border:3px solid #fff;border-radius:50%;background:${color};box-shadow:0 2px 7px #17202a88"></span>`,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
+    html: `<span class="hander-place-pin" style="background:${color}"></span>`,
+    iconSize: [28, 34],
+    iconAnchor: [14, 34],
   });
 
 /** Vad en markering föreställer – så att klustret kan färgas efter innehåll. */

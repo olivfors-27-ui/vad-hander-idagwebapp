@@ -191,14 +191,26 @@
   border-radius: 50%;
   background: #22c55e;
 }
-.hander-place-dot {
+/* Fast plats: kartnål med spetsen nedåt, i samma stil som eventnålarna men mindre. */
+.hander-place-pin {
   display: block;
-  width: 25px;
-  height: 25px;
+  width: 22px;
+  height: 22px;
   border: 3px solid white;
-  border-radius: 50%;
+  border-radius: 50% 50% 50% 4px;
   background: var(--pin-color);
-  box-shadow: 0 2px 7px #17202a55;
+  box-shadow: 0 3px 8px #17202a55;
+  transform: rotate(-45deg);
+}
+.hander-place-pin::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
 }
 .hander-cluster-label {
   display: grid;
