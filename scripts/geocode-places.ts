@@ -1,7 +1,8 @@
 /**
  * Geokodar de kuraterade platserna och skriver cachen som
- * src/lib/curated-coordinates.ts byggs av. Går att köra om hur många gånger
- * som helst – redan geokodade platser hoppas över.
+ * src/lib/curated-coordinates.ts byggs av. Redan hittade platser hoppas över,
+ * och scripts/place-attempts.json kommer ihåg vilka källor som prövats för varje
+ * namn – därför går en omkörning bara på det som ännu inte fått ett svar.
  *
  *   bun run geocode:places
  *
@@ -78,7 +79,9 @@ type OverpassElement = {
 const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /** Hämtar koordinater för en batch namn i en enda Overpass-fråga. */
-const geocodeBatch = async (names: string[]): Promise<Record<string, CoordinateHit>> => {
+const geocodeBatch = async (
+  names: string[],
+): Promise<Record<string, CoordinateHit> | undefined> => {
   const pattern = names.map(escapeRegex).join("|");
   const query = `[out:json][timeout:90];nwr["name"~"^(${pattern})$",i](${BOUNDS.minLat},${BOUNDS.minLng},${BOUNDS.maxLat},${BOUNDS.maxLng});out center tags;`;
   const data = await fetchJson<{ elements?: OverpassElement[] }>(OVERPASS, {
@@ -86,10 +89,13 @@ const geocodeBatch = async (names: string[]): Promise<Record<string, CoordinateH
     body: new URLSearchParams({ data: query }),
     headers: { "content-type": "application/x-www-form-urlencoded" },
   });
+  // Inget svar alls betyder att anropet misslyckades – då får namnen inte
+  // markeras som prövade.
+  if (!data) return undefined;
   const wanted = new Map(names.map((name) => [normalize(name), name]));
   const best: Record<string, { hit: CoordinateHit; distance: number }> = {};
 
-  for (const element of data?.elements ?? []) {
+  for (const element of data.elements ?? []) {
     const name = element.tags?.name;
     if (!name) continue;
     const wantedName = wanted.get(normalize(name));
@@ -127,7 +133,9 @@ const tokens = (value: string) =>
  * Andra Overpass-omgången: söker på utmärkande ord i stället för exakt namn,
  * så att t.ex. "Fotografiska" hittar "Fotografiska museet".
  */
-const geocodeRelaxed = async (names: string[]): Promise<Record<string, CoordinateHit>> => {
+const geocodeRelaxed = async (
+  names: string[],
+): Promise<Record<string, CoordinateHit> | undefined> => {
   const keys = new Map<string, string[]>();
   for (const name of names) {
     const own = tokens(name);
@@ -143,8 +151,9 @@ const geocodeRelaxed = async (names: string[]): Promise<Record<string, Coordinat
     headers: { "content-type": "application/x-www-form-urlencoded" },
   });
 
+  if (!data) return undefined;
   const results: Record<string, CoordinateHit> = {};
-  for (const element of data?.elements ?? []) {
+  for (const element of data.elements ?? []) {
     const osmName = element.tags?.name;
     if (!osmName) continue;
     const lat = element.lat ?? element.center?.lat;
@@ -275,7 +284,11 @@ const matchWithIndex = (names: string[], index: OsmPlace[]): Record<string, Coor
   return results;
 };
 
-const geocodePhoton = async (name: string): Promise<CoordinateHit | undefined> => {
+/**
+ * undefined = tjänsten svarade inte (prova igen nästa körning), null = den
+ * svarade men hade ingen träff (namnet är prövat).
+ */
+const geocodePhoton = async (name: string): Promise<CoordinateHit | null | undefined> => {
   const url = `${PHOTON}?${new URLSearchParams({
     q: `${name}, Stockholm`,
     limit: "5",
@@ -288,9 +301,10 @@ const geocodePhoton = async (name: string): Promise<CoordinateHit | undefined> =
       properties: { name?: string; countrycode?: string; osm_key?: string; type?: string; city?: string };
     }[];
   }>(url);
+  if (!data) return undefined;
   await sleep(500);
   const tooCoarse = new Set(["street", "locality", "district", "city", "county", "state", "country"]);
-  for (const feature of data?.features ?? []) {
+  for (const feature of data.features ?? []) {
     const [lng, lat] = feature.geometry.coordinates;
     if (!inBounds(lat, lng)) continue;
     if (feature.properties.countrycode && feature.properties.countrycode !== "SE") continue;
@@ -298,10 +312,10 @@ const geocodePhoton = async (name: string): Promise<CoordinateHit | undefined> =
     if (feature.properties.type && tooCoarse.has(feature.properties.type)) continue;
     return { lat, lng, label: `${feature.properties.name ?? name} – ${feature.properties.city ?? "Stockholm"}` };
   }
-  return undefined;
+  return null;
 };
 
-const geocodeNominatim = async (name: string): Promise<CoordinateHit | undefined> => {
+const geocodeNominatim = async (name: string): Promise<CoordinateHit | null | undefined> => {
   const url = `${NOMINATIM}?${new URLSearchParams({
     q: `${name}, Stockholm`,
     format: "jsonv2",
@@ -310,35 +324,74 @@ const geocodeNominatim = async (name: string): Promise<CoordinateHit | undefined
     viewbox: `${BOUNDS.minLng},${BOUNDS.maxLat},${BOUNDS.maxLng},${BOUNDS.minLat}`,
     bounded: "0",
   })}`;
-  const hits = (await fetchJson<{ lat: string; lon: string; display_name: string }[]>(url)) ?? [];
+  const hits = await fetchJson<{ lat: string; lon: string; display_name: string }[]>(url);
+  if (!hits) return undefined;
   await sleep(1100);
   const hit = hits[0];
-  if (!hit) return undefined;
+  if (!hit) return null;
   const lat = Number(hit.lat);
   const lng = Number(hit.lon);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng) || !inBounds(lat, lng)) return undefined;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || !inBounds(lat, lng)) return null;
   return { lat, lng, label: hit.display_name };
 };
 
 /** Slår upp en gatuadress (används för de platser OSM inte har namngett). */
-const geocodeNominatimAddress = async (address: string): Promise<CoordinateHit | undefined> => {
+const geocodeNominatimAddress = async (
+  address: string,
+): Promise<CoordinateHit | null | undefined> => {
   const url = `${NOMINATIM}?${new URLSearchParams({
     q: address,
     format: "jsonv2",
     limit: "1",
     countrycodes: "se",
   })}`;
-  const hits = (await fetchJson<{ lat: string; lon: string; display_name: string }[]>(url)) ?? [];
+  const hits = await fetchJson<{ lat: string; lon: string; display_name: string }[]>(url);
+  if (!hits) return undefined;
   await sleep(1200);
   const hit = hits[0];
-  if (!hit) return undefined;
+  if (!hit) return null;
   const lat = Number(hit.lat);
   const lng = Number(hit.lon);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng) || !inBounds(lat, lng)) return undefined;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || !inBounds(lat, lng)) return null;
   return { lat, lng, label: hit.display_name };
 };
 
 const cache = readCache();
+
+// Vilka källor som redan prövats för varje namn. Utan den här cachen frågade
+// varje omkörning alla namn igen, trots att svaret redan var "finns inte här".
+const ATTEMPTS_PATH = "scripts/place-attempts.json";
+type Source = "overpass" | "overpass-löst" | "osm-index" | "adress" | "photon" | "nominatim";
+type Attempts = Record<string, Source[]>;
+
+const readAttempts = (): Attempts => {
+  if (!existsSync(ATTEMPTS_PATH)) return {};
+  try {
+    return JSON.parse(readFileSync(ATTEMPTS_PATH, "utf8")) as Attempts;
+  } catch {
+    return {};
+  }
+};
+
+const attempts = readAttempts();
+
+const markAttempted = (names: string[], source: Source) => {
+  for (const name of names) {
+    const tried = attempts[name] ?? [];
+    if (!tried.includes(source)) tried.push(source);
+    attempts[name] = tried;
+  }
+  const sorted = Object.fromEntries(
+    Object.entries(attempts).sort(([a], [b]) => a.localeCompare(b, "sv")),
+  );
+  writeFileSync(ATTEMPTS_PATH, `${JSON.stringify(sorted, null, 1)}\n`);
+};
+
+/** Namn som saknar koordinat och där källan inte redan prövats. */
+const remaining = (source: Source) =>
+  CURATED_VENUES.filter(
+    (venue) => !cache[venue.name] && !attempts[venue.name]?.includes(source),
+  ).map((venue) => venue.name);
 
 // Första körningen: återanvänd koordinaterna som redan finns i modulen.
 if (Object.keys(cache).length === 0) {
@@ -349,14 +402,19 @@ if (Object.keys(cache).length === 0) {
   if (Object.keys(cache).length > 0) writeCache(cache);
 }
 
-let pending = CURATED_VENUES.filter((venue) => !cache[venue.name]).map((venue) => venue.name);
+let pending = remaining("overpass");
 console.log(`${Object.keys(cache).length} klara, ${pending.length} kvar att geokoda`);
 
 // 1) Overpass i batchar.
 for (let index = 0; index < pending.length; index += BATCH_SIZE) {
   const batch = pending.slice(index, index + BATCH_SIZE);
   const hits = await geocodeBatch(batch);
+  if (!hits) {
+    console.log(`overpass: inget svar för ${batch.length} namn, provar igen nästa körning`);
+    continue;
+  }
   for (const [name, hit] of Object.entries(hits)) cache[name] = hit;
+  markAttempted(batch, "overpass");
   writeCache(cache);
   writeCoordinateModule(cache);
   console.log(`overpass: ${index + batch.length}/${pending.length} försökta, ${Object.keys(cache).length} totalt`);
@@ -364,12 +422,17 @@ for (let index = 0; index < pending.length; index += BATCH_SIZE) {
 }
 
 // 2) Overpass igen, nu på utmärkande ord.
-pending = CURATED_VENUES.filter((venue) => !cache[venue.name]).map((venue) => venue.name);
+pending = remaining("overpass-löst");
 console.log(`${pending.length} kvar efter exakt overpass-sökning`);
 for (let index = 0; index < pending.length; index += 10) {
   const batch = pending.slice(index, index + 10);
   const hits = await geocodeRelaxed(batch);
+  if (!hits) {
+    console.log(`overpass (löst): inget svar för ${batch.length} namn, provar igen nästa körning`);
+    continue;
+  }
   for (const [name, hit] of Object.entries(hits)) cache[name] = hit;
+  markAttempted(batch, "overpass-löst");
   writeCache(cache);
   console.log(`overpass (löst): ${Math.min(index + batch.length, pending.length)}/${pending.length}, ${Object.keys(cache).length} totalt`);
   await sleep(1200);
@@ -377,11 +440,13 @@ for (let index = 0; index < pending.length; index += 10) {
 writeCoordinateModule(cache);
 
 // 3) Lokalt OSM-index med fuzzy namnmatchning för resten.
-pending = CURATED_VENUES.filter((venue) => !cache[venue.name]).map((venue) => venue.name);
+pending = remaining("osm-index");
 if (pending.length > 0) {
   const index = await loadOsmIndex();
   const hits = matchWithIndex(pending, index);
   for (const [name, hit] of Object.entries(hits)) cache[name] = hit;
+  // Ett halvfärdigt index får inte låsa namnen som prövade.
+  if (index.length > 1000) markAttempted(pending, "osm-index");
   writeCache(cache);
   writeCoordinateModule(cache);
   console.log(`osm-index: ${Object.keys(hits).length} av ${pending.length} matchade`);
@@ -392,9 +457,15 @@ const overrideHits = async (): Promise<number> => {
   if (!existsSync(OVERRIDES_PATH)) return 0;
   const overrides = JSON.parse(readFileSync(OVERRIDES_PATH, "utf8")) as Record<string, string>;
   let added = 0;
-  for (const [name, address] of Object.entries(overrides)) {
-    if (cache[name]) continue;
+  for (const name of remaining("adress")) {
+    const address = overrides[name];
+    if (!address) continue;
     const hit = await geocodeNominatimAddress(address);
+    if (hit === undefined) {
+      console.log(`adressuppslaget svarade inte: ${name} (${address})`);
+      continue;
+    }
+    markAttempted([name], "adress");
     if (!hit) {
       console.log(`adressen gick inte att hitta: ${name} (${address})`);
       continue;
@@ -410,8 +481,9 @@ const overrideHits = async (): Promise<number> => {
 await overrideHits();
 
 // 5) Photon och Nominatim för resten.
-pending = CURATED_VENUES.filter((venue) => !cache[venue.name]).map((venue) => venue.name);
-console.log(`${pending.length} kvar efter båda overpass-omgångarna`);
+const photonPending = remaining("photon");
+const nominatimPending = remaining("nominatim");
+console.log(`${photonPending.length} kvar för photon, ${nominatimPending.length} för nominatim`);
 
 // Kolla först vilka tjänster som svarar – annars står vi och knackar på en
 // dörr som är stängd för varje namn.
@@ -426,26 +498,61 @@ const probe = async (url: string) => {
     return false;
   }
 };
-const photonAlive = await probe(`${PHOTON}?q=Stockholm&limit=1`);
-const nominatimAlive = await probe(
-  `${NOMINATIM}?${new URLSearchParams({ q: "Stockholm", format: "jsonv2", limit: "1" })}`,
-);
-console.log(`photon: ${photonAlive ? "svarar" : "nere"}, nominatim: ${nominatimAlive ? "svarar" : "nere"}`);
+const photonAlive = photonPending.length > 0 && (await probe(`${PHOTON}?q=Stockholm&limit=1`));
+const nominatimAlive =
+  nominatimPending.length > 0 &&
+  (await probe(`${NOMINATIM}?${new URLSearchParams({ q: "Stockholm", format: "jsonv2", limit: "1" })}`));
+if (photonPending.length > 0 || nominatimPending.length > 0) {
+  console.log(
+    `photon: ${photonAlive ? "svarar" : "nere"}, nominatim: ${nominatimAlive ? "svarar" : "nere"}`,
+  );
+}
 
-const missed: string[] = [];
-for (const name of pending) {
-  const hit =
-    (photonAlive ? await geocodePhoton(name) : undefined) ??
-    (nominatimAlive ? await geocodeNominatim(name) : undefined);
-  if (hit) {
-    cache[name] = hit;
-    writeCache(cache);
-  } else {
-    missed.push(name);
-    console.log(`hoppar över: ${name}`);
+// En tjänst som slutat svara ska inte prövas om och om igen för varje namn –
+// tre missar i rad betyder att den är nere, och då sparas resten till nästa
+// körning i stället för att varje namn ska vänta ut tre tidsgränser.
+let photonActive = photonAlive;
+let nominatimActive = nominatimAlive;
+let photonMisses = 0;
+let nominatimMisses = 0;
+
+for (const name of new Set([...photonPending, ...nominatimPending])) {
+  if (!cache[name] && photonActive) {
+    const hit = await geocodePhoton(name);
+    // undefined = tjänsten svarade inte, så namnet lämnas åt nästa körning.
+    if (hit === undefined) {
+      console.log(`photon svarade inte: ${name}`);
+      photonMisses += 1;
+      if (photonMisses >= 3) {
+        photonActive = false;
+        console.log("photon svarar inte längre – resten sparas till nästa körning");
+      }
+    } else {
+      photonMisses = 0;
+      if (hit) cache[name] = hit;
+      else markAttempted([name], "photon");
+    }
   }
+  if (!cache[name] && nominatimActive) {
+    const hit = await geocodeNominatim(name);
+    if (hit === undefined) {
+      console.log(`nominatim svarade inte: ${name}`);
+      nominatimMisses += 1;
+      if (nominatimMisses >= 3) {
+        nominatimActive = false;
+        console.log("nominatim svarar inte längre – resten sparas till nästa körning");
+      }
+    } else {
+      nominatimMisses = 0;
+      if (hit) cache[name] = hit;
+      else markAttempted([name], "nominatim");
+    }
+  }
+  if (cache[name]) writeCache(cache);
+  else console.log(`hoppar över: ${name}`);
 }
 
 const covered = writeCoordinateModule(cache);
 console.log(`klart: ${covered}/${CURATED_VENUES.length} platser har koordinater`);
-if (missed.length) console.log(`saknas (${missed.length}): ${missed.join(", ")}`);
+const missing = CURATED_VENUES.filter((venue) => !cache[venue.name]).map((venue) => venue.name);
+if (missing.length) console.log(`saknas (${missing.length}): ${missing.join(", ")}`);

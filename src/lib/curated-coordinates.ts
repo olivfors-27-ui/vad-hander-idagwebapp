@@ -141,6 +141,7 @@ export const CURATED_COORDINATES: Record<string, [number, number]> = {
   "Beckmans Designhögskola": [59.33725, 18.07575],
   "Kungliga Konsthögskolan": [59.32428, 18.08300],
   "Långholmen": [59.85274, 18.63981],
+  "Brunnsviksbadet": [59.36191, 18.04852],
   "Smedsuddsbadet": [59.32496, 18.02111],
   "Tanto strandbad": [59.31187, 18.03845],
   "Vinterviken": [60.13062, 18.41892],

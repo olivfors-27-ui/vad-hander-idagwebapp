@@ -1,0 +1,596 @@
+{
+ "AC Paintball": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Arc Rooftop": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Arya Glass": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Aspuddens Bokhandel": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Atelje FAFF": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Bagarmossens centrum": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Bar Ninja": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Barnängens brygga": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Bengans Skivbutik": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Big Ben comedy": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Boda Borg Oxelösund": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "photon",
+  "nominatim"
+ ],
+ "Brunnsviksbadet": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "adress"
+ ],
+ "Chokladprovning i Gamla stan": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Curling i Danderyd": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Danvikstullsbro & Hammarby sluss": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Dice Coffee": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Dovaz": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Dreja och drick vin": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "photon",
+  "nominatim"
+ ],
+ "Drejverkstaden": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "photon",
+  "nominatim"
+ ],
+ "Eden Smedsuddsbadet": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Eriksdals Bangolf": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Flottsbro utsiktsberg": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Fredhällsklipporna": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "photon",
+  "nominatim"
+ ],
+ "Frescati Sports Center Badminton": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Fryshuset Skatepark": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "GoBoat Stockholm": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Gunthers Korvkiosk": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Gärdet Frisbeegolf": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Highvalley Skateworld": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Högt och lågt": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "JumpYard Barkarby": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Järvafältets gravfält": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "K.A. Almgren sidenväveri": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Kaffeprovning på Johan & Nyström": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "photon",
+  "nominatim"
+ ],
+ "Kajakpaddling i stan": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Katarina Bangata Loppis": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "photon",
+  "nominatim"
+ ],
+ "Kayaker i Liljeholmskajen": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "photon",
+  "nominatim"
+ ],
+ "Kayakomat Hornstull": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Kockduellen": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "photon",
+  "nominatim"
+ ],
+ "Konträr": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Kristinebergs Golfbar": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Kungsholmens Bangolf": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Kärsön Discgolf": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Lappis skrik": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Laserdome Hägersten": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Liljeholmskajens konstpromenad": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Loppisrunda på Södermalm": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Maffia comedy club": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "MDT Moderna Dansteatern": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "photon",
+  "nominatim"
+ ],
+ "Medicinska Föreningen": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Moyagi karaoke": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Myrorna Ropsten": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Målerikväll med vin": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Nynäshamn & Strandvägen": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "O'Learys Mall of Scandinavia": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Ocean Bus": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Ost- och vinprovning": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Parkteatern i Vita Bergen": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Prison Island Stockholm": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "RAW Comedy Club": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "RIB-båt i skärgården": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "photon",
+  "nominatim"
+ ],
+ "Rosendals äppelfestival": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "SATS Student": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Scheelegatans art deco-fasader": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "photon",
+  "nominatim"
+ ],
+ "Schmaltz Bar & Delicatessen": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Sci-fi bokhandeln": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Sergelgatans konsthall": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "SL-båtarna Linje 80 & 89": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "photon",
+  "nominatim"
+ ],
+ "Sofia kyrka & Vita Bergen": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "photon",
+  "nominatim"
+ ],
+ "Spelapaintball Farsta": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Spesso": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Språkcafé på Stadsbiblioteket": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "photon",
+  "nominatim"
+ ],
+ "Spårvägsmuseets modelljärnväg": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Stendörrens naturreservat": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "STHLM Ljusstöperi": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Stora Essingens badbryggor": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Strömma Kanalbolaget": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Subtopias utomhusgalleri": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "SUP-paddling vid Rålambshovsparken": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "photon",
+  "nominatim"
+ ],
+ "Surdegskurs på bageri": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Södermalms Padel": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "SöderS pub": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Södertörns högskolebibliotek": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Takvandring i Gamla stan": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Tantolundens Discgolf": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Tantolundens koloniområde": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Teprovning på Tehuset Java": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "photon",
+  "nominatim"
+ ],
+ "Tilt bar": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Tunnelbanekonsten": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "photon",
+  "nominatim"
+ ],
+ "Täby Galopp bakluckeloppis": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Under Bron": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Uppsala studentnationer": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Vasaparkens minigolf": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Vrex city": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ],
+ "Ölprovning på mikrobryggeri": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "photon",
+  "nominatim"
+ ],
+ "Örnsbergs klippbad": [
+  "overpass",
+  "overpass-löst",
+  "osm-index",
+  "nominatim"
+ ]
+}
