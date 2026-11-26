@@ -1148,7 +1148,9 @@
 
 /* Blad och delningsark ska förankras i telefonramen (sticky shell), inte viewporten.
    Transform gör .hander-phone till containing block för position: fixed-element inuti. */
-.hander-phone .sheet-backdrop {
+/* Bladen används även på desktop (kartan är samma vy där), så grundstilen
+   ligger globalt och bara telefonens extra bottenutrymme är scopat. */
+.sheet-backdrop {
   background: rgba(42, 36, 33, 0.32);
   backdrop-filter: blur(2px);
 }
@@ -1156,7 +1158,7 @@
 .hander-phone .filter-sheet-backdrop {
   top: 119px;
 }
-.hander-phone .sheet-panel {
+.sheet-panel {
   border-radius: 24px 24px 0 0;
   border: 1px solid rgba(74, 45, 36, 0.16);
   border-bottom: 0;
@@ -1164,23 +1166,45 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.6),
     0 -10px 34px -14px rgba(34, 34, 59, 0.3);
-  /* Viktigt: innehållet ska sluta ovanför botten-navigationen (86px). */
+  padding-bottom: 16px;
+}
+/* Bara i telefonramen behöver innehållet sluta ovanför botten-navigationen (86px). */
+.hander-phone .sheet-panel {
   padding-bottom: 104px !important;
 }
-.hander-phone .sheet-panel .bg-secondary {
+.sheet-panel .bg-secondary {
   background: #f7e5d5;
   color: #593b2a;
 }
-.hander-phone .sheet-panel .bg-card {
+/* Faktakorten (NÄR/PRIS/ÖPPETTIDER) i bladen: vita kort med varm kant och mjuk
+   3d-kant, samma stil som på eventsidan. */
+.sheet-panel .bg-secondary\/70 {
+  background: #ffffff;
+  border: 1px solid rgba(74, 45, 36, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 3px 0 color-mix(in srgb, #f7e5d5 75%, #fff),
+    0 8px 16px -10px rgba(34, 34, 59, 0.2);
+}
+.sheet-panel .bg-secondary\/70 p:first-child {
+  color: #b08a6e;
+}
+.sheet-panel .bg-secondary\/70 p {
+  color: #2a2421;
+}
+.sheet-panel .bg-secondary\/70 .text-muted-foreground {
+  color: #8c7a6b;
+}
+.sheet-panel .bg-card {
   background: #ffffff;
 }
-.hander-phone .sheet-panel .rounded-2xl {
+.sheet-panel .rounded-2xl {
   border-radius: 14px;
 }
-.hander-phone .sheet-panel .rounded-3xl {
+.sheet-panel .rounded-3xl {
   border-radius: 18px;
 }
-.hander-phone .sheet-panel .rounded-t-3xl {
+.sheet-panel .rounded-t-3xl {
   border-radius: 22px 22px 0 0;
 }
 /* Gör alla fixed-lager till absoluta inom skalet. */
@@ -1315,7 +1339,7 @@
 }
 
 /* Kartbladen (EventSheet/PlaceSheet) matchar hem-temat: vitt blad, röd primär, sektionsfärger. */
-.hander-phone .map-sheet-card {
+.map-sheet-card {
   border: 1px solid rgba(74, 45, 36, 0.14);
   border-radius: 14px;
   overflow: hidden;
@@ -1325,28 +1349,30 @@
     0 3px 0 color-mix(in srgb, var(--sheet-accent, #e45048) 70%, #000),
     0 10px 18px -8px rgba(34, 34, 59, 0.28);
 }
-.hander-phone .map-sheet-card--red {
+.map-sheet-card--red {
   --sheet-accent: #e45048;
 }
-.hander-phone .map-sheet-card--blue {
+.map-sheet-card--blue {
   --sheet-accent: #465bc4;
 }
-.hander-phone .map-sheet-card--pink {
+.map-sheet-card--pink {
   --sheet-accent: #e57657;
 }
-.hander-phone .map-sheet-card .map-sheet-cover {
-  height: 220px;
+
+.map-sheet-card .map-sheet-cover {
+  /* Kort bild så att titel och faktakort syns redan i det kollapsade bladet. */
+  height: 150px;
   background-size: cover;
   background-position: center;
   position: relative;
 }
-.hander-phone .map-sheet-card .map-sheet-cover::after {
+.map-sheet-card .map-sheet-cover::after {
   content: "";
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg, rgba(0, 0, 0, 0) 40%, rgba(20, 16, 25, 0.6) 100%);
 }
-.hander-phone .map-sheet-card .map-sheet-cover span {
+.map-sheet-card .map-sheet-cover span {
   position: absolute;
   left: 12px;
   bottom: 10px;
@@ -1356,32 +1382,59 @@
   font-weight: 700;
   letter-spacing: 0.02em;
 }
-.hander-phone .map-sheet-card h3 {
+.map-sheet-card h3 {
   color: #2a2421;
 }
-.hander-phone .map-sheet-card .text-muted-foreground {
+.map-sheet-card .text-muted-foreground {
   color: rgba(42, 36, 33, 0.62);
 }
-.hander-phone .map-sheet-card .text-primary {
+.map-sheet-card .text-primary {
   color: var(--sheet-accent, #e45048);
 }
-.hander-phone .map-sheet-card .map-sheet-primary {
+.map-sheet-card .map-sheet-primary {
   background: var(--sheet-accent, #e45048);
   color: #fffdf9;
   box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--sheet-accent, #e45048) 60%, transparent);
 }
-.hander-phone .map-sheet-card .map-sheet-secondary {
+.map-sheet-card .map-sheet-secondary {
   background: #f7e5d5;
   color: #593b2a;
 }
-.hander-phone .map-sheet-card .map-sheet-ghost {
+.map-sheet-card .map-sheet-ghost {
   background: rgba(42, 36, 33, 0.92);
   color: #fff;
 }
-.hander-phone .map-sheet-card .map-sheet-tag {
+.map-sheet-card .map-sheet-tag {
   background: rgba(255, 255, 255, 0.92);
   color: #2a2421;
   border: 1px solid rgba(74, 45, 36, 0.12);
+}
+/* Åtgärdsraden ligger utanför kortet i markupen, så knapparna behöver sin egen
+   stil – annars blev de genomskinliga på desktop. Raden scrollar med innehållet
+   i stället för att klistra över titeln i det kollapsade mobilbladet. */
+.map-sheet-actions {
+  position: static;
+}
+.map-sheet-actions .map-sheet-ghost {
+  background: rgba(42, 36, 33, 0.92);
+  color: #fff;
+}
+.map-sheet-actions .map-sheet-secondary {
+  background: #f7e5d5;
+  color: #593b2a;
+}
+.map-sheet-actions .map-sheet-primary {
+  background: #e45048;
+  color: #fffdf9;
+  box-shadow: 0 8px 20px -6px rgba(228, 80, 72, 0.42);
+}
+/* På desktop finns ingen bottennavigation att ta hänsyn till och inget att dra i,
+   så bladet får plats med hela innehållet direkt och bilden kortas ned. */
+@media (min-width: 1024px) {
+  .sheet-panel {
+    max-height: min(78vh, 680px) !important;
+    max-width: 30rem;
+  }
 }
 
 /* Vänerrader följer samma 3d-kortstil som eventkorten på hem: tunn sektionsfärgad ram, extruderad kant under och mjuk skugga. */

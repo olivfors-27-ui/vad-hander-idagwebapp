@@ -513,47 +513,53 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
           >
             <span>{meta.label}</span>
           </div>
-          <div className="space-y-1 p-3.5">
-            <h3 className="font-display text-xl font-bold leading-tight">{place.name}</h3>
-            <p className="text-sm text-muted-foreground">{place.description}</p>
-          </div>
-        </div>
-        <dl className="mt-3 space-y-1 text-sm">
-          <div className="flex gap-2">
-            <dt className="w-24 shrink-0 text-muted-foreground">Plats</dt>
-            <dd className="min-w-0">{place.address}</dd>
-          </div>
-          <div className="flex gap-2">
-            <dt className="w-24 shrink-0 text-muted-foreground">Avstånd</dt>
-            <dd>{place.distance} km bort</dd>
-          </div>
-          <div className="flex gap-2">
-            <dt className="w-24 shrink-0 text-muted-foreground">Öppettider</dt>
-            <dd>{place.open}</dd>
-          </div>
-          {place.price && (
-            <div className="flex gap-2">
-              <dt className="w-24 shrink-0 text-muted-foreground">Pris</dt>
-              <dd className="font-bold text-primary">{place.price}</dd>
+          {/* Samma uppbyggnad som EventSheet: titel, typchip, två faktakort,
+              adresskort och beskrivning – så ett platsblad känns som ett eventblad. */}
+          <div className="space-y-4 p-4">
+            <h3 className="font-display text-2xl font-bold leading-tight">{place.name}</h3>
+            <span className="map-sheet-tag inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide">
+              <span aria-hidden>{meta.emoji}</span>
+              {meta.label}
+            </span>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-2xl bg-secondary/70 p-3">
+                <p className="text-[11px] font-bold uppercase text-muted-foreground">Öppettider</p>
+                <p className="text-sm font-bold">{place.open}</p>
+              </div>
+              <div className="rounded-2xl bg-secondary/70 p-3">
+                <p className="text-[11px] font-bold uppercase text-muted-foreground">Avstånd</p>
+                <p className="text-sm font-bold text-primary">{place.distance} km</p>
+                <p className="text-xs text-muted-foreground">från city</p>
+              </div>
             </div>
-          )}
-          {place.contact && (
-            <div className="flex gap-2">
-              <dt className="w-24 shrink-0 text-muted-foreground">Kontakt</dt>
-              <dd className="min-w-0 break-words">{place.contact}</dd>
+            <div className="rounded-2xl border border-border p-3">
+              <p className="flex items-center gap-2 text-sm font-bold">
+                <MapPin className="h-4 w-4 shrink-0 text-primary" /> {place.address}
+              </p>
+              <p className="ml-6 text-xs text-muted-foreground">
+                {place.distance} km bort{place.price ? ` · ${place.price}` : ""}
+              </p>
             </div>
-          )}
-          {place.link && (
-            <div className="flex gap-2">
-              <dt className="w-24 shrink-0 text-muted-foreground">Länk</dt>
-              <dd className="min-w-0 break-all">
-                <a href={place.link} target="_blank" rel="noreferrer" className="text-primary underline">
+            {place.description && (
+              <p className="text-sm leading-relaxed text-foreground/90">{place.description}</p>
+            )}
+            {/* Länken ligger ofta både i contact och link – visa den bara en gång. */}
+            {place.link ? (
+              <div className="text-xs">
+                <a
+                  href={place.link}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-bold text-primary underline"
+                >
                   {place.link.replace(/^https?:\/\//, "")}
                 </a>
-              </dd>
-            </div>
-          )}
-        </dl>
+              </div>
+            ) : place.contact ? (
+              <p className="text-xs break-words text-muted-foreground">{place.contact}</p>
+            ) : null}
+          </div>
+        </div>
 
         <ActionRow
           saved={store.savedPlaces.includes(place.id)}
